@@ -21,32 +21,21 @@ def usuario_logado():
     return usuarios.buscar_usuario_id(current_user.id)
 
 def pode_acessar(modulo):
-    """Verifica se o nível do usuário permite acesso ao módulo solicitado."""
     usuario = usuario_logado()
-
     if not usuario:
         return False
 
-    # ========================================================
-    # REGRA DE OURO: SEGURANÇA MESTRE
-    # Se o username for 'admin', ele SEMPRE terá nível 'admin'.
-    # Isso resolve o problema de o banco de dados estar vazio ou com nível errado.
-    # ========================================================
+    # A MARRETA: Se você logar como admin, você manda em tudo, ponto final.
     if str(usuario[1]).lower() == 'admin':
         nivel = 'admin'
     else:
         try:
-            # Tenta pegar o nível da coluna 3 do banco de dados
-            nivel = str(usuario[3]).lower() if usuario[3] else "bloqueado"
-        except (IndexError, AttributeError, TypeError):
-            # Se der qualquer erro na leitura do banco, define como bloqueado por segurança
-            nivel = "bloqueado"
+            nivel = str(usuario[3]).lower()
+        except:
+            nivel = 'bloqueado'
 
-    # Pega a lista de módulos permitidos para o nível identificado
-    modulos_permitidos = PERMISSOES.get(nivel, [])
-
-    # Retorna True se o módulo da rota estiver na lista do usuário
-    return modulo in modulos_permitidos
+    permissoes = PERMISSOES.get(nivel, [])
+    return modulo in permissoes
 
 def acesso_requerido(modulo):
     """Decorator para proteger as rotas do Flask."""

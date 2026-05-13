@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask import Flask, render_template, request, redirect, flash, session, abort
 from datetime import datetime
@@ -122,6 +124,17 @@ def dashboard():
         mes=mes,
         criticos=criticos
     )
+
+@app.route("/usuarios/editar/<int:id>", methods=["POST"])
+@login_required
+@acesso_requerido("usuarios")
+def editar_usuario(id):
+    nova_senha = request.form.get("nova_senha")
+    if nova_senha:
+        hash_senha = generate_password_hash(nova_senha)
+        usuarios.atualizar_senha(id, hash_senha) # Você precisaria criar essa função no usuarios.py
+        flash("Senha alterada!", "success")
+    return redirect("/usuarios")
 
 # ========================================================
 # COMPRAS E ESTOQUE

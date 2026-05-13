@@ -1,89 +1,112 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container py-5 animate-in">
     <div class="row justify-content-center">
-        <div class="col-md-7">
-            <div class="card shadow-lg border-0 bg-dark text-white">
-                <!-- Cabeçalho com destaque em amarelo -->
-                <div class="card-header bg-warning text-dark text-center py-4">
-                    <h2 class="mb-0 fw-bold">📊 Resumo da Importação</h2>
+        <div class="col-lg-6 col-md-8">
+            
+            <div class="card bg-dark-card border-0 shadow-2xl rounded-4 overflow-hidden">
+                <!-- HEADER COM DESTAQUE -->
+                <div class="card-header bg-warning py-4 border-0">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div class="bg-black bg-opacity-10 rounded-circle p-2 me-3">
+                            <i class="bi bi-file-earmark-check-fill fs-3 text-dark"></i>
+                        </div>
+                        <h2 class="mb-0 fw-extrabold text-dark" style="letter-spacing: -1px;">Revisar Importação</h2>
+                    </div>
                 </div>
 
-                <div class="card-body p-5">
-                    <p class="text-center text-muted mb-4 fs-5">O sistema analisou seu arquivo e detectou o seguinte:</p>
+                <div class="card-body p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <p class="text-white-50">O sistema mapeou os dados do seu arquivo.<br>Confira os itens que serão criados ou atualizados:</p>
+                    </div>
                     
-                    <!-- Lista de Itens com Cores de Destaque -->
-                    <div class="list-group list-group-flush mb-4 rounded overflow-hidden shadow-sm">
-                        <div class="list-group-item bg-black bg-opacity-25 text-white d-flex justify-content-between align-items-center border-secondary py-3">
-                            <div>
-                                <i class="bi bi-bag-plus text-info me-2"></i>
-                                <strong>Novos Produtos:</strong>
+                    <!-- RESUMO TIPO DASHBOARD -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-4">
+                            <div class="bg-black bg-opacity-20 p-3 rounded-4 border border-secondary border-opacity-10 text-center">
+                                <i class="bi bi-bag-plus text-info fs-4 d-block mb-1"></i>
+                                <span class="d-block fw-extrabold text-white fs-4">{{ novos_produtos }}</span>
+                                <small class="text-white-50 fw-bold" style="font-size: 0.6rem; text-uppercase;">Produtos</small>
                             </div>
-                            <span class="badge bg-info text-dark rounded-pill fs-6">{{ novos_produtos }}</span>
                         </div>
-                        
-                        <div class="list-group-item bg-black bg-opacity-25 text-white d-flex justify-content-between align-items-center border-secondary py-3">
-                            <div>
-                                <i class="bi bi-box-seam text-success me-2"></i>
-                                <strong>Novas Matérias-primas:</strong>
+                        <div class="col-4">
+                            <div class="bg-black bg-opacity-20 p-3 rounded-4 border border-secondary border-opacity-10 text-center">
+                                <i class="bi bi-box-seam text-success fs-4 d-block mb-1"></i>
+                                <span class="d-block fw-extrabold text-white fs-4">{{ novas_mps }}</span>
+                                <small class="text-white-50 fw-bold" style="font-size: 0.6rem; text-uppercase;">Insumos</small>
                             </div>
-                            <span class="badge bg-success rounded-pill fs-6">{{ novas_mps }}</span>
                         </div>
-
-                        <div class="list-group-item bg-black bg-opacity-25 text-white d-flex justify-content-between align-items-center border-secondary py-3">
-                            <div>
-                                <i class="bi bi-link-45deg text-warning me-2"></i>
-                                <strong>Itens de Receita:</strong>
+                        <div class="col-4">
+                            <div class="bg-black bg-opacity-20 p-3 rounded-4 border border-secondary border-opacity-10 text-center">
+                                <i class="bi bi-link-45deg text-warning fs-4 d-block mb-1"></i>
+                                <span class="d-block fw-extrabold text-white fs-4">{{ receitas }}</span>
+                                <small class="text-white-50 fw-bold" style="font-size: 0.6rem; text-uppercase;">Receitas</small>
                             </div>
-                            <span class="badge bg-warning text-dark rounded-pill fs-6">{{ receitas }}</span>
                         </div>
                     </div>
 
-                    <!-- Alerta de Atenção -->
-                    <div class="alert alert-warning border-0 bg-opacity-10 text-warning d-flex align-items-center">
-                        <i class="bi bi-exclamation-circle-fill fs-4 me-3"></i>
-                        <small>
-                            Ao confirmar, os novos itens serão criados com **custo zero**. 
-                            Lembre-se de atualizar os preços de compra na tela de Estoque para calcular o lucro corretamente.
-                        </small>
+                    <!-- ALERTA DE CUSTO ZERO -->
+                    <div class="p-3 rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-10 mb-4">
+                        <div class="d-flex">
+                            <i class="bi bi-info-circle-fill text-warning fs-5 me-3"></i>
+                            <div class="small text-white-50">
+                                <strong class="text-warning">Importante:</strong> Os itens entrarão com <span class="text-white">custo zero</span>. Após confirmar, visite a tela de estoque para lançar os preços de compra e garantir o cálculo correto do lucro.
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Ações -->
-                    <div class="d-grid gap-2 mt-4">
+                    <!-- BOTÕES DE AÇÃO -->
+                    <div class="d-grid gap-3">
                         <form action="/confirmar-importacao" method="POST" id="confirmForm">
-                            <button type="submit" class="btn btn-success btn-lg w-100 fw-bold py-3 shadow" id="confirmBtn">
-                                ✅ CONFIRMAR E SALVAR
+                            <button type="submit" class="btn btn-success btn-lg w-100 fw-extrabold py-3 rounded-3 shadow-lg hover-grow" id="confirmBtn">
+                                <i class="bi bi-cloud-check-fill me-2"></i>SALVAR DADOS NO SISTEMA
                             </button>
                         </form>
-                        <a href="/importacoes" class="btn btn-outline-secondary border-0 text-muted">
-                            ❌ Cancelar e descartar arquivo
+                        
+                        <a href="/importacoes" class="btn btn-link text-white-50 text-decoration-none small fw-bold">
+                            <i class="bi bi-trash3 me-1"></i> Descartar e voltar
                         </a>
                     </div>
                 </div>
             </div>
-            
-            <p class="text-center text-secondary mt-4 small">
-                <i class="bi bi-shield-lock me-1"></i> 
-                Processamento seguro via sessão temporária.
-            </p>
+
+            <div class="text-center mt-4 opacity-50">
+                <small class="text-white font-monospace" style="font-size: 0.7rem;">
+                    <i class="bi bi-shield-lock-fill me-1"></i> TRANSAÇÃO PROTEGIDA PELA SESSÃO ATIVA
+                </small>
+            </div>
         </div>
     </div>
 </div>
 
+<style>
+    .bg-dark-card { background: #1e293b !important; }
+    .fw-extrabold { font-weight: 800; }
+    .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); }
+    
+    .hover-grow { transition: all 0.2s ease-in-out; }
+    .hover-grow:hover { transform: translateY(-2px); }
+
+    .animate-in { animation: zoomIn 0.4s ease-out; }
+    @keyframes zoomIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Estilização do Spinner para o JS */
+    .btn.disabled { opacity: 0.8; pointer-events: none; }
+</style>
+
 <script>
-    // Evita múltiplos cliques e mostra carregamento
+    // Feedback visual ao clicar no botão de confirmação
     document.getElementById('confirmForm').onsubmit = function() {
         const btn = document.getElementById('confirmBtn');
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>PROCESSANDO DADOS...';
+        btn.innerHTML = `
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            PROCESSANDO ARQUIVO...
+        `;
         btn.classList.add('disabled');
     };
 </script>
-
-<style>
-    .list-group-item { border-left: 0; border-right: 0; }
-    .list-group-item:first-child { border-top: 0; }
-    .btn-success { transition: transform 0.2s; }
-    .btn-success:active { transform: scale(0.98); }
-</style>
 {% endblock %}

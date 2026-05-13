@@ -1,79 +1,154 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-warning">📋 Ficha Técnica: {{ produto[1] }}</h2>
-        <a href="/precificacao" class="btn btn-outline-light btn-sm">Voltar</a>
+<div class="container py-4 animate-in">
+    
+    <!-- HEADER COM NAVEGAÇÃO -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="/precificacao" class="text-warning text-decoration-none">Precificação</a></li>
+                    <li class="breadcrumb-item active text-white-50" aria-current="page">Ficha Técnica</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold text-white mb-0">
+                <span class="text-warning">📋</span> {{ produto[1] }}
+            </h2>
+        </div>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-outline-secondary border-opacity-25 text-white">
+                <i class="bi bi-printer me-2"></i>Imprimir
+            </button>
+            <a href="/precificacao" class="btn btn-warning fw-bold px-4">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
     </div>
 
-    <div class="row">
-        <!-- Coluna da Esquerda: Lista de Custos -->
-        <div class="col-md-7">
-            <div class="card bg-dark text-white shadow">
-                <div class="card-header border-secondary">Composição do Custo</div>
-                <div class="card-body">
-                    <table class="table table-dark table-hover">
-                        <thead>
-                            <tr>
-                                <th>Ingrediente</th>
-                                <th>Qtd. Usada</th>
-                                <th class="text-end">Custo (R$)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for i in itens %}
-                            <tr>
-                                <td>{{ i.item }}</td>
-                                <td>{{ i.qtd }}</td>
-                                <td class="text-end text-danger">R$ {{ "%.2f"|format(i.custo) }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                        <tfoot>
-                            <tr class="table-active">
-                                <th colspan="2">CUSTO TOTAL DE PRODUÇÃO</th>
-                                <th class="text-end text-warning">R$ {{ "%.2f"|format(total) }}</th>
-                            </tr>
-                        </tfoot>
-                    </table>
+    <div class="row g-4">
+        <!-- COLUNA DA ESQUERDA: COMPOSIÇÃO -->
+        <div class="col-lg-7">
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-black bg-opacity-30 border-0 py-3 px-4">
+                    <h5 class="mb-0 text-white fw-bold small text-uppercase tracking-wider">Custos de Insumos</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-dark align-middle mb-0">
+                            <thead class="text-white-50 small">
+                                <tr>
+                                    <th class="ps-4 border-0">Ingrediente</th>
+                                    <th class="border-0">Qtd. Usada</th>
+                                    <th class="text-end pe-4 border-0">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in itens %}
+                                <tr class="border-bottom border-secondary border-opacity-10">
+                                    <td class="ps-4 fw-medium">{{ i.item }}</td>
+                                    <td class="text-white-50 font-monospace">{{ i.qtd }}</td>
+                                    <td class="text-end pe-4 fw-bold text-info">R$ {{ "%.2f"|format(i.custo) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="bg-black bg-opacity-20">
+                                <tr>
+                                    <th colspan="2" class="ps-4 py-3 text-white-50 fw-normal">Custo Total de Produção</th>
+                                    <th class="text-end pe-4 py-3 fs-5 text-warning">R$ {{ "%.2f"|format(total) }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Coluna da Direita: Resumo de Lucro -->
-        <div class="col-md-5">
-            <div class="card bg-dark text-white shadow h-100">
-                <div class="card-header border-secondary">Análise de Venda</div>
-                <div class="card-body text-center">
-                    <small class="text-muted">Preço de Venda Atual</small>
-                    <h2 class="text-success">R$ {{ "%.2f"|format(produto[2]) }}</h2>
+        <!-- COLUNA DA DIREITA: ANÁLISE COMERCIAL -->
+        <div class="col-lg-5">
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 h-100">
+                <div class="card-header bg-black bg-opacity-30 border-0 py-3 px-4 text-center">
+                    <h5 class="mb-0 text-white fw-bold small text-uppercase tracking-wider">Performance Financeira</h5>
+                </div>
+                <div class="card-body p-4 d-flex flex-column justify-content-between">
                     
-                    <hr class="border-secondary">
-                    
-                    <div class="row">
-                        <div class="col-6">
-                            <small class="text-muted">Lucro por Unid.</small>
-                            <h4 class="text-info">R$ {{ "%.2f"|format(lucro) }}</h4>
-                        </div>
-                        <div class="col-6">
-                            <small class="text-muted">Margem (%)</small>
-                            <h4 class="{{ 'text-success' if margem >= 30 else 'text-danger' }}">
-                                {{ "%.1f"|format(margem) }}%
-                            </h4>
+                    <div class="text-center mb-4">
+                        <span class="text-white-50 small text-uppercase">Preço de Venda</span>
+                        <div class="display-5 fw-extrabold text-success mb-1">R$ {{ "%.2f"|format(produto[2]) }}</div>
+                        <div class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
+                            Preço sugerido OK
                         </div>
                     </div>
 
-                    <div class="alert {{ 'alert-success' if margem >= 30 else 'alert-danger' }} mt-4">
-                        {% if margem >= 30 %}
-                            🚀 Margem saudável! Continue assim.
-                        {% else %}
-                            ⚠️ Cuidado! Sua margem está baixa. Considere reajustar o preço ou reduzir o custo dos insumos.
-                        {% endif %}
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <div class="p-3 rounded-4 bg-black bg-opacity-20 text-center">
+                                <small class="text-white-50 d-block mb-1">Lucro Bruto</small>
+                                <span class="fs-4 fw-bold text-info">R$ {{ "%.2f"|format(lucro) }}</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 rounded-4 bg-black bg-opacity-20 text-center">
+                                <small class="text-white-50 d-block mb-1">Margem</small>
+                                <span class="fs-4 fw-bold {{ 'text-success' if margem >= 30 else 'text-danger' }}">
+                                    {{ "%.1f"|format(margem) }}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CARD DE STATUS DINÂMICO -->
+                    <div class="card {{ 'bg-success' if margem >= 30 else 'bg-danger' }} bg-opacity-10 border-0 rounded-4">
+                        <div class="card-body d-flex gap-3">
+                            <div class="fs-2">
+                                {% if margem >= 30 %} 🚀 {% else %} ⚠️ {% endif %}
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1 {{ 'text-success' if margem >= 30 else 'text-danger' }}">
+                                    {% if margem >= 30 %}Saúde Financeira Alta{% else %}Alerta de Margem Baixa{% endif %}
+                                </h6>
+                                <p class="small mb-0 text-white-50">
+                                    {% if margem >= 30 %}
+                                        Este produto está gerando um retorno excelente sobre o custo de insumos.
+                                    {% else %}
+                                        Considere revisar o fornecedor ou ajustar o preço para cobrir custos fixos.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-top border-secondary border-opacity-10">
+                        <button class="btn btn-outline-info w-100 rounded-3 py-2 fw-bold">
+                            <i class="bi bi-graph-up-arrow me-2"></i>Simular Novo Preço
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .bg-dark-card { background: #1e293b !important; }
+    .tracking-wider { letter-spacing: 0.05em; }
+    .fw-extrabold { font-weight: 800; }
+    .font-monospace { font-family: 'JetBrains Mono', monospace !important; }
+    
+    .animate-in { 
+        animation: slideIn 0.5s ease-out forwards; 
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media print {
+        .btn, .breadcrumb, .alert-info-button { display: none !important; }
+        .bg-dark-card { background: white !important; color: black !important; border: 1px solid #ddd !important; }
+        .table-dark { --bs-table-bg: white !important; color: black !important; }
+        .text-white, .text-white-50 { color: black !important; }
+    }
+</style>
 {% endblock %}

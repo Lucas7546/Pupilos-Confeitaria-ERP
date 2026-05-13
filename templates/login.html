@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Sistema Confeitaria</title>
+    <title>Login | Pupilos Confeitaria</title>
 
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <!-- Bootstrap 5 & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -12,162 +14,148 @@
     <style>
         :root {
             --bg-deep: #0f172a;
-            --card-bg: rgba(17, 24, 39, 0.95);
+            --card-bg: rgba(30, 41, 59, 0.7); /* Ajustado para melhor contraste */
             --accent-gold: #f59e0b;
             --text-muted: #94a3b8;
         }
 
         body {
             background: radial-gradient(circle at top right, #1e293b, #0f172a);
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'Inter', 'Segoe UI', sans-serif;
+            font-family: 'Inter', sans-serif;
             color: white;
             margin: 0;
-            overflow: hidden;
+            padding: 20px; /* Previne que o card encoste na borda no celular */
         }
 
-        /* Efeito de Vidro no Card */
         .login-box {
             width: 100%;
             max-width: 420px;
             background: var(--card-bg);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 28px;
-            padding: 45px;
+            padding: 40px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(12px);
-            animation: slideUp 0.7s ease-out;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .logo-circle {
-            width: 80px;
-            height: 80px;
+            width: 70px;
+            height: 70px;
             background: rgba(245, 158, 11, 0.1);
             border: 2px solid var(--accent-gold);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 40px;
+            margin: 0 auto 15px;
+            font-size: 32px;
             box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
         }
 
         h2 {
-            color: white;
             text-align: center;
             font-weight: 800;
-            letter-spacing: -1px;
-            margin-bottom: 8px;
+            letter-spacing: -1.5px;
+            margin-bottom: 5px;
         }
 
         .sub {
             text-align: center;
             color: var(--text-muted);
-            font-size: 0.95rem;
-            margin-bottom: 35px;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
         }
 
-        /* Inputs Estilizados */
         .form-label {
-            color: #cbd5e1;
+            color: #94a3b8;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
         }
 
         .input-group-text {
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             color: var(--accent-gold);
-            border-radius: 14px 0 0 14px;
+            border-radius: 12px 0 0 12px;
         }
 
         .form-control {
-            background: #1e293b !important;
-            border: 1px solid #334155 !important;
+            background: rgba(15, 23, 42, 0.5) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
             color: white !important;
-            border-radius: 0 14px 14px 0;
+            border-radius: 0 12px 12px 0;
             padding: 12px;
-            transition: all 0.3s;
         }
 
         .form-control:focus {
             border-color: var(--accent-gold) !important;
-            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
         }
 
-        /* Link Esqueci Senha */
-        .forgot-link {
-            color: var(--accent-gold);
-            font-size: 0.75rem;
-            text-decoration: none;
-            font-weight: 600;
-            transition: 0.3s;
-        }
-
-        .forgot-link:hover {
-            color: white;
-            text-decoration: underline;
-        }
-
-        /* Botão Robusto */
         .btn-login {
             background: linear-gradient(135deg, #f59e0b, #d97706);
             border: none;
             width: 100%;
             padding: 14px;
-            border-radius: 14px;
+            border-radius: 12px;
             font-weight: 700;
             color: #000;
-            margin-top: 20px;
-            transition: all 0.3s;
+            margin-top: 15px;
+            transition: all 0.2s ease;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }
 
         .btn-login:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 24px rgba(217, 119, 6, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(217, 119, 6, 0.3);
             filter: brightness(1.1);
         }
 
-        /* Alerts Customizados */
+        .btn-login:active { transform: translateY(0); }
+
+        .forgot-link {
+            color: var(--accent-gold);
+            font-size: 0.75rem;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
         .alert {
-            background: rgba(220, 38, 38, 0.2);
-            border: 1px solid rgba(220, 38, 38, 0.3);
-            color: #fca5a5;
-            border-radius: 14px;
-            font-size: 0.9rem;
-            padding: 10px 15px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border-radius: 12px;
+            font-size: 0.85rem;
         }
     </style>
 </head>
 <body>
 
-    <div class="login-box shadow-lg">
-        <div class="logo-circle">
-            🧁
-        </div>
+    <div class="login-box">
+        <div class="logo-circle">🧁</div>
 
-        <h2>Pupilos Confeitaria</h2>
-        <p class="sub">Login Administrativo</p>
+        <h2>Pupilos</h2>
+        <p class="sub">Painel Administrativo</p>
 
-        <!-- Mensagens de Erro (Flash) -->
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
-              <div class="alert d-flex align-items-center mb-4" role="alert">
-                <i class="bi bi-exclamation-octagon-fill me-2"></i>
+              <div class="alert d-flex align-items-center mb-4 bounce-in" role="alert">
+                <i class="bi bi-exclamation-circle-fill me-2"></i>
                 <div>{{ message }}</div>
               </div>
             {% endfor %}
@@ -175,39 +163,36 @@
         {% endwith %}
 
         <form method="POST">
-            <!-- Usuário -->
             <div class="mb-3">
-                <label class="form-label d-block mb-2">Usuário</label>
+                <label class="form-label mb-2">Usuário</label>
                 <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
-                    <input type="text" name="username" class="form-control" placeholder="Seu usuário" required autocomplete="off">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <input type="text" name="username" class="form-control" placeholder="admin_pupilos" required autocomplete="username">
                 </div>
             </div>
 
-            <!-- Senha -->
             <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <label class="form-label mb-0">Senha</label>
-                    <a href="/recuperar-senha" class="forgot-link">Esqueceu a senha?</a>
+                    <a href="#" class="forgot-link">Redefinir acesso</a>
                 </div>
                 <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-shield-lock-fill"></i></span>
-                    <input type="password" name="senha" class="form-control" placeholder="••••••••" required>
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <input type="password" name="senha" class="form-control" placeholder="••••••••" required autocomplete="current-password">
                 </div>
             </div>
 
-            <!-- Botão -->
-            <button type="submit" class="btn-login shadow">
-                Entrar no Sistema <i class="bi bi-arrow-right-short"></i>
+            <button type="submit" class="btn-login">
+                Acessar Painel <i class="bi bi-chevron-right ms-1"></i>
             </button>
         </form>
 
-        <div class="mt-4 text-center">
-            <small class="text-muted" style="font-size: 0.7rem; opacity: 0.6;">
-                &copy; 2026 Sistema de Gestão Gastronômica<br>
-                Ambiente Seguro e Monitorado
-            </small>
-        </div>
+        <footer class="mt-5 text-center">
+            <p class="text-white-50 m-0" style="font-size: 0.65rem; opacity: 0.5;">
+                &copy; 2026 Pupilos Confeitaria • São Paulo<br>
+                Ambiente Seguro para Gestão de Insumos
+            </p>
+        </footer>
     </div>
 
 </body>

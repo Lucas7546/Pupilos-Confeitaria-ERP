@@ -1,52 +1,120 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container py-5 animate-in">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <h2 class="text-warning mb-4">💰 Registrar Venda</h2>
+        <div class="col-lg-5 col-md-8">
+            
+            <!-- HEADER DE VENDAS -->
+            <div class="text-center mb-4">
+                <div class="display-6 text-warning mb-2">
+                    <i class="bi bi-cart-check-fill"></i>
+                </div>
+                <h2 class="fw-extrabold text-white mb-1" style="letter-spacing: -1px;">Registrar <span class="text-warning">Venda</span></h2>
+                <p class="text-white-50 small">O estoque de insumos será baixado automaticamente.</p>
+            </div>
 
-            <div class="card bg-dark text-white p-4 shadow border-0">
-                <form action="/vender" method="POST">
-                    <!-- Seleção do Produto -->
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-info">Selecione o Produto:</label>
-                        <select name="id_produto" class="form-select bg-secondary text-white border-0" required>
-                            <option value="" disabled selected>Escolha um produto...</option>
-                            {% for p in produtos %}
-                                {# p[0] = ID, p[1] = Nome, p[2] = Preço #}
-                                <option value="{{ p[0] }}">{{ p[1] }} (R$ {{ "%.2f"|format(p[2])|replace('.', ',') }})</option>
-                            {% endfor %}
-                        </select>
-                    </div>
+            <div class="card bg-dark-card border-0 shadow-2xl rounded-4 overflow-hidden">
+                <!-- INDICADOR DE PROGRESSO SIMBÓLICO -->
+                <div class="progress rounded-0" style="height: 4px; background: transparent;">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: 100%"></div>
+                </div>
 
-                    <!-- Quantidade -->
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-info">Quantidade vendida:</label>
-                        <input type="number" name="quantidade" class="form-control bg-secondary text-white border-0" placeholder="Ex: 2" min="1" value="1" required>
-                    </div>
+                <div class="card-body p-4 p-md-5">
+                    <form action="/vender" method="POST" id="vendaForm">
+                        
+                        <!-- SELEÇÃO DO PRODUTO -->
+                        <div class="mb-4">
+                            <label class="form-label text-white-50 small fw-bold tracking-wider">PRODUTO</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-dark border-secondary border-opacity-50 text-warning">
+                                    <i class="bi bi-box-seam"></i>
+                                </span>
+                                <select name="id_produto" id="id_produto" class="form-select bg-dark text-white border-secondary border-opacity-50 py-3" required>
+                                    <option value="" disabled selected>Escolha o item vendido...</option>
+                                    {% for p in produtos %}
+                                        <option value="{{ p[0] }}" data-preco="{{ p[2] }}">
+                                            {{ p[1] }} — (R$ {{ "%.2f"|format(p[2]) }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
 
-                    <!-- Botão de Ação -->
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-warning btn-lg fw-bold shadow">
-                            Finalizar Venda
-                        </button>
-                        <a href="/" class="btn btn-outline-secondary btn-sm">Cancelar</a>
-                    </div>
-                </form>
+                        <!-- QUANTIDADE -->
+                        <div class="mb-4">
+                            <label class="form-label text-white-50 small fw-bold tracking-wider">QUANTIDADE</label>
+                            <div class="input-group input-group-lg">
+                                <button type="button" class="btn btn-outline-secondary border-opacity-25 text-white px-3" onclick="decrement()">-</button>
+                                <input type="number" name="quantidade" id="quantidade" class="form-control bg-dark border-secondary border-opacity-50 text-white text-center fw-bold" min="1" value="1" required>
+                                <button type="button" class="btn btn-outline-secondary border-opacity-25 text-white px-3" onclick="increment()">+</button>
+                            </div>
+                        </div>
+
+                        <!-- RESUMO DO TOTAL -->
+                        <div class="p-4 rounded-4 bg-black bg-opacity-30 border border-secondary border-opacity-10 mb-4 text-center">
+                            <span class="text-white-50 small d-block mb-1">TOTAL A RECEBER</span>
+                            <div class="display-6 fw-extrabold text-success" id="totalDisplay">R$ 0,00</div>
+                        </div>
+
+                        <!-- BOTÕES DE AÇÃO -->
+                        <div class="d-grid gap-3">
+                            <button type="submit" class="btn btn-warning btn-lg fw-extrabold py-3 rounded-3 shadow-sm transition-all hover-grow">
+                                <i class="bi bi-check-circle-fill me-2"></i>FINALIZAR VENDA
+                            </button>
+                            <a href="/" class="btn btn-link text-white-50 text-decoration-none small fw-bold">
+                                <i class="bi bi-x-lg me-1"></i> CANCELAR
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- DICA DE SEGURANÇA -->
+            <div class="mt-4 p-3 rounded-3 bg-info bg-opacity-10 border border-info border-opacity-10 text-center">
+                <p class="small text-info mb-0">
+                    <i class="bi bi-info-circle-fill me-1"></i> 
+                    Certifique-se de que o pagamento foi confirmado antes de finalizar.
+                </p>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    /* Ajuste para o select no modo escuro */
-    .form-select option { background-color: #343a40; }
-    .form-control:focus, .form-select:focus {
-        background-color: #495057 !important;
-        color: white;
-        border-color: #ffc107;
-        box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
+    .bg-dark-card { background: #1e293b !important; }
+    .fw-extrabold { font-weight: 800; }
+    .tracking-wider { letter-spacing: 0.05em; }
+    .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+    
+    /* Chrome, Safari, Edge, Opera: remover setas padrão do input number */
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    
+    .animate-in { animation: slideUp 0.5s ease-out; }
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
     }
+
+    .hover-grow:hover { transform: scale(1.02); }
 </style>
+
+<script>
+    const selectProduto = document.getElementById('id_produto');
+    const inputQtd = document.getElementById('quantidade');
+    const displayTotal = document.getElementById('totalDisplay');
+
+    function calcularTotal() {
+        const option = selectProduto.options[selectProduto.selectedIndex];
+        const preco = option.getAttribute('data-preco') || 0;
+        const total = preco * inputQtd.value;
+        displayTotal.innerText = `R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+    }
+
+    function increment() { inputQtd.value = parseInt(inputQtd.value) + 1; calcularTotal(); }
+    function decrement() { if(inputQtd.value > 1) { inputQtd.value = parseInt(inputQtd.value) - 1; calcularTotal(); } }
+
+    selectProduto.addEventListener('change', calcularTotal);
+    inputQtd.addEventListener('input', calcularTotal);
+</script>
 {% endblock %}

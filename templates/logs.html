@@ -1,49 +1,68 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold text-warning mb-0">
-            <i class="bi bi-journal-text me-2"></i>Logs do Sistema
-        </h2>
-        <span class="badge bg-dark text-secondary border border-secondary p-2">
-            Arquivo: logs.json
-        </span>
-    </div>
+<div class="container-fluid py-4 px-md-5 animate-in">
     
-    <div class="card shadow-sm border-0">
-        <div class="table-responsive" style="max-height: 70vh;">
-            <table class="table table-dark table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th class="ps-4">Data/Hora</th>
-                        <th>Usuário</th>
-                        <th>Módulo</th>
-                        <th>Ação</th>
-                        <th class="pe-4">Detalhe</th>
+    <!-- HEADER ESTILO TERMINAL -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h1 class="fw-extrabold text-white mb-1" style="font-size: 2rem; letter-spacing: -1px;">
+                <span class="text-warning">#</span> Auditoria do <span class="text-warning">Sistema</span>
+            </h1>
+            <p class="text-white-50 mb-0 font-monospace small">root@pupilos_confeitaria:~/logs.json</p>
+        </div>
+        <div class="d-flex gap-2">
+            <div class="bg-dark border border-secondary border-opacity-25 rounded-3 px-3 py-2">
+                <small class="text-white-50 d-block fw-bold text-uppercase" style="font-size: 0.6rem;">Status do Arquivo</small>
+                <span class="text-success small fw-bold"><i class="bi bi-hdd-fill me-1"></i> ONLINE & SINCRONIZADO</span>
+            </div>
+            <button class="btn btn-outline-danger border-opacity-25 fw-bold px-4" onclick="confirmClearLogs()">
+                <i class="bi bi-trash3 me-2"></i>LIMPAR LOGS
+            </button>
+        </div>
+    </div>
+
+    <!-- TABELA DE LOGS -->
+    <div class="card bg-dark-card border-0 shadow-lg rounded-4 overflow-hidden">
+        <div class="table-responsive" style="max-height: 75vh; overflow-y: auto;">
+            <table class="table table-hover table-dark align-middle mb-0" style="--bs-table-bg: transparent;">
+                <thead class="sticky-top bg-black">
+                    <tr class="text-white-50 small text-uppercase font-monospace">
+                        <th class="ps-4 py-3" style="width: 180px;">Timestamp</th>
+                        <th class="py-3" style="width: 150px;">Agente</th>
+                        <th class="py-3" style="width: 120px;">Módulo</th>
+                        <th class="py-3" style="width: 150px;">Evento</th>
+                        <th class="pe-4 py-3 text-end">Payload / Detalhes</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="font-monospace" style="font-size: 0.9rem;">
                     {% for log in logs %}
-                    <tr>
-                        <td class="ps-4 text-info" style="font-family: monospace;">{{ log.data }}</td>
+                    <tr class="border-bottom border-secondary border-opacity-10 transition-all">
+                        <td class="ps-4 text-info">{{ log.data }}</td>
                         <td>
-                            <span class="badge rounded-pill bg-info bg-opacity-10 text-info border border-info border-opacity-25">
-                                <i class="bi bi-person-fill me-1"></i>{{ log.usuario }}
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-10 px-2 py-1">
+                                @{{ log.usuario }}
                             </span>
                         </td>
                         <td>
-                            <span class="text-uppercase small fw-bold text-secondary">{{ log.modulo }}</span>
+                            <span class="text-white-50">{{ log.modulo }}</span>
                         </td>
                         <td>
-                            <strong class="text-warning text-uppercase" style="font-size: 0.85rem;">{{ log.acao }}</strong>
+                            <span class="fw-bold {% if 'DELETE' in log.acao or 'ERRO' in log.acao %}text-danger{% elif 'EDIT' in log.acao or 'UPDATE' in log.acao %}text-warning{% else %}text-success{% endif %}">
+                                {{ log.acao }}
+                            </span>
                         </td>
-                        <td class="pe-4 small text-light opacity-75">{{ log.detalhe }}</td>
+                        <td class="pe-4 text-end text-light opacity-50 small italic">
+                            {{ log.detalhe }}
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5" class="text-center py-5 text-secondary">
-                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                            Nenhum registro encontrado no sistema.
+                        <td colspan="5" class="text-center py-5">
+                            <div class="opacity-25">
+                                <i class="bi bi-terminal display-1 d-block mb-3"></i>
+                                <p class="fs-5">Nenhuma atividade registrada no arquivo JSON.</p>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -52,4 +71,31 @@
         </div>
     </div>
 </div>
+
+<style>
+    .bg-dark-card { background: #0f172a !important; }
+    .fw-extrabold { font-weight: 800; }
+    .font-monospace { font-family: 'JetBrains Mono', 'Fira Code', monospace !important; }
+    .transition-all { transition: all 0.15s ease-in-out; }
+    tr:hover { background-color: rgba(255, 255, 255, 0.03) !important; }
+    
+    /* Personalização da barra de rolagem para parecer terminal */
+    .table-responsive::-webkit-scrollbar { width: 8px; }
+    .table-responsive::-webkit-scrollbar-track { background: #0f172a; }
+    .table-responsive::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    .table-responsive::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+    .animate-in { animation: fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    
+    .italic { font-style: italic; }
+</style>
+
+<script>
+function confirmClearLogs() {
+    if(confirm("Deseja realmente apagar todo o histórico de logs? Esta ação é irreversível.")) {
+        window.location.href = "/limpar-logs";
+    }
+}
+</script>
 {% endblock %}

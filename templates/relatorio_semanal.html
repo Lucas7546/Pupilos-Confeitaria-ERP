@@ -1,40 +1,77 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2 class="text-warning mb-4">🗓️ Levantamento Semanal</h2>
+<div class="container-fluid py-4 px-md-5 animate-in">
+    
+    <!-- HEADER -->
+    <div class="mb-5">
+        <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.2rem; letter-spacing: -1.5px;">
+            🗓️ Painel <span class="text-warning">Semanal</span>
+        </h1>
+        <p class="text-white-50">Inteligência de estoque, produção e performance de vendas.</p>
+    </div>
 
-    <div class="row">
-        <!-- Coluna da Esquerda: Compras e Produção -->
-        <div class="col-md-6">
-            <!-- LISTA DE COMPRAS -->
-            <div class="card border-danger mb-4">
-                <div class="card-header bg-danger text-white">🛒 Lista de Compras (Reposição)</div>
-                <div class="card-body">
+    <div class="row g-4">
+        
+        <!-- COLUNA ESQUERDA: OPERACIONAL -->
+        <div class="col-lg-7">
+            
+            <!-- LISTA DE COMPRAS (ALERTA CRÍTICO) -->
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 mb-4 overflow-hidden">
+                <div class="card-header bg-danger bg-opacity-10 border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 text-danger fw-bold"><i class="bi bi-cart-x-fill me-2"></i>REPOSIÇÃO NECESSÁRIA</h6>
+                    <span class="badge bg-danger rounded-pill">{{ compras|length if compras else 0 }} itens</span>
+                </div>
+                <div class="card-body p-4">
                     {% if compras %}
-                        <ul class="list-group list-group-flush">
-                        {% for item in compras %}
-                            <li class="list-group-item bg-transparent text-white d-flex justify-content-between align-items-center">
-                                {{ item[1] }} 
-                                <span class="badge bg-danger">Saldo: {{ item[4] }} {{ item[2] }}</span>
-                            </li>
-                        {% endfor %}
-                        </ul>
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent;">
+                                <thead>
+                                    <tr class="text-white-50 small font-monospace">
+                                        <th>INSUMO</th>
+                                        <th class="text-end">ESTOQUE ATUAL</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in compras %}
+                                    <tr>
+                                        <td class="fw-bold text-white"><i class="bi bi-arrow-right-short text-danger"></i> {{ item[1] }}</td>
+                                        <td class="text-end font-monospace text-danger fw-bold">
+                                            {{ item[4] }} <small>{{ item[2] }}</small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     {% else %}
-                        <p class="text-success mb-0">✅ Todos os insumos estão com estoque em dia!</p>
+                        <div class="text-center py-4">
+                            <div class="display-6 text-success mb-2"><i class="bi bi-check2-all"></i></div>
+                            <p class="text-success fw-bold mb-0">Estoque em dia! Nenhum item abaixo do mínimo.</p>
+                        </div>
                     {% endif %}
                 </div>
             </div>
 
             <!-- CAPACIDADE DE PRODUÇÃO -->
-            <div class="card border-info">
-                <div class="card-header bg-info text-dark fw-bold">👩‍🍳 Quanto consigo produzir hoje?</div>
-                <div class="card-body text-center">
-                    <div class="row">
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-info bg-opacity-10 border-0 py-3">
+                    <h6 class="mb-0 text-info fw-bold"><i class="bi bi-egg-fill me-2"></i>POTENCIAL DE PRODUÇÃO (HOJE)</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
                         {% for p in producao %}
-                        <div class="col-6 mb-3">
-                            <small class="text-muted">{{ p.nome }}</small>
-                            <h4 class="text-info">{{ p.quantidade }} <small>unid.</small></h4>
+                        <div class="col-md-6">
+                            <div class="p-3 rounded-3 bg-black bg-opacity-20 border border-secondary border-opacity-10">
+                                <small class="text-white-50 d-block text-uppercase fw-bold mb-1" style="font-size: 0.65rem;">{{ p.nome }}</small>
+                                <div class="d-flex align-items-end justify-content-between">
+                                    <h3 class="text-info fw-extrabold mb-0">{{ p.quantidade }}</h3>
+                                    <span class="text-white-50 small">unidades</span>
+                                </div>
+                                <div class="progress mt-2" style="height: 3px; background: rgba(255,255,255,0.05);">
+                                    <div class="progress-bar bg-info" style="width: {{ '100' if p.quantidade > 10 else '30' }}%"></div>
+                                </div>
+                            </div>
                         </div>
                         {% endfor %}
                     </div>
@@ -42,26 +79,57 @@
             </div>
         </div>
 
-        <!-- Coluna da Direita: Resumo Financeiro da Semana -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header">📈 Desempenho dos Últimos 7 Dias</div>
-                <div class="card-body">
-                    <h3 class="text-center text-success">R$ {{ "%.2f"|format(vendas.faturamento) }}</h3>
-                    <p class="text-center text-muted">Faturamento Semanal</p>
-                    <hr>
-                    <h5>Produtos mais vendidos no período:</h5>
-                    <table class="table table-sm">
+        <!-- COLUNA DIREITA: FINANCEIRO -->
+        <div class="col-lg-5">
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 h-100 overflow-hidden">
+                <div class="card-header bg-success bg-opacity-10 border-0 py-3">
+                    <h6 class="mb-0 text-success fw-bold"><i class="bi bi-graph-up-arrow me-2"></i>PERFORMANCE 7 DIAS</h6>
+                </div>
+                <div class="card-body p-4 p-md-5 d-flex flex-column">
+                    <div class="text-center mb-5">
+                        <span class="text-white-50 small fw-bold text-uppercase">Faturamento Bruto</span>
+                        <h2 class="display-5 fw-extrabold text-white mt-1">
+                            <small class="fs-4 text-success">R$</small>{{ "%.2f"|format(vendas.faturamento)|replace('.', ',') }}
+                        </h2>
+                    </div>
+
+                    <h6 class="text-white-50 small fw-bold mb-3 font-monospace">🏆 RANKING DE VENDAS</h6>
+                    <div class="flex-grow-1">
                         {% for nome, qtd, total in vendas.ranking %}
-                        <tr>
-                            <td>{{ nome }}</td>
-                            <td class="text-end fw-bold">{{ qtd }} un</td>
-                        </tr>
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded-3 bg-white bg-opacity-5 transition-all">
+                            <div>
+                                <span class="text-white fw-bold d-block">{{ nome }}</span>
+                                <small class="text-white-50">{{ qtd }} unidades vendidas</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="text-success fw-bold font-monospace">R$ {{ "%.2f"|format(total) }}</span>
+                            </div>
+                        </div>
                         {% endfor %}
-                    </table>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-top border-secondary border-opacity-10">
+                        <div class="d-grid">
+                            <button class="btn btn-outline-light border-opacity-10 fw-bold py-2" onclick="window.print()">
+                                <i class="bi bi-printer me-2"></i> Gerar Relatório PDF
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
+
+<style>
+    .bg-dark-card { background: #1e293b !important; }
+    .fw-extrabold { font-weight: 800; }
+    .transition-all { transition: all 0.2s ease; }
+    .animate-in { animation: slideUp 0.5s ease-out; }
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
 {% endblock %}

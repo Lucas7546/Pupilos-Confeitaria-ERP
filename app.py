@@ -38,16 +38,17 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User(user_id)
+    # Recupera o nível da sessão para manter as permissões ativas
+    nivel = session.get("nivel")
+    return User(user_id, nivel=nivel)
 
 # =========================
-# CRIAR TABELA LOGS (SAFE)
+# INICIALIZAÇÃO DE TABELAS (LOGS)
 # =========================
 with app.app_context():
     try:
         conn = conectar()
         cur = conn.cursor()
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS logs (
                 id SERIAL PRIMARY KEY,
@@ -58,18 +59,15 @@ with app.app_context():
                 data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
-
         conn.commit()
         cur.close()
         conn.close()
-        print("✔ Logs verificados")
+        print("✔ Tabelas de Logs verificadas")
     except Exception as e:
-        print(f"Erro logs: {e}")
+        print(f"Erro ao inicializar logs: {e}")
 
 # =========================
-
-# =========================
-# LOG UNIFICADO (PADRÃO)
+# UTILITÁRIOS
 # =========================
 def registrar_log(acao, modulo, detalhe="", usuario_manual=None):
     usuario_log = usuario_manual or (
@@ -81,7 +79,7 @@ def registrar_log(acao, modulo, detalhe="", usuario_manual=None):
         print(f"Erro log: {e}")
 
 # =========================
-# LOGIN
+# ROTAS DE AUTENTICAÇÃO
 # =========================
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -95,7 +93,17 @@ def login():
             flash("Usuário ou senha inválidos", "danger")
             return render_template("login.html")
 
-        id_user, user_db, senha_db, nivel, ativo = usuario[:5]
+        # Tratando retorno do banco (seja tupla ou dicionário)
+        try:
+            id_user = usuario[0]
+            senha_db = usuario[2]
+            nivel = usuario[3]
+            ativo = usuario[4]
+        except KeyError:
+            id_user = usuario['id_usuario']
+            senha_db = usuario['senha']
+            nivel = usuario['nivel']
+            ativo = usuario['ativo']
 
         if ativo == 0:
             flash("Usuário bloqueado", "danger")
@@ -105,29 +113,25 @@ def login():
             flash("Usuário ou senha inválidos", "danger")
             return render_template("login.html")
 
-        user = User(username)
+        user = User(username, nivel=nivel)
         login_user(user)
 
         session["nivel"] = nivel
         session["user_id"] = id_user
 
         registrar_log("LOGIN", "AUTH", f"{username} logou")
-
         flash("Bem-vindo!", "success")
         return redirect("/")
 
     return render_template("login.html")
 
-# =========================
-# LOGOUT
-# =========================
 @app.route("/logout")
 @login_required
 def logout():
     registrar_log("LOGOUT", "AUTH", f"{current_user.id} saiu")
     logout_user()
+    session.clear()
     return redirect("/login")
-
 
 # =========================
 # DASHBOARD
@@ -136,11 +140,13 @@ def logout():
 @login_required
 def dashboard():
     try:
+        # Busca dados reais do banco
         resumo_semanal = vendas.obter_resumo_periodo(7)
         resumo_mensal = vendas.obter_resumo_periodo(30)
         capacidade = produtos.calcular_capacidade_geral()
         insumos = estoque.listar_materia_prima()
 
+        # Filtra itens críticos (estoque <= mínimo)
         criticos = [i for i in insumos if float(i[4]) <= float(i[3])]
 
         return render_template(
@@ -151,8 +157,15 @@ def dashboard():
             criticos=criticos
         )
     except Exception as e:
-        print(e)
-        return render_template("dashboard.html")
+        print(f"Erro no Dashboard: {e}")
+        # Retorno de segurança para não quebrar a página
+        return render_template(
+            "dashboard.html",
+            semana={"faturamento": 0, "vendas": 0},
+            mes={"faturamento": 0, "vendas": 0},
+            capacidade=0,
+            criticos=[]
+        )
 
 # =========================
 # ESTOQUE
@@ -202,7 +215,8 @@ def vender():
         id_p = int(request.form["id_produto"])
         qtd = int(request.form["quantidade"])
 
-        produto = next((p for p in produtos.buscar_produto_por_nome("") if p[0] == id_p), None)
+        prods = produtos.buscar_produto_por_nome("")
+        produto = next((p for p in prods if p[0] == id_p), None)
 
         if not produto:
             flash("Produto não encontrado", "danger")
@@ -211,55 +225,54 @@ def vender():
         sucesso, msg = vendas.vender_produto(id_p, qtd, produto[2])
 
         if sucesso:
-            registrar_log("VENDA", "VENDAS", f"{id_p} qtd {qtd}")
+            registrar_log("VENDA", "VENDAS", f"ID {id_p} | Qtd {qtd}")
             flash(msg, "success")
         else:
             flash(msg, "danger")
-
     except Exception as e:
-        flash(str(e), "danger")
-
+        flash(f"Erro ao vender: {e}", "danger")
     return redirect("/vendas")
 
-# ========================================================
+# =========================
 # FINANCEIRO E AUDITORIA
-# ========================================================
-
+# =========================
 @app.route("/financeiro")
 @login_required
 @acesso_requerido("financeiro")
 def pagina_financeiro():
-    faturamento = vendas.obter_resumo_periodo(30)["faturamento"]
-    custo_insumos = vendas.obter_custo_total_vendas(30)
-    despesas = vendas.listar_despesas(30)
-    total_fixas = sum([d[2] for d in despesas])
-    
-    return render_template(
-        "financeiro.html",
-        faturamento=faturamento,
-        custo_insumos=custo_insumos,
-        despesas=despesas,
-        total_fixas=total_fixas,
-        lucro_real=(faturamento - custo_insumos - total_fixas)
-    )
+    try:
+        faturamento = vendas.obter_resumo_periodo(30)["faturamento"]
+        custo_insumos = vendas.obter_custo_total_vendas(30)
+        despesas = vendas.listar_despesas(30)
+        total_fixas = sum([d[2] for d in despesas])
+        
+        return render_template(
+            "financeiro.html",
+            faturamento=faturamento,
+            custo_insumos=custo_insumos,
+            despesas=despesas,
+            total_fixas=total_fixas,
+            lucro_real=(faturamento - custo_insumos - total_fixas)
+        )
+    except Exception as e:
+        flash("Erro ao carregar dados financeiros", "warning")
+        return redirect("/")
 
 @app.route("/auditoria")
 @login_required
 @acesso_requerido("auditoria")
 def auditoria():
-    # Pega logs direto do Postgres agora
     logs_data = usuarios.listar_logs_auditoria(100)
     return render_template('auditoria.html', logs=logs_data)
 
 # =========================
-# USUÁRIOS
+# GESTÃO DE USUÁRIOS
 # =========================
 @app.route("/usuarios")
 @login_required
 @acesso_requerido("usuarios")
 def usuarios_page():
     return render_template("usuarios.html", usuarios_lista=usuarios.listar_usuarios())
-
 
 @app.route("/criar-usuario", methods=["POST"])
 @login_required
@@ -284,16 +297,14 @@ def criar_usuario():
 def toggle_usuario(id_usuario):
     user_db = usuarios.buscar_usuario_id(id_usuario)
     if user_db:
-        # Se status (índice 4) for 1, vira 0. Se for 0, vira 1.
         novo_status = 0 if user_db[4] == 1 else 1
         usuarios.alterar_status(id_usuario, novo_status)
         flash("Status alterado!", "success")
     return redirect("/usuarios")
 
-# ========================================================
-# IMPORTAÇÃO IFOOD E ESTRUTURA
-# ========================================================
-
+# =========================
+# IMPORTAÇÕES
+# =========================
 @app.route("/importacoes")
 @login_required
 def central_importacoes():
@@ -302,18 +313,15 @@ def central_importacoes():
 @app.route("/importar-ifood", methods=["POST"])
 @login_required
 def importar_ifood():
-    # Lógica simplificada de importação
     arquivo = request.files.get("arquivo")
     if arquivo:
         registrar_log("IMPORT_IFOOD", "VENDAS", f"Arquivo: {arquivo.filename}")
         flash("Processamento de iFood iniciado!", "info")
     return redirect("/importacoes")
 
-# ========================================================
+# =========================
 # INICIALIZAÇÃO
-# ========================================================
-
+# =========================
 if __name__ == "__main__":
-    # O Render usa a variável de ambiente PORT
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)

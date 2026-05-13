@@ -1,30 +1,154 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="container-fluid py-4">
+    
+    <!-- TÍTULO DA PÁGINA -->
+    <div class="mb-5 animate-in">
+        <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.5rem; letter-spacing: -1.5px;">
+            🚀 Operações <span class="text-warning">Rápidas</span>
+        </h1>
+        <p class="text-white-50 fs-5 fw-light">Gerencie entradas e saídas de forma simplificada.</p>
+    </div>
 
-<div class="card">
-    <h2>🏠 Cadastro rápido</h2>
+    <div class="row g-4">
+        <!-- CARD: CADASTRO DE MATÉRIA PRIMA -->
+        <div class="col-lg-6">
+            <div class="card h-100 bg-dark-card border-secondary border-opacity-10 shadow-lg p-4">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="bg-warning p-2 rounded-3 text-dark">
+                        <i class="bi bi-box-seam-fill fs-4"></i>
+                    </div>
+                    <h3 class="fw-bold text-white mb-0">Cadastro de Insumos</h3>
+                </div>
 
-    <form action="/cadastrar-mp" method="POST">
-        <input name="nome" placeholder="Nome">
-        <input name="unidade" placeholder="Unidade">
-        <input name="minimo" placeholder="Estoque mínimo">
-        <input name="preco" placeholder="Preço">
+                <form action="/cadastrar-mp" method="POST" class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label text-white-50 small fw-bold text-uppercase">Nome do Insumo</label>
+                        <input name="nome" type="text" class="form-control form-control-lg custom-input" placeholder="Ex: Farinha de Trigo" required>
+                    </div>
 
-        <button type="submit">Cadastrar</button>
-    </form>
+                    <div class="col-md-6">
+                        <label class="form-label text-white-50 small fw-bold text-uppercase">Unidade</label>
+                        <select name="unidade" class="form-select form-control-lg custom-input">
+                            <option value="kg">Quilograma (kg)</option>
+                            <option value="un">Unidade (un)</option>
+                            <option value="l">Litro (l)</option>
+                            <option value="g">Grama (g)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-white-50 small fw-bold text-uppercase">Preço de Custo</label>
+                        <div class="input-group">
+                            <span class="input-group-text custom-input border-end-0 text-white-50">R$</span>
+                            <input name="preco" type="number" step="0.01" class="form-control form-control-lg custom-input border-start-0" placeholder="0,00" required>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label text-white-50 small fw-bold text-uppercase">Estoque Mínimo (Alerta)</label>
+                        <input name="minimo" type="number" class="form-control form-control-lg custom-input" placeholder="Quantidade para aviso de falta" required>
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold shadow-sm py-3 transition-btn">
+                            <i class="bi bi-plus-circle-fill me-2"></i> Cadastrar no Sistema
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- CARD: VENDER PRODUTO -->
+        <div class="col-lg-6">
+            <div class="card h-100 bg-dark-card border-secondary border-opacity-10 shadow-lg p-4">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="bg-success p-2 rounded-3 text-white">
+                        <i class="bi bi-cart-check-fill fs-4"></i>
+                    </div>
+                    <h3 class="fw-bold text-white mb-0">Registrar Venda</h3>
+                </div>
+
+                <form action="/vender" method="POST" class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label text-white-50 small fw-bold text-uppercase">Produto Final</label>
+                        <input name="nome_produto" type="text" class="form-control form-control-lg custom-input" placeholder="Ex: Bolo de Pote - Chocolate" required>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-white-50 small fw-bold text-uppercase">Quantidade</label>
+                        <input name="quantidade" type="number" class="form-control form-control-lg custom-input" placeholder="0" required>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-white-50 small fw-bold text-uppercase">Preço de Venda</label>
+                        <div class="input-group">
+                            <span class="input-group-text custom-input border-end-0 text-white-50">R$</span>
+                            <input name="preco" type="number" step="0.01" class="form-control form-control-lg custom-input border-start-0" placeholder="0,00" required>
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-auto">
+                        <div class="p-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-20 mb-4 mt-2">
+                            <small class="text-success fw-bold"><i class="bi bi-info-circle-fill me-1"></i> Dica:</small>
+                            <small class="text-white-50 d-block">O sistema dará baixa automática nos insumos vinculados a este produto.</small>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow-sm py-3 transition-btn">
+                            <i class="bi bi-currency-dollar me-2"></i> Finalizar Venda
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="card">
-    <h2>🧁 Vender produto</h2>
+<style>
+    .bg-dark-card { background: #1e293b !important; border-radius: 24px; }
+    
+    .custom-input {
+        background-color: #0f172a !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+        border-radius: 12px !important;
+    }
 
-    <form action="/vender" method="POST">
-        <input name="nome_produto" placeholder="Nome do produto">
-        <input name="quantidade" placeholder="Quantidade">
-        <input name="preco" placeholder="Preço">
+    .custom-input:focus {
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 0.25rem rgba(245, 158, 11, 0.15) !important;
+    }
 
-        <button type="submit">Vender</button>
-    </form>
-</div>
+    .custom-input::placeholder {
+        color: #475569 !important;
+        font-size: 0.9rem;
+    }
 
+    .transition-btn {
+        transition: all 0.3s ease;
+        border-radius: 14px;
+    }
+
+    .transition-btn:hover {
+        transform: translateY(-3px);
+        filter: brightness(1.1);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .animate-in {
+        animation: fadeIn 0.8s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Remove setas de input number no Chrome/Safari */
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+</style>
 {% endblock %}

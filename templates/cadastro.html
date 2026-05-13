@@ -7,27 +7,26 @@
         <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.5rem; letter-spacing: -1.5px;">
             📝 Central de <span class="text-warning">Cadastros</span>
         </h1>
-        <p class="text-white-50 fs-5">Gerencie seus insumos, produtos e fichas técnicas.</p>
+        <p class="text-white-50 fs-5">Gerencie insumos e produtos integrados ao <span class="text-info fw-bold">PostgreSQL</span>.</p>
     </div>
 
     <div class="row g-4">
         <!-- Card 1: Matéria-Prima (Insumos) -->
         <div class="col-lg-6">
-            <div class="card h-100 bg-dark-card border-secondary border-opacity-25 shadow">
+            <div class="card h-100 bg-dark-card border-0 shadow-lg p-2">
                 <div class="card-header border-0 bg-transparent py-4 px-4">
-                    <h4 class="fw-bold text-warning mb-0"><i class="bi bi-egg-fried me-2"></i>Matéria-Prima</h4>
+                    <h4 class="fw-bold text-warning mb-0"><i class="bi bi-egg-fried me-2"></i>Insumos (Matéria-Prima)</h4>
                 </div>
                 <div class="card-body px-4 pb-4">
                     <form action="/cadastrar-mp" method="POST">
                         <div class="mb-3">
-                            <!-- TEXTO EM BRANCO PARA TOTAL VISIBILIDADE -->
-                            <label class="form-label text-white fw-bold small">NOME DO INGREDIENTE</label>
-                            <input name="nome" class="form-control form-control-lg custom-input" placeholder="Ex: Farinha de Trigo" required>
+                            <label class="form-label text-white-50 small fw-bold">NOME DO INGREDIENTE</label>
+                            <input name="nome" type="text" class="form-control form-control-lg custom-input" placeholder="Ex: Chocolate 70%" required>
                         </div>
 
                         <div class="row g-3">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label text-white fw-bold small">UNIDADE</label>
+                                <label class="form-label text-white-50 small fw-bold">UNIDADE DE MEDIDA</label>
                                 <select name="unidade" class="form-select custom-input" required>
                                     <option value="kg">Quilograma (kg)</option>
                                     <option value="l">Litro (L)</option>
@@ -37,24 +36,27 @@
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label text-white fw-bold small">ESTOQUE INICIAL</label>
-                                <input type="number" step="0.001" name="estoque_atual" class="form-control custom-input" placeholder="Qtd atual" required>
+                                <label class="form-label text-white-50 small fw-bold">ESTOQUE ATUAL</label>
+                                <input type="number" step="0.001" name="estoque_atual" class="form-control custom-input" placeholder="0.000" required>
                             </div>
                         </div>
 
                         <div class="row g-3">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label text-white fw-bold small">PREÇO DE CUSTO (R$)</label>
-                                <input type="number" step="0.01" name="preco" class="form-control custom-input" placeholder="Ex: 15.50" required>
+                                <label class="form-label text-white-50 small fw-bold">PREÇO DE CUSTO (R$)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-black border-secondary border-opacity-25 text-success">R$</span>
+                                    <input type="number" step="0.01" name="preco" class="form-control custom-input" placeholder="0.00" required>
+                                </div>
                             </div>
                             <div class="col-md-6 mb-4">
-                                <label class="form-label text-white fw-bold small">ESTOQUE MÍNIMO (ALERTA)</label>
-                                <input type="number" step="0.01" name="estoque_minimo" class="form-control custom-input" placeholder="Ex: 2.00" required>
+                                <label class="form-label text-white-50 small fw-bold">ESTOQUE MÍNIMO</label>
+                                <input type="number" step="0.01" name="estoque_minimo" class="form-control custom-input" placeholder="Ponto de pedido" required>
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-warning w-100 fw-bold py-3 shadow-sm rounded-4 text-dark">
-                            CADASTRAR INGREDIENTE
+                        <button type="submit" class="btn btn-warning w-100 fw-bold py-3 shadow-sm rounded-4 text-dark transition-btn">
+                            <i class="bi bi-plus-circle-fill me-2"></i>SALVAR INGREDIENTE NO BANCO
                         </button>
                     </form>
                 </div>
@@ -63,77 +65,79 @@
 
         <!-- Card 2: Produto Final -->
         <div class="col-lg-6">
-            <div class="card h-100 bg-dark-card border-secondary border-opacity-25 shadow">
+            <div class="card h-100 bg-dark-card border-0 shadow-lg p-2">
                 <div class="card-header border-0 bg-transparent py-4 px-4">
-                    <h4 class="fw-bold text-info mb-0"><i class="bi bi-cake2 me-2"></i>Produto para Venda</h4>
+                    <h4 class="fw-bold text-info mb-0"><i class="bi bi-cake2 me-2"></i>Produto Final</h4>
                 </div>
                 <div class="card-body px-4 pb-4">
                     <form action="/cadastrar-produto" method="POST">
                         <div class="mb-3">
-                            <label class="form-label text-white fw-bold small">NOME DO PRODUTO</label>
-                            <input name="nome" class="form-control form-control-lg custom-input" placeholder="Ex: Bolo de Pote" required>
+                            <label class="form-label text-white-50 small fw-bold">NOME COMERCIAL</label>
+                            <input name="nome" type="text" class="form-control form-control-lg custom-input" placeholder="Ex: Brownie Supremo" required>
                         </div>
 
                         <div class="row g-3">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label text-white fw-bold small">PREÇO DE VENDA</label>
+                                <label class="form-label text-white-50 small fw-bold">VALOR DE VENDA</label>
                                 <div class="input-group">
-                                    <span class="input-group-text bg-black border-0 text-success fw-bold">R$</span>
+                                    <span class="input-group-text bg-black border-secondary border-opacity-25 text-info">R$</span>
                                     <input type="number" step="0.01" name="preco" class="form-control custom-input" placeholder="0.00" required>
                                 </div>
                             </div>
                             <div class="col-md-6 mb-4">
-                                <label class="form-label text-white fw-bold small">CATEGORIA</label>
+                                <label class="form-label text-white-50 small fw-bold">CATEGORIA</label>
                                 <select name="categoria" class="form-select custom-input" required>
-                                    <option value="bolos">Bolos</option>
-                                    <option value="doces">Doces/Brigadeiros</option>
-                                    <option value="tortas">Tortas</option>
+                                    <option value="bolos">Bolos Caseiros</option>
+                                    <option value="doces">Doces & Brigadeiros</option>
+                                    <option value="tortas">Tortas Finas</option>
+                                    <option value="fatias">Fatias Gourmet</option>
                                     <option value="outros">Outros</option>
                                 </select>
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-info w-100 fw-bold py-3 text-white shadow-sm rounded-4">
-                            CADASTRAR PRODUTO
+                        <button type="submit" class="btn btn-info w-100 fw-bold py-3 text-white shadow-sm rounded-4 transition-btn">
+                            <i class="bi bi-check-all me-2"></i>FINALIZAR CADASTRO DE PRODUTO
                         </button>
                     </form>
                 </div>
             </div>
         </div>
 
-        <!-- Card 3: Ficha Técnica -->
+        <!-- Card 3: Ficha Técnica (Engenharia de Produto) -->
         <div class="col-12 mt-4">
-            <div class="card bg-dark-card border-secondary border-opacity-25 shadow">
+            <div class="card bg-dark-card border-0 shadow-lg">
                 <div class="card-header border-0 bg-success bg-opacity-10 py-4 px-4">
-                    <h4 class="fw-bold text-success mb-0"><i class="bi bi-diagram-3 me-2"></i>Ficha Técnica</h4>
+                    <h4 class="fw-bold text-success mb-0"><i class="bi bi-diagram-3 me-2"></i>Engenharia de Produto (Ficha Técnica)</h4>
+                    <p class="text-muted small mb-0 mt-1">Vincule os insumos gastos para produzir uma unidade do produto final.</p>
                 </div>
                 <div class="card-body px-4 py-4">
                     <form action="/vincular-receita" method="POST" class="row g-3 align-items-end">
                         <div class="col-md-4">
-                            <label class="form-label text-white fw-bold small">SELECIONE O PRODUTO</label>
+                            <label class="form-label text-white-50 small fw-bold text-uppercase">Produto Base</label>
                             <select name="id_produto" class="form-select custom-input" required>
-                                <option value="" disabled selected>Escolha um produto...</option>
+                                <option value="" disabled selected>Selecione o produto...</option>
                                 {% for p in produtos %}
-                                <option value="{{ p[0] }}">{{ p[1] }}</option>
+                                    <option value="{{ p[0] }}">{{ p[1] }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label text-white fw-bold small">INGREDIENTE</label>
+                            <label class="form-label text-white-50 small fw-bold text-uppercase">Ingrediente Utilizado</label>
                             <select name="id_materia_prima" class="form-select custom-input" required>
-                                <option value="" disabled selected>Escolha um insumo...</option>
+                                <option value="" disabled selected>Selecione o insumo...</option>
                                 {% for m in materias %}
-                                <option value="{{ m[0] }}">{{ m[1] }} ({{ m[2] }})</option>
+                                    <option value="{{ m[0] }}">{{ m[1] }} ({{ m[2] }})</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label text-white fw-bold small">QTD NA RECEITA</label>
-                            <input type="number" step="0.001" name="quantidade" class="form-control custom-input" placeholder="Ex: 0.350" required>
+                            <label class="form-label text-white-50 small fw-bold text-uppercase">Gasto (Qtd)</label>
+                            <input type="number" step="0.001" name="quantidade" class="form-control custom-input" placeholder="Ex: 0.250" required>
                         </div>
                         <div class="col-md-2">
-                            <button type="submit" class="btn btn-success w-100 fw-bold py-2 rounded-3 shadow-sm">
-                                ADICIONAR
+                            <button type="submit" class="btn btn-success w-100 fw-bold py-2 rounded-3 shadow-sm transition-btn">
+                                <i class="bi bi-plus-lg"></i> ADICIONAR
                             </button>
                         </div>
                     </form>
@@ -146,33 +150,42 @@
 <style>
     .bg-dark-card { background: #1e293b !important; border-radius: 24px; }
     
-    /* ESTILO REFORÇADO PARA OS INPUTS */
     .custom-input {
-        background-color: #0f172a !important; /* Fundo bem escuro para contrastar com o texto */
+        background-color: #0f172a !important;
         border: 1px solid #334155 !important;
-        color: #ffffff !important; /* Texto branco dentro do input */
-    }
-
-    .custom-input::placeholder {
-        color: #64748b !important; /* Placeholder cinza claro */
+        color: #ffffff !important;
+        border-radius: 12px !important;
+        padding: 0.75rem 1rem;
     }
 
     .custom-input:focus {
         border-color: #f59e0b !important;
-        box-shadow: 0 0 0 0.25rem rgba(245, 158, 11, 0.2) !important;
+        box-shadow: 0 0 0 0.25rem rgba(245, 158, 11, 0.1) !important;
+        background-color: #0f172a !important;
     }
 
-    /* Cor do texto das opções do select */
+    .transition-btn {
+        transition: all 0.3s ease;
+    }
+
+    .transition-btn:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.1);
+    }
+
+    /* Estilo para as opções do select no PostgreSQL */
     select.custom-input option {
         background-color: #1e293b;
         color: white;
     }
 
-    .animate-in { animation: fadeInUp 0.5s ease forwards; }
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(15px); }
-        to { opacity: 1; transform: translateY(0); }
+    .animate-in { 
+        animation: fadeInBlur 0.6s ease-out; 
+    }
+
+    @keyframes fadeInBlur {
+        from { opacity: 0; filter: blur(5px); transform: translateY(15px); }
+        to { opacity: 1; filter: blur(0); transform: translateY(0); }
     }
 </style>
-
 {% endblock %}

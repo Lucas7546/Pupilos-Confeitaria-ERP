@@ -108,23 +108,35 @@ def logout():
 @app.route("/")
 @login_required
 def dashboard():
-    # Comentamos as linhas que dão erro até você ajustar o modules/vendas.py
-    # resumo_semanal = vendas.obter_resumo_periodo(dias=7)
-    # resumo_mensal = vendas.obter_resumo_periodo(dias=30)
-    
-    # Criamos dados vazios só para a página carregar
-    semana = {"faturamento": 0, "vendas": 0}
-    mes = {"faturamento": 0, "vendas": 0}
-    capacidade = 0
-    criticos = []
+    try:
+        # Agora que o vendas.py tem a função, buscamos os dados reais
+        resumo_semanal = vendas.obter_resumo_periodo(dias=7)
+        resumo_mensal = vendas.obter_resumo_periodo(dias=30)
+        
+        # Outras métricas
+        capacidade = produtos.calcular_capacidade_geral()
+        insumos = estoque.listar_materia_prima()
+        
+        # Filtra itens onde o estoque atual (i[4]) é menor ou igual ao mínimo (i[3])
+        criticos = [i for i in insumos if float(i[4]) <= float(i[3])]
 
-    return render_template(
-        "dashboard.html",
-        semana=semana,
-        mes=mes,
-        capacidade=capacidade,
-        criticos=criticos
-    )
+        return render_template(
+            "dashboard.html",
+            semana=resumo_semanal,
+            mes=resumo_mensal,
+            capacidade=capacidade,
+            criticos=criticos
+        )
+    except Exception as e:
+        print(f"Erro no Dashboard: {e}")
+        # Se algo der errado, envia dados zerados para não travar a tela
+        return render_template(
+            "dashboard.html",
+            semana={"faturamento": 0, "vendas": 0},
+            mes={"faturamento": 0, "vendas": 0},
+            capacidade=0,
+            criticos=[]
+        )
 # ========================================================
 # GESTÃO DE ESTOQUE
 # ========================================================

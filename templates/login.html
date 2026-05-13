@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Sistema Confeitaria</title>
+
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            --bg-deep: #0f172a;
+            --card-bg: rgba(17, 24, 39, 0.95);
+            --accent-gold: #f59e0b;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            color: white;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* Efeito de Vidro no Card */
+        .login-box {
+            width: 100%;
+            max-width: 420px;
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            padding: 45px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(12px);
+            animation: slideUp 0.7s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo-circle {
+            width: 80px;
+            height: 80px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 2px solid var(--accent-gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 40px;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+        }
+
+        h2 {
+            color: white;
+            text-align: center;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+
+        .sub {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 35px;
+        }
+
+        /* Inputs Estilizados */
+        .form-label {
+            color: #cbd5e1;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group-text {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: var(--accent-gold);
+            border-radius: 14px 0 0 14px;
+        }
+
+        .form-control {
+            background: #1e293b !important;
+            border: 1px solid #334155 !important;
+            color: white !important;
+            border-radius: 0 14px 14px 0;
+            padding: 12px;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent-gold) !important;
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
+        }
+
+        /* Link Esqueci Senha */
+        .forgot-link {
+            color: var(--accent-gold);
+            font-size: 0.75rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .forgot-link:hover {
+            color: white;
+            text-decoration: underline;
+        }
+
+        /* Botão Robusto */
+        .btn-login {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
+            font-weight: 700;
+            color: #000;
+            margin-top: 20px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(217, 119, 6, 0.4);
+            filter: brightness(1.1);
+        }
+
+        /* Alerts Customizados */
+        .alert {
+            background: rgba(220, 38, 38, 0.2);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            color: #fca5a5;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            padding: 10px 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-box shadow-lg">
+        <div class="logo-circle">
+            🧁
+        </div>
+
+        <h2>Pupilos Confeitaria</h2>
+        <p class="sub">Login Administrativo</p>
+
+        <!-- Mensagens de Erro (Flash) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-octagon-fill me-2"></i>
+                <div>{{ message }}</div>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <!-- Usuário -->
+            <div class="mb-3">
+                <label class="form-label d-block mb-2">Usuário</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                    <input type="text" name="username" class="form-control" placeholder="Seu usuário" required autocomplete="off">
+                </div>
+            </div>
+
+            <!-- Senha -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0">Senha</label>
+                    <a href="/recuperar-senha" class="forgot-link">Esqueceu a senha?</a>
+                </div>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-shield-lock-fill"></i></span>
+                    <input type="password" name="senha" class="form-control" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <!-- Botão -->
+            <button type="submit" class="btn-login shadow">
+                Entrar no Sistema <i class="bi bi-arrow-right-short"></i>
+            </button>
+        </form>
+
+        <div class="mt-4 text-center">
+            <small class="text-muted" style="font-size: 0.7rem; opacity: 0.6;">
+                &copy; 2026 Sistema de Gestão Gastronômica<br>
+                Ambiente Seguro e Monitorado
+            </small>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card shadow-lg border-0 bg-dark text-white">
+                <!-- Cabeçalho com destaque em amarelo -->
+                <div class="card-header bg-warning text-dark text-center py-4">
+                    <h2 class="mb-0 fw-bold">📊 Resumo da Importação</h2>
+                </div>
+
+                <div class="card-body p-5">
+                    <p class="text-center text-muted mb-4 fs-5">O sistema analisou seu arquivo e detectou o seguinte:</p>
+                    
+                    <!-- Lista de Itens com Cores de Destaque -->
+                    <div class="list-group list-group-flush mb-4 rounded overflow-hidden shadow-sm">
+                        <div class="list-group-item bg-black bg-opacity-25 text-white d-flex justify-content-between align-items-center border-secondary py-3">
+                            <div>
+                                <i class="bi bi-bag-plus text-info me-2"></i>
+                                <strong>Novos Produtos:</strong>
+                            </div>
+                            <span class="badge bg-info text-dark rounded-pill fs-6">{{ novos_produtos }}</span>
+                        </div>
+                        
+                        <div class="list-group-item bg-black bg-opacity-25 text-white d-flex justify-content-between align-items-center border-secondary py-3">
+                            <div>
+                                <i class="bi bi-box-seam text-success me-2"></i>
+                                <strong>Novas Matérias-primas:</strong>
+                            </div>
+                            <span class="badge bg-success rounded-pill fs-6">{{ novas_mps }}</span>
+                        </div>
+
+                        <div class="list-group-item bg-black bg-opacity-25 text-white d-flex justify-content-between align-items-center border-secondary py-3">
+                            <div>
+                                <i class="bi bi-link-45deg text-warning me-2"></i>
+                                <strong>Itens de Receita:</strong>
+                            </div>
+                            <span class="badge bg-warning text-dark rounded-pill fs-6">{{ receitas }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Alerta de Atenção -->
+                    <div class="alert alert-warning border-0 bg-opacity-10 text-warning d-flex align-items-center">
+                        <i class="bi bi-exclamation-circle-fill fs-4 me-3"></i>
+                        <small>
+                            Ao confirmar, os novos itens serão criados com **custo zero**. 
+                            Lembre-se de atualizar os preços de compra na tela de Estoque para calcular o lucro corretamente.
+                        </small>
+                    </div>
+
+                    <!-- Ações -->
+                    <div class="d-grid gap-2 mt-4">
+                        <form action="/confirmar-importacao" method="POST" id="confirmForm">
+                            <button type="submit" class="btn btn-success btn-lg w-100 fw-bold py-3 shadow" id="confirmBtn">
+                                ✅ CONFIRMAR E SALVAR
+                            </button>
+                        </form>
+                        <a href="/importacoes" class="btn btn-outline-secondary border-0 text-muted">
+                            ❌ Cancelar e descartar arquivo
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <p class="text-center text-secondary mt-4 small">
+                <i class="bi bi-shield-lock me-1"></i> 
+                Processamento seguro via sessão temporária.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Evita múltiplos cliques e mostra carregamento
+    document.getElementById('confirmForm').onsubmit = function() {
+        const btn = document.getElementById('confirmBtn');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>PROCESSANDO DADOS...';
+        btn.classList.add('disabled');
+    };
+</script>
+
+<style>
+    .list-group-item { border-left: 0; border-right: 0; }
+    .list-group-item:first-child { border-top: 0; }
+    .btn-success { transition: transform 0.2s; }
+    .btn-success:active { transform: scale(0.98); }
+</style>
+{% endblock %}

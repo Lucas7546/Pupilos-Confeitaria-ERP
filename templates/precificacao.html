@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-warning mb-0">💰 Inteligência de Preços</h2>
+            <small class="text-muted">Análise em tempo real baseada nos custos dos insumos</small>
+        </div>
+        <span class="badge bg-dark border border-secondary p-2">v.2.0 - 2026</span>
+    </div>
+
+    <!-- Card Informativo de Metas -->
+    <div class="card bg-dark text-white mb-4 border-warning shadow">
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-4 border-end border-secondary">
+                    <small class="text-muted d-block uppercase small-font">Ponto de Equilíbrio</small>
+                    <span class="text-info fw-bold">Custo + 10% (Variáveis)</span>
+                </div>
+                <div class="col-md-4 border-end border-secondary">
+                    <small class="text-muted d-block">Meta de Lucratividade</small>
+                    <span class="text-success fw-bold">30% Líquido</span>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted d-block">Monitoramento</small>
+                    <span class="text-warning fw-bold">Alertas Ativos</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Precificação -->
+    <div class="card shadow-lg border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Produto</th>
+                            <th>Preço Atual</th>
+                            <th>Custo Base (Equilíbrio)</th>
+                            <th>Sugerido (30% Lucro)</th>
+                            <th class="text-center">Ficha Técnica</th>
+                            <th class="text-center">Saúde Financeira</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in tabela %}
+                        <tr>
+                            <td class="ps-4">
+                                <span class="fw-bold text-dark">{{ item.nome }}</span>
+                            </td>
+                            <td class="{{ 'text-danger fw-bold' if item.alerta else 'text-dark' }}">
+                                R$ {{ "%.2f"|format(item.atual) }}
+                            </td>
+                            <td class="text-muted">
+                                R$ {{ "%.2f"|format(item.equilibrio) }}
+                            </td>
+                            <td class="text-success fw-bold">
+                                R$ {{ "%.2f"|format(item.sugerido) }}
+                            </td>
+                            <td class="text-center">
+                                <!-- O ID deve vir do dicionário item no app.py -->
+                                <a href="/ficha-tecnica/{{ item.id }}" class="btn btn-sm btn-outline-info rounded-pill px-3">
+                                    <i class="bi bi-search"></i> Detalhes
+                                </a>
+                            </td>
+                            <td class="text-center">
+                                {% if item.alerta %}
+                                    <span class="badge bg-danger px-3 py-2 shadow-sm">🛑 PREJUÍZO</span>
+                                    <div class="text-danger mt-1" style="font-size: 0.7rem; font-weight: bold;">Abaixo do custo!</div>
+                                {% elif item.atual < item.sugerido %}
+                                    <span class="badge bg-warning text-dark px-3 py-2 shadow-sm">⚠️ MARGEM BAIXA</span>
+                                {% else %}
+                                    <span class="badge bg-success px-3 py-2 shadow-sm">✅ SAUDÁVEL</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                Nenhum produto cadastrado para análise.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rodapé Informativo -->
+    <div class="mt-4 p-3 border-start border-warning bg-white shadow-sm rounded">
+        <div class="d-flex align-items-center">
+            <div class="fs-4 me-3">💡</div>
+            <div>
+                <p class="mb-0 text-dark fw-bold">Como interpretar os dados?</p>
+                <p class="mb-0 small text-muted">
+                    Se um item apresentar <strong>Margem Baixa</strong>, você não está necessariamente perdendo dinheiro, mas não está atingindo a meta de 30%. 
+                    Se estiver em <strong>Prejuízo</strong>, o preço de venda é menor do que o custo dos ingredientes + 10% de custos fixos.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Estilo extra para melhorar a leitura */
+    .table-hover tbody tr:hover {
+        background-color: rgba(255, 193, 7, 0.05);
+    }
+    .uppercase {
+        text-transform: uppercase;
+    }
+    .small-font {
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+    }
+</style>
+{% endblock %}

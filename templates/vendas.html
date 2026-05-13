@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h2 class="text-warning mb-4">💰 Registrar Venda</h2>
+
+            <div class="card bg-dark text-white p-4 shadow border-0">
+                <form action="/vender" method="POST">
+                    <!-- Seleção do Produto -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-info">Selecione o Produto:</label>
+                        <select name="id_produto" class="form-select bg-secondary text-white border-0" required>
+                            <option value="" disabled selected>Escolha um produto...</option>
+                            {% for p in produtos %}
+                                {# p[0] = ID, p[1] = Nome, p[2] = Preço #}
+                                <option value="{{ p[0] }}">{{ p[1] }} (R$ {{ "%.2f"|format(p[2])|replace('.', ',') }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Quantidade -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-info">Quantidade vendida:</label>
+                        <input type="number" name="quantidade" class="form-control bg-secondary text-white border-0" placeholder="Ex: 2" min="1" value="1" required>
+                    </div>
+
+                    <!-- Botão de Ação -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-warning btn-lg fw-bold shadow">
+                            Finalizar Venda
+                        </button>
+                        <a href="/" class="btn btn-outline-secondary btn-sm">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Ajuste para o select no modo escuro */
+    .form-select option { background-color: #343a40; }
+    .form-control:focus, .form-select:focus {
+        background-color: #495057 !important;
+        color: white;
+        border-color: #ffc107;
+        box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
+    }
+</style>
+{% endblock %}

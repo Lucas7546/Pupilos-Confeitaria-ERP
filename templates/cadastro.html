@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4 animate-in">
+    <!-- HEADER -->
+    <div class="mb-5">
+        <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.5rem; letter-spacing: -1.5px;">
+            📝 Central de <span class="text-warning">Cadastros</span>
+        </h1>
+        <p class="text-white-50 fs-5">Gerencie seus insumos, produtos e fichas técnicas.</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Card 1: Matéria-Prima (Insumos) -->
+        <div class="col-lg-6">
+            <div class="card h-100 bg-dark-card border-secondary border-opacity-25 shadow">
+                <div class="card-header border-0 bg-transparent py-4 px-4">
+                    <h4 class="fw-bold text-warning mb-0"><i class="bi bi-egg-fried me-2"></i>Matéria-Prima</h4>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <form action="/cadastrar-mp" method="POST">
+                        <div class="mb-3">
+                            <!-- TEXTO EM BRANCO PARA TOTAL VISIBILIDADE -->
+                            <label class="form-label text-white fw-bold small">NOME DO INGREDIENTE</label>
+                            <input name="nome" class="form-control form-control-lg custom-input" placeholder="Ex: Farinha de Trigo" required>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-white fw-bold small">UNIDADE</label>
+                                <select name="unidade" class="form-select custom-input" required>
+                                    <option value="kg">Quilograma (kg)</option>
+                                    <option value="l">Litro (L)</option>
+                                    <option value="un">Unidade (un)</option>
+                                    <option value="g">Grama (g)</option>
+                                    <option value="ml">Mililitro (ml)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-white fw-bold small">ESTOQUE INICIAL</label>
+                                <input type="number" step="0.001" name="estoque_atual" class="form-control custom-input" placeholder="Qtd atual" required>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-white fw-bold small">PREÇO DE CUSTO (R$)</label>
+                                <input type="number" step="0.01" name="preco" class="form-control custom-input" placeholder="Ex: 15.50" required>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label text-white fw-bold small">ESTOQUE MÍNIMO (ALERTA)</label>
+                                <input type="number" step="0.01" name="estoque_minimo" class="form-control custom-input" placeholder="Ex: 2.00" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning w-100 fw-bold py-3 shadow-sm rounded-4 text-dark">
+                            CADASTRAR INGREDIENTE
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Produto Final -->
+        <div class="col-lg-6">
+            <div class="card h-100 bg-dark-card border-secondary border-opacity-25 shadow">
+                <div class="card-header border-0 bg-transparent py-4 px-4">
+                    <h4 class="fw-bold text-info mb-0"><i class="bi bi-cake2 me-2"></i>Produto para Venda</h4>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <form action="/cadastrar-produto" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label text-white fw-bold small">NOME DO PRODUTO</label>
+                            <input name="nome" class="form-control form-control-lg custom-input" placeholder="Ex: Bolo de Pote" required>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-white fw-bold small">PREÇO DE VENDA</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-black border-0 text-success fw-bold">R$</span>
+                                    <input type="number" step="0.01" name="preco" class="form-control custom-input" placeholder="0.00" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label text-white fw-bold small">CATEGORIA</label>
+                                <select name="categoria" class="form-select custom-input" required>
+                                    <option value="bolos">Bolos</option>
+                                    <option value="doces">Doces/Brigadeiros</option>
+                                    <option value="tortas">Tortas</option>
+                                    <option value="outros">Outros</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-info w-100 fw-bold py-3 text-white shadow-sm rounded-4">
+                            CADASTRAR PRODUTO
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Ficha Técnica -->
+        <div class="col-12 mt-4">
+            <div class="card bg-dark-card border-secondary border-opacity-25 shadow">
+                <div class="card-header border-0 bg-success bg-opacity-10 py-4 px-4">
+                    <h4 class="fw-bold text-success mb-0"><i class="bi bi-diagram-3 me-2"></i>Ficha Técnica</h4>
+                </div>
+                <div class="card-body px-4 py-4">
+                    <form action="/vincular-receita" method="POST" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label text-white fw-bold small">SELECIONE O PRODUTO</label>
+                            <select name="id_produto" class="form-select custom-input" required>
+                                <option value="" disabled selected>Escolha um produto...</option>
+                                {% for p in produtos %}
+                                <option value="{{ p[0] }}">{{ p[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-white fw-bold small">INGREDIENTE</label>
+                            <select name="id_materia_prima" class="form-select custom-input" required>
+                                <option value="" disabled selected>Escolha um insumo...</option>
+                                {% for m in materias %}
+                                <option value="{{ m[0] }}">{{ m[1] }} ({{ m[2] }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-white fw-bold small">QTD NA RECEITA</label>
+                            <input type="number" step="0.001" name="quantidade" class="form-control custom-input" placeholder="Ex: 0.350" required>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-success w-100 fw-bold py-2 rounded-3 shadow-sm">
+                                ADICIONAR
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-dark-card { background: #1e293b !important; border-radius: 24px; }
+    
+    /* ESTILO REFORÇADO PARA OS INPUTS */
+    .custom-input {
+        background-color: #0f172a !important; /* Fundo bem escuro para contrastar com o texto */
+        border: 1px solid #334155 !important;
+        color: #ffffff !important; /* Texto branco dentro do input */
+    }
+
+    .custom-input::placeholder {
+        color: #64748b !important; /* Placeholder cinza claro */
+    }
+
+    .custom-input:focus {
+        border-color: #f59e0b !important;
+        box-shadow: 0 0 0 0.25rem rgba(245, 158, 11, 0.2) !important;
+    }
+
+    /* Cor do texto das opções do select */
+    select.custom-input option {
+        background-color: #1e293b;
+        color: white;
+    }
+
+    .animate-in { animation: fadeInUp 0.5s ease forwards; }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+{% endblock %}

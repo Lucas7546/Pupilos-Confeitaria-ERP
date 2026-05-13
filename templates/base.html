@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confeitaria ERP | Gestão Inteligente</title>
+
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --bg-dark: #0f172a;
+            --bg-sidebar: #111827;
+            --accent: #f59e0b;
+            --accent-hover: #fbbf24;
+            --text-muted: #64748b;
+            --glass: rgba(255, 255, 255, 0.03);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Scrollbar Personalizada */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: #f8fafc;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* SIDEBAR ROBUSTA */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: var(--bg-sidebar);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1050;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+            text-decoration: none;
+            color: white;
+            padding-left: 10px;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent), #d97706);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 8px 15px rgba(245, 158, 11, 0.2);
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .menu-title {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            margin: 20px 0 10px 15px;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            flex-grow: 1;
+        }
+
+        .sidebar-menu li { margin-bottom: 5px; }
+
+        .nav-link-custom {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #94a3b8;
+            padding: 12px 15px;
+            border-radius: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link-custom i { font-size: 1.1rem; transition: transform 0.2s ease; }
+
+        .nav-link-custom:hover {
+            background: rgba(255, 255, 255, 0.03);
+            color: white;
+        }
+
+        .nav-link-custom:hover i { transform: scale(1.1); }
+
+        .nav-link-custom.active {
+            background: linear-gradient(135deg, var(--accent), #d97706);
+            color: #000 !important;
+            font-weight: 700;
+            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.15);
+        }
+        
+        .nav-link-custom.active i { color: #000; }
+
+        /* CONTEÚDO PRINCIPAL */
+        .main {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            padding: 40px;
+            transition: all 0.3s ease;
+        }
+
+        /* TOPBAR ESTILO GLASS */
+        .topbar {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 15px 30px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: sticky;
+            top: 20px;
+            z-index: 1000;
+        }
+
+        .user-box {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 5px 5px 5px 20px;
+            border-left: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #000;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        /* RESPONSIVIDADE INTELIGENTE */
+        @media(max-width: 1200px) {
+            :root { --sidebar-width: 80px; }
+            .logo-text, .menu-title, .nav-link-custom span, .topbar h4, .topbar small, .user-info { display: none; }
+            .sidebar { padding: 30px 15px; align-items: center; }
+            .logo { margin-bottom: 30px; padding: 0; }
+            .nav-link-custom { justify-content: center; width: 50px; height: 50px; padding: 0; }
+            .user-box { border: none; padding: 0; }
+        }
+
+        /* ANIMAÇÃO DE CARREGAMENTO */
+        .fade-in-up {
+            animation: fadeInUp 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <a href="/" class="logo">
+            <div class="logo-icon">🧁</div>
+            <span class="logo-text">Confeitaria ERP</span>
+        </a>
+
+        <div class="menu-title">Navegação</div>
+        <ul class="sidebar-menu">
+            <li><a href="/" class="nav-link-custom"><i class="bi bi-grid-fill"></i> <span>Dashboard</span></a></li>
+            <li><a href="/importacoes" class="nav-link-custom"><i class="bi bi-cloud-arrow-up-fill"></i> <span>Importações</span></a></li>
+            <li><a href="/estoque" class="nav-link-custom"><i class="bi bi-box-seam-fill"></i> <span>Estoque</span></a></li>
+            <li><a href="/vendas" class="nav-link-custom"><i class="bi bi-cash-stack"></i> <span>Vendas</span></a></li>
+            <li><a href="/precificacao" class="nav-link-custom"><i class="bi bi-calculator-fill"></i> <span>Precificação</span></a></li>
+            <li><a href="/financeiro" class="nav-link-custom"><i class="bi bi-bar-chart-line-fill"></i> <span>Financeiro</span></a></li>
+            <li><a href="/cadastro" class="nav-link-custom"><i class="bi bi-person-plus-fill"></i> <span>Cadastros</span></a></li>
+            <li><a href="/auditoria" class="nav-link-custom"><i class="bi bi-shield-lock-fill"></i> <span>Auditoria</span></a></li>
+        </ul>
+
+        <ul class="sidebar-menu mt-auto">
+            <hr style="border-color: rgba(255,255,255,0.05);">
+            <li>
+                <a href="/logout" class="nav-link-custom text-danger">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Sair do Sistema</span>
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+        <!-- TOPBAR -->
+        <header class="topbar shadow-lg">
+            <div>
+                <h4 class="fw-bold mb-0 text-white">Gestão <span class="text-warning">Gourmet</span></h4>
+                <small class="text-muted">Bem-vindo à sua central de controle</small>
+            </div>
+
+            <div class="user-box">
+                <div class="user-info text-end">
+                    <div class="fw-bold text-white small">{{ current_user.id }}</div>
+                    <div class="text-warning fw-bold" style="font-size: 0.65rem; text-transform: uppercase;">Acesso Admin</div>
+                </div>
+                <div class="avatar shadow">
+                    {{ current_user.id[0]|upper }}
+                </div>
+            </div>
+        </header>
+
+        <!-- MENSAGENS FLASH -->
+        <div class="container-fluid p-0">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show border-0 shadow-sm mb-4 bg-dark text-white" style="border-left: 4px solid #f59e0b !important;">
+                            <i class="bi bi-stars text-warning me-2"></i> {{ message }}
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- CONTEÚDO DA PÁGINA -->
+            <div class="fade-in-up">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </main>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const currentPath = window.location.pathname;
+            document.querySelectorAll(".nav-link-custom").forEach(link => {
+                if (link.getAttribute("href") === currentPath) {
+                    link.classList.add("active");
+                }
+            });
+        });
+    </script>
+</body>
+</html>

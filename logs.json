@@ -1,0 +1,72 @@
+[
+    {
+        "usuario": "admin",
+        "acao": "LOGOUT",
+        "modulo": "AUTH",
+        "detalhe": "Usuário admin saiu",
+        "data": "12/05/2026 12:02:03"
+    },
+    {
+        "usuario": "admin",
+        "acao": "LOGIN",
+        "modulo": "AUTH",
+        "detalhe": "Usuário admin entrou no sistema",
+        "data": "12/05/2026 12:02:09"
+    },
+    {
+        "usuario": "admin",
+        "acao": "ACESSO",
+        "modulo": "ESTOQUE",
+        "detalhe": "Usuário acessou o estoque",
+        "data": "12/05/2026 12:02:26"
+    },
+    {
+        "data": "2026-05-12 13:32:21",
+        "usuario": "admin",
+        "acao": "LOGOUT",
+        "modulo": "AUTH",
+        "detalhe": "Usuário admin saiu"
+    },
+    {
+        "data": "2026-05-12 13:32:26",
+        "usuario": "admin",
+        "acao": "LOGIN",
+        "modulo": "AUTH",
+        "detalhe": "Usuário admin entrou no sistema"
+    },
+    {
+        "data": "2026-05-12 13:32:28",
+        "usuario": "admin",
+        "acao": "LOGOUT",
+        "modulo": "AUTH",
+        "detalhe": "Usuário admin saiu"
+    },
+    {
+        "data": "2026-05-12 13:32:34",
+        "usuario": "admin",
+        "acao": "LOGIN",
+        "modulo": "AUTH",
+        "detalhe": "Usuário admin entrou no sistema"
+    },
+    {
+        "data": "2026-05-12 13:34:04",
+        "usuario": "admin",
+        "acao": "LOGOUT",
+        "modulo": "AUTH",
+        "detalhe": "Usuário admin saiu"
+    },
+    {
+        "data": "2026-05-12 13:34:10",
+        "usuario": "admin",
+        "acao": "LOGIN",
+        "modulo": "AUTH",
+        "detalhe": "Usuário admin entrou no sistema"
+    },
+    {
+        "data": "2026-05-13 01:56:01",
+        "usuario": "admin",
+        "acao": "LOGOUT",
+        "modulo": "AUTH",
+        "detalhe": "Usuário admin saiu"
+    }
+]

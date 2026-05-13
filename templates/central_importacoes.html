@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+            <!-- Cabeçalho -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="fw-bold text-warning mb-1">📥 Central de Importações</h1>
+                    <p class="text-secondary">Gerencie entradas de dados em massa (iFood e Cadastros)</p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-dark border border-secondary p-2">
+                        <i class="bi bi-clock-history me-1"></i> Sessão Atual: {{ "12/05/2026" }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="card shadow-lg border-0 bg-dark text-white">
+                <div class="card-body p-4">
+                    <!-- NAVEGAÇÃO POR ABAS -->
+                    <ul class="nav nav-pills mb-4 bg-black bg-opacity-25 p-2 rounded" id="importTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-bold px-4" id="ifood-tab" data-bs-toggle="tab" data-bs-target="#ifood" type="button" role="tab">
+                                <i class="bi bi-box-seam me-2"></i>iFood (Vendas)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold px-4" id="estrutura-tab" data-bs-toggle="tab" data-bs-target="#estrutura" type="button" role="tab">
+                                <i class="bi bi-diagram-3 me-2"></i>Estrutura (Produtos/Receitas)
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content pt-2" id="importTabContent">
+                        
+                        <!-- ABA 1: IFOOD -->
+                        <div class="tab-pane fade show active" id="ifood" role="tabpanel">
+                            <div class="row align-items-center">
+                                <div class="col-md-7">
+                                    <h4 class="text-info mb-3">Sincronizar Pedidos do iFood</h4>
+                                    <p class="text-muted">Carregue o arquivo <strong>CSV</strong> ou <strong>Excel</strong> extraído do Portal do Parceiro. O sistema dará baixa automática no estoque baseando-se nas fichas técnicas.</p>
+                                    
+                                    <form action="/importar-ifood" method="POST" enctype="multipart/form-data" id="formIfood">
+                                        <div class="mb-4">
+                                            <label class="form-label text-secondary fw-bold">Selecione o arquivo de vendas:</label>
+                                            <input type="file" name="arquivo" class="form-control form-control-lg bg-secondary text-white border-0" accept=".csv, .xlsx, .xls" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold shadow-sm py-3" id="btnIfood">
+                                            🚀 IMPORTAR VENDAS AGORA
+                                        </button>
+                                    </form>
+                                </div>
+                                <div class="col-md-5 d-none d-md-block text-center">
+                                    <i class="bi bi-cloud-arrow-up text-secondary opacity-25" style="font-size: 8rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ABA 2: ESTRUTURA -->
+                        <div class="tab-pane fade" id="estrutura" role="tabpanel">
+                            <div class="row align-items-center">
+                                <div class="col-md-7">
+                                    <h4 class="text-success mb-3">Importação de Cadastros</h4>
+                                    <p class="text-muted">Utilize esta opção para subir novos produtos, matérias-primas e receitas em massa via planilha modelo.</p>
+                                    
+                                    <form action="/preview-importacao" method="POST" enctype="multipart/form-data">
+                                        <div class="mb-4">
+                                            <label class="form-label text-secondary fw-bold">Planilha de Estrutura Completa:</label>
+                                            <input type="file" name="arquivo" class="form-control form-control-lg bg-secondary text-white border-0" accept=".csv, .xlsx, .xls" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow-sm py-3">
+                                            🔍 VERIFICAR DADOS (PREVIEW)
+                                        </button>
+                                    </form>
+                                </div>
+                                <div class="col-md-5 d-none d-md-block text-center">
+                                    <i class="bi bi-table text-secondary opacity-25" style="font-size: 8rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HISTÓRICO DE ATIVIDADE -->
+            <div class="mt-5">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="bi bi-journal-text text-warning me-2 fs-4"></i>
+                    <h5 class="text-white mb-0">Histórico Recente de Importações</h5>
+                </div>
+                <div class="card bg-dark border-0 shadow">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0">
+                            <thead class="table-black">
+                                <tr>
+                                    <th class="border-secondary py-3 px-4">Data/Hora</th>
+                                    <th class="border-secondary py-3">Arquivo</th>
+                                    <th class="border-secondary py-3 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in historico_ifood %}
+                                <tr class="align-middle">
+                                    <td class="py-3 px-4 text-muted small">{{ item.data }}</td>
+                                    <td class="py-3 fw-bold text-info">{{ item.arquivo }}</td>
+                                    <td class="py-3 text-center">
+                                        <span class="badge bg-success bg-opacity-25 text-success border border-success px-3 py-2">
+                                            <i class="bi bi-check-circle me-1"></i> Concluído
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-5">
+                                        <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
+                                        Nenhuma importação realizada nesta sessão.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Customização para o Dark Mode e Abas */
+    .nav-pills .nav-link { color: #adb5bd; transition: all 0.3s; }
+    .nav-pills .nav-link.active { background-color: #ffc107 !important; color: #000 !important; }
+    .nav-pills .nav-link:hover:not(.active) { background-color: rgba(255, 255, 255, 0.1); }
+    
+    .form-control:focus {
+        background-color: #495057 !important;
+        border-color: #ffc107 !important;
+        color: white;
+        box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(255, 255, 255, 0.03);
+    }
+</style>
+
+<script>
+    // Feedback visual ao clicar no botão de importar
+    document.getElementById('formIfood').onsubmit = function() {
+        const btn = document.getElementById('btnIfood');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>PROCESSANDO ARQUIVO...';
+        btn.classList.add('disabled');
+    };
+</script>
+{% endblock %}

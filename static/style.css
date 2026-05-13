@@ -1,0 +1,211 @@
+/* ==================================================
+   GERAL & VARIAVEIS
+================================================== */
+:root {
+    --bg-dark: #0f172a;
+    --card-bg: #1e293b;
+    --accent: #facc15; /* Amarelo iFood/Ouro */
+    --accent-hover: #eab308;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border-color: rgba(255, 255, 255, 0.08);
+}
+
+body {
+    background: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ==================================================
+   NAVBAR (Glassmorphism)
+================================================== */
+.navbar {
+    background: rgba(15, 23, 42, 0.8) !important;
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 15px 0;
+}
+
+.navbar-brand {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent) !important;
+    letter-spacing: -0.5px;
+}
+
+.nav-link {
+    color: var(--text-muted) !important;
+    font-weight: 600;
+    padding: 10px 18px !important;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    color: var(--accent) !important;
+    background: rgba(250, 204, 21, 0.1);
+}
+
+.nav-link.active {
+    color: var(--accent) !important;
+    background: rgba(250, 204, 21, 0.05);
+}
+
+/* ==================================================
+   CARDS (Robustos)
+================================================== */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    box-shadow: 0 10px 30px -5px rgba(0,0,0,0.3);
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.card-header {
+    background: rgba(0, 0, 0, 0.2) !important;
+    border-bottom: 1px solid var(--border-color);
+    padding: 20px;
+    color: var(--accent) !important;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* ==================================================
+   INPUTS (Ajuste de contraste para Dark Mode)
+================================================= */
+.form-control, .form-select {
+    background: #0f172a !important; /* Escuro para não cegar o usuário */
+    border: 2px solid #334155 !important;
+    color: white !important;
+    border-radius: 14px !important;
+    padding: 14px !important;
+    font-weight: 400;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.15) !important;
+    outline: none;
+}
+
+::placeholder {
+    color: #475569 !important;
+}
+
+/* ==================================================
+   TABELAS (Estilo Admin Moderno)
+================================================== */
+.table {
+    color: var(--text-main);
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background: #0f172a !important;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border-color);
+    padding: 15px;
+}
+
+.table tbody td {
+    padding: 18px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* ==================================================
+   BOTÕES (Premium)
+================================================== */
+.btn {
+    border-radius: 14px;
+    font-weight: 700;
+    padding: 12px 24px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.btn-warning {
+    background: var(--accent) !important;
+    border: none;
+    color: #000 !important;
+}
+
+.btn-warning:hover {
+    background: var(--accent-hover) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(250, 204, 21, 0.3);
+}
+
+.btn-success {
+    background: #10b981 !important;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+}
+
+/* ==================================================
+   METRICAS (Dashboard)
+================================================== */
+.metric-card {
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 30px;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card::after {
+    content: "";
+    position: absolute;
+    top: 0; right: 0;
+    width: 100px; height: 100px;
+    background: var(--accent);
+    opacity: 0.03;
+    border-radius: 50%;
+    transform: translate(30%, -30%);
+}
+
+.metric-title {
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.metric-value {
+    color: var(--text-main);
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+/* ==================================================
+   BADGES & ALERTAS
+================================================== */
+.badge {
+    padding: 6px 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+}
+
+.alert {
+    border-radius: 16px;
+    font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.05);
+}

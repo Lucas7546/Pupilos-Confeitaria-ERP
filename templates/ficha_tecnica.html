@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-warning">📋 Ficha Técnica: {{ produto[1] }}</h2>
+        <a href="/precificacao" class="btn btn-outline-light btn-sm">Voltar</a>
+    </div>
+
+    <div class="row">
+        <!-- Coluna da Esquerda: Lista de Custos -->
+        <div class="col-md-7">
+            <div class="card bg-dark text-white shadow">
+                <div class="card-header border-secondary">Composição do Custo</div>
+                <div class="card-body">
+                    <table class="table table-dark table-hover">
+                        <thead>
+                            <tr>
+                                <th>Ingrediente</th>
+                                <th>Qtd. Usada</th>
+                                <th class="text-end">Custo (R$)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in itens %}
+                            <tr>
+                                <td>{{ i.item }}</td>
+                                <td>{{ i.qtd }}</td>
+                                <td class="text-end text-danger">R$ {{ "%.2f"|format(i.custo) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-active">
+                                <th colspan="2">CUSTO TOTAL DE PRODUÇÃO</th>
+                                <th class="text-end text-warning">R$ {{ "%.2f"|format(total) }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna da Direita: Resumo de Lucro -->
+        <div class="col-md-5">
+            <div class="card bg-dark text-white shadow h-100">
+                <div class="card-header border-secondary">Análise de Venda</div>
+                <div class="card-body text-center">
+                    <small class="text-muted">Preço de Venda Atual</small>
+                    <h2 class="text-success">R$ {{ "%.2f"|format(produto[2]) }}</h2>
+                    
+                    <hr class="border-secondary">
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Lucro por Unid.</small>
+                            <h4 class="text-info">R$ {{ "%.2f"|format(lucro) }}</h4>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Margem (%)</small>
+                            <h4 class="{{ 'text-success' if margem >= 30 else 'text-danger' }}">
+                                {{ "%.1f"|format(margem) }}%
+                            </h4>
+                        </div>
+                    </div>
+
+                    <div class="alert {{ 'alert-success' if margem >= 30 else 'alert-danger' }} mt-4">
+                        {% if margem >= 30 %}
+                            🚀 Margem saudável! Continue assim.
+                        {% else %}
+                            ⚠️ Cuidado! Sua margem está baixa. Considere reajustar o preço ou reduzir o custo dos insumos.
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

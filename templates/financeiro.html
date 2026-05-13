@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-warning mb-4">📊 Saúde Financeira (Últimos 30 dias)</h2>
+
+    <!-- Cards de Resumo -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white p-3 shadow-sm">
+                <small>Faturamento (Entradas)</small>
+                <h3>R$ {{ "%.2f"|format(faturamento) }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white p-3 shadow-sm">
+                <small>Custo Insumos (Variável)</small>
+                <h3>- R$ {{ "%.2f"|format(custo_insumos) }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white p-3 shadow-sm">
+                <small>Custos Fixos/Extras</small>
+                <h3>- R$ {{ "%.2f"|format(total_fixas) }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card {{ 'bg-success' if lucro_real > 0 else 'bg-dark' }} text-white p-3 shadow-sm">
+                <small>LUCRO LÍQUIDO REAL</small>
+                <h3 class="fw-bold">R$ {{ "%.2f"|format(lucro_real) }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Lançamento de Despesas -->
+        <div class="col-md-5">
+            <div class="card shadow p-4 mb-4">
+                <h5>Lançar Gasto (Fixo/Extra)</h5>
+                <form action="/lancar-despesa" method="POST">
+                    <input type="text" name="descricao" placeholder="Ex: Energia, MEI, Aluguel" class="form-control mb-2" required>
+                    <input type="number" step="0.01" name="valor" placeholder="Valor R$" class="form-control mb-2" required>
+                    <select name="categoria" class="form-select mb-2">
+                        <option value="Fixo">Fixo (Energia/Água/Aluguel)</option>
+                        <option value="Operacional">Operacional (Embalagens/Entrega)</option>
+                        <option value="Outros">Outros</option>
+                    </select>
+                    <<button type="submit"
+                             class="btn btn-danger w-100"
+                             onclick="this.classList.add('btn-loading')">Registrar Gasto</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lista de Despesas do Mês -->
+        <div class="col-md-7">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">Extrato de Despesas</div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Categoria</th>
+                                <th class="text-end">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in despesas %}
+                            <tr>
+                                <td>{{ d[1] }}</td> <!-- Descricao -->
+                                <td><span class="badge bg-light text-dark">{{ d[3] }}</span></td> <!-- Categoria -->
+                                <td class="text-end text-danger">- R$ {{ "%.2f"|format(d[2]) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

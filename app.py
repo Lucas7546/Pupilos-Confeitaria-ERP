@@ -20,6 +20,17 @@ from modules.db import conectar
 # ========================================================
 
 app = Flask(__name__)
+
+@app.route("/arrumar-meu-acesso")
+def arrumar_acesso():
+    from modules.db import conectar
+    conn = conectar()
+    cur = conn.cursor()
+    # Esse comando vai forçar o usuário admin a ser 'admin' no banco
+    cur.execute("UPDATE usuarios SET nivel = 'admin' WHERE username = 'admin';")
+    conn.commit()
+    conn.close()
+    return "Acesso de Admin recuperado! Pode voltar para a home e tentar entrar."
 app.secret_key = os.getenv("SECRET_KEY", "pupilos-confeitaria-123")
 
 login_manager = LoginManager()
@@ -112,10 +123,16 @@ def dashboard():
 @acesso_requerido("usuarios")
 def editar_usuario(id):
     nova_senha = request.form.get("nova_senha")
+    novo_nivel = request.form.get("nivel") # <--- Captura o nível do modal
+
     if nova_senha:
         hash_senha = generate_password_hash(nova_senha)
-        usuarios.atualizar_senha(id, hash_senha) 
-        flash("Senha alterada!", "success")
+        usuarios.atualizar_senha(id, hash_senha)
+    
+    if novo_nivel:
+        usuarios.atualizar_nivel(id, novo_nivel) # <--- Chama a função de nível
+        
+    flash("Usuário atualizado com sucesso!", "success")
     return redirect("/usuarios")
 
 # ========================================================

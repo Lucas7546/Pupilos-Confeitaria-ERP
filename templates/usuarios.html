@@ -1,84 +1,42 @@
 {% extends "base.html" %}
 
 {% block content %}
-
 <div class="container mt-4">
-
     <div class="d-flex justify-content-between align-items-center mb-4">
-
-        <h2 class="text-warning">
-            👥 Gestão de Usuários
-        </h2>
-
+        <h2 class="text-warning">👥 Gestão de Usuários</h2>
     </div>
 
     <!-- CRIAR USUÁRIO -->
-
     <div class="card bg-dark border-secondary mb-4">
-
         <div class="card-body">
-
             <form action="/criar-usuario" method="POST">
-
                 <div class="row g-3">
-
                     <div class="col-md-4">
-                        <input type="text"
-                               name="username"
-                               class="form-control bg-dark text-white"
-                               placeholder="Usuário"
-                               required>
+                        <input type="text" name="username" class="form-control bg-dark text-white" placeholder="Usuário" required>
                     </div>
-
                     <div class="col-md-4">
-                        <input type="password"
-                               name="senha"
-                               class="form-control bg-dark text-white"
-                               placeholder="Senha"
-                               required>
+                        <input type="password" name="senha" class="form-control bg-dark text-white" placeholder="Senha" required>
                     </div>
-
                     <div class="col-md-2">
-
-                        <select name="nivel"
-                                class="form-select bg-dark text-white">
-
+                        <select name="nivel" class="form-select bg-dark text-white">
                             <option value="admin">Admin</option>
                             <option value="gerente">Gerente</option>
-                            <option value="funcionario">
-                                Funcionário
-                            </option>
-
+                            <option value="funcionario">Funcionário</option>
                         </select>
-
                     </div>
-
                     <div class="col-md-2">
-
-                        <button class="btn btn-warning w-100">
-                            Criar
-                        </button>
-
+                        <button class="btn btn-warning w-100">Criar</button>
                     </div>
-
                 </div>
-
             </form>
-
         </div>
-
     </div>
 
     <!-- TABELA -->
-
     <div class="card bg-dark border-secondary">
-
         <div class="card-body p-0">
-
             <table class="table table-dark table-hover mb-0">
-
                 <thead>
-
                     <tr>
                         <th>ID</th>
                         <th>Usuário</th>
@@ -86,77 +44,75 @@
                         <th>Status</th>
                         <th>Ações</th>
                     </tr>
-
                 </thead>
-
                 <tbody>
-
                     {% for u in usuarios_lista %}
-
                     <tr>
-
                         <td>{{ u[0] }}</td>
-
                         <td>{{ u[1] }}</td>
-
                         <td>
-
                             {% if u[2] == "admin" %}
-                                <span class="badge bg-danger">
-                                    ADMIN
-                                </span>
-
+                                <span class="badge bg-danger">ADMIN</span>
                             {% elif u[2] == "gerente" %}
-                                <span class="badge bg-warning text-dark">
-                                    GERENTE
-                                </span>
-
+                                <span class="badge bg-warning text-dark">GERENTE</span>
                             {% else %}
-                                <span class="badge bg-info">
-                                    FUNCIONÁRIO
-                                </span>
-
+                                <span class="badge bg-info">FUNCIONÁRIO</span>
                             {% endif %}
-
                         </td>
-
                         <td>
-
                             {% if u[3] == 1 %}
-                                <span class="badge bg-success">
-                                    ATIVO
-                                </span>
+                                <span class="badge bg-success">ATIVO</span>
                             {% else %}
-                                <span class="badge bg-secondary">
-                                    BLOQUEADO
-                                </span>
+                                <span class="badge bg-secondary">BLOQUEADO</span>
                             {% endif %}
-
                         </td>
-
                         <td>
-
-                            <a href="/toggle-usuario/{{ u[0] }}"
-                               class="btn btn-sm btn-warning">
-
-                                Bloquear / Liberar
-
+                            <!-- BOTÃO EDITAR (Abre o Modal) -->
+                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#editModal{{ u[0] }}">
+                                ✏️ Editar
+                            </button>
+                            
+                            <a href="/toggle-usuario/{{ u[0] }}" class="btn btn-sm btn-warning">
+                                🔒 Bloquear/Liberar
                             </a>
-
                         </td>
-
                     </tr>
 
+                    <!-- MODAL DE EDIÇÃO PARA CADA USUÁRIO -->
+                    <div class="modal fade" id="editModal{{ u[0] }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content bg-dark text-white border-secondary">
+                                <div class="modal-header border-secondary">
+                                    <h5 class="modal-title">Editar Usuário: {{ u[1] }}</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form action="/usuarios/editar/{{ u[0] }}" method="POST">
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Novo Nível de Acesso</label>
+                                            <select name="nivel" class="form-select bg-secondary text-white border-0">
+                                                <option value="admin" {% if u[2] == 'admin' %}selected{% endif %}>Administrador</option>
+                                                <option value="gerente" {% if u[2] == 'gerente' %}selected{% endif %}>Gerente</option>
+                                                <option value="funcionario" {% if u[2] == 'funcionario' %}selected{% endif %}>Funcionário</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Alterar Senha (deixe vazio para manter)</label>
+                                            <input type="password" name="nova_senha" class="form-control bg-secondary text-white border-0">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-secondary">
+                                        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-warning">Salvar Alterações</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                     {% endfor %}
-
                 </tbody>
-
             </table>
-
         </div>
-
     </div>
-
 </div>
-
 {% endblock %}

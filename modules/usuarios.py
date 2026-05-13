@@ -159,3 +159,12 @@ def buscar_usuario_id(id_usuario):
     finally:
         if conn:
             conn.close()
+
+
+
+def atualizar_nivel(id_usuario, novo_nivel):
+    conn = conectar()
+    cur = conn.cursor()
+    cur.execute("UPDATE usuarios SET nivel = %s WHERE id = %s", (novo_nivel, id_usuario))
+    conn.commit()
+    conn.close()

@@ -8,26 +8,23 @@ def cadastrar_receita(id_produto, id_materia_prima, quantidade):
     con = None
     try:
         con = conectar()
-        cursor = con.cursor()
+        cur = con.cursor()
 
-        cursor.execute("""
-            SELECT id_receita
-            FROM receitas
-            WHERE id_produto = %s
-            AND id_materia_prima = %s
+        cur.execute("""
+            SELECT 1 FROM receitas
+            WHERE id_produto = %s AND id_materia_prima = %s
         """, (id_produto, id_materia_prima))
 
-        existe = cursor.fetchone()
+        existe = cur.fetchone()
 
         if existe:
-            cursor.execute("""
+            cur.execute("""
                 UPDATE receitas
                 SET quantidade_utilizada = %s
-                WHERE id_produto = %s
-                AND id_materia_prima = %s
+                WHERE id_produto = %s AND id_materia_prima = %s
             """, (float(quantidade), id_produto, id_materia_prima))
         else:
-            cursor.execute("""
+            cur.execute("""
                 INSERT INTO receitas (id_produto, id_materia_prima, quantidade_utilizada)
                 VALUES (%s, %s, %s)
             """, (id_produto, id_materia_prima, float(quantidade)))
@@ -36,7 +33,7 @@ def cadastrar_receita(id_produto, id_materia_prima, quantidade):
         return True
 
     except Exception as e:
-        print(f"Erro ao salvar receita: {e}")
+        print(f"Erro receita: {e}")
         return False
 
     finally:

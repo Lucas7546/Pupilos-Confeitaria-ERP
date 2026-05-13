@@ -42,13 +42,14 @@ def load_user(user_id):
     nivel = session.get("nivel")
     return User(user_id, nivel=nivel)
 
-# =========================
-# INICIALIZAÇÃO DE TABELAS (LOGS)
-# =========================
+# ========================================================
+# TABELA LOGS (FIX ORDEM)
+# ========================================================
 with app.app_context():
     try:
         conn = conectar()
         cur = conn.cursor()
+
         cur.execute("""
             CREATE TABLE IF NOT EXISTS logs (
                 id SERIAL PRIMARY KEY,
@@ -59,25 +60,26 @@ with app.app_context():
                 data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
+
         conn.commit()
         cur.close()
         conn.close()
-        print("✔ Tabelas de Logs verificadas")
+
+        print("✔ Logs verificados com sucesso")
+
     except Exception as e:
         print(f"Erro ao inicializar logs: {e}")
 
-# =========================
-# UTILITÁRIOS
-# =========================
+# ========================================================
+# LOGS (CORRIGIDO)
+# ========================================================
 def registrar_log(acao, modulo, detalhe="", usuario_manual=None):
-    usuario_log = usuario_manual or (
-        current_user.id if current_user.is_authenticated else "anonimo"
-    )
-    try:
-        registrar_log_db(usuario_log, acao, modulo, detalhe)
-    except Exception as e:
-        print(f"Erro log: {e}")
+    usuario_log = usuario_manual or (current_user.id if current_user.is_authenticated else "anonimo")
 
+    try:
+        usuarios.registrar_log_db(usuario_log, acao, modulo, detalhe)
+    except Exception as e:
+        print(f"ERRO AO SALVAR LOG: {e}")
 # =========================
 # ROTAS DE AUTENTICAÇÃO
 # =========================

@@ -15,7 +15,7 @@ import sqlite3
 
 app = Flask(__name__)
 
-app.secret_key = "confeitaria_secreta_2026"
+app.secret_key = os.getenv("SECRET_KEY", "uma-chave-padrao-muito-longa-e-segura")
 
 login_manager = LoginManager()
 login_manager.init_app(app)

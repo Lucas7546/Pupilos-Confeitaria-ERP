@@ -13,6 +13,30 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from modules import usuarios, vendas, estoque, produtos, receitas
 from modules.permissoes import acesso_requerido
 
+# SCRIPT DE CRIAÇÃO DE TABELAS (Execute uma vez para garantir)
+with app.app_context():
+    from modules.db import conectar
+    try:
+        conn = conectar()
+        cur = conn.cursor()
+        # Cria a tabela de logs caso ela não exista
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS logs (
+                id SERIAL PRIMARY KEY,
+                usuario TEXT,
+                acao TEXT,
+                modulo TEXT,
+                detalhe TEXT,
+                data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("Tabelas verificadas com sucesso!")
+    except Exception as e:
+        print(f"Erro ao inicializar tabelas: {e}")
+
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "pupilos-confeitaria-senha-segura-2026")
 
@@ -84,20 +108,23 @@ def logout():
 @app.route("/")
 @login_required
 def dashboard():
-    resumo_semanal = vendas.obter_resumo_periodo(dias=7)
-    resumo_mensal = vendas.obter_resumo_periodo(dias=30)
-    capacidade = produtos.calcular_capacidade_geral()
-    insumos = estoque.listar_materia_prima()
-    criticos = [i for i in insumos if i[4] <= i[3]]
+    # Comentamos as linhas que dão erro até você ajustar o modules/vendas.py
+    # resumo_semanal = vendas.obter_resumo_periodo(dias=7)
+    # resumo_mensal = vendas.obter_resumo_periodo(dias=30)
+    
+    # Criamos dados vazios só para a página carregar
+    semana = {"faturamento": 0, "vendas": 0}
+    mes = {"faturamento": 0, "vendas": 0}
+    capacidade = 0
+    criticos = []
 
     return render_template(
         "dashboard.html",
-        semana=resumo_semanal,
-        mes=resumo_mensal,
+        semana=semana,
+        mes=mes,
         capacidade=capacidade,
         criticos=criticos
     )
-
 # ========================================================
 # GESTÃO DE ESTOQUE
 # ========================================================

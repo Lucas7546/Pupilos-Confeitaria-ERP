@@ -68,5 +68,75 @@
         "acao": "LOGOUT",
         "modulo": "AUTH",
         "detalhe": "Usuário admin saiu"
+    },
+    {
+        "data": "2026-05-13 04:13:02",
+        "usuario": "amanda",
+        "acao": "LOGIN",
+        "modulo": "AUTH",
+        "detalhe": "Usuário amanda entrou no sistema"
+    },
+    {
+        "data": "2026-05-13 04:13:44",
+        "usuario": "amanda",
+        "acao": "LOGOUT",
+        "modulo": "AUTH",
+        "detalhe": "Usuário amanda saiu"
+    },
+    {
+        "data": "2026-05-13 04:13:51",
+        "usuario": "admin",
+        "acao": "LOGIN",
+        "modulo": "AUTH",
+        "detalhe": "Usuário admin entrou no sistema"
+    },
+    {
+        "data": "2026-05-13 04:27:19",
+        "usuario": "admin",
+        "acao": "ACESSO",
+        "modulo": "ESTOQUE",
+        "detalhe": "Usuário acessou o estoque"
+    },
+    {
+        "data": "2026-05-13 04:28:21",
+        "usuario": "admin",
+        "acao": "LOGOUT",
+        "modulo": "AUTH",
+        "detalhe": "Usuário admin saiu"
+    },
+    {
+        "data": "2026-05-13 04:28:28",
+        "usuario": "admin",
+        "acao": "LOGIN",
+        "modulo": "AUTH",
+        "detalhe": "Usuário admin entrou no sistema"
+    },
+    {
+        "data": "2026-05-13 04:28:36",
+        "usuario": "admin",
+        "acao": "LOGOUT",
+        "modulo": "AUTH",
+        "detalhe": "Usuário admin saiu"
+    },
+    {
+        "data": "2026-05-13 04:28:42",
+        "usuario": "amanda",
+        "acao": "LOGIN",
+        "modulo": "AUTH",
+        "detalhe": "Usuário amanda entrou no sistema"
+    },
+    {
+        "data": "2026-05-13 04:28:52",
+        "usuario": "amanda",
+        "acao": "ACESSO",
+        "modulo": "ESTOQUE",
+        "detalhe": "Usuário acessou o estoque"
+    },
+    {
+        "data": "2026-05-13 04:28:54",
+        "usuario": "amanda",
+        "acao": "LOGOUT",
+        "modulo": "AUTH",
+        "detalhe": "Usuário amanda saiu"
     }
 ]

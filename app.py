@@ -1,6 +1,9 @@
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask import Flask, render_template, request, redirect, flash
 from datetime import datetime
+from modules import usuarios
+from werkzeug.security import check_password_hash
+from modules.permissoes import acesso_requerido
 import json
 import pandas as pd
 import os
@@ -12,6 +15,8 @@ import modules.estoque as estoque
 import modules.produtos as produtos
 import modules.receitas as receitas
 import sqlite3
+from functools import wraps
+from flask import abort
 
 app = Flask(__name__)
 
@@ -128,11 +133,6 @@ class User(UserMixin):
         self.id = id
 
 
-usuarios = {
-    "admin": {
-        "senha": generate_password_hash("123456")
-    }
-}
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -141,31 +141,114 @@ def load_user(user_id):
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+
     if request.method == "POST":
-        username = request.form["username"]
-        senha = request.form["senha"]
 
-        usuario = usuarios.get(username)
+        username = request.form["username"].strip().lower()
+        senha = request.form["senha"].strip()
 
-        if usuario and check_password_hash(usuario["senha"], senha):
+        usuario = usuarios.buscar_usuario(username)
+
+        print("USUARIO RAW:", usuario)
+
+        if not usuario:
+            flash("Usuário não encontrado", "danger")
+            return render_template("login.html")
+
+        print("HASH DO BANCO:", usuario[2])
+        print("SENHA DIGITADA:", senha)
+
+        senha_ok = check_password_hash(usuario[2], senha)
+
+        print("CHECK:", senha_ok)
+
+        if senha_ok:
+
             user = User(username)
             login_user(user)
 
-            # AJUSTE AQUI: Passamos o username diretamente para a função
             registrar_log(
                 "LOGIN",
                 "AUTH",
-                f"Usuário {username} entrou no sistema",
-                usuario_manual=username  # <--- Adicione isso
+                f"Usuário {username} entrou no sistema"
             )
 
             flash("Login realizado com sucesso!", "success")
             return redirect("/")
 
-        else:
-            flash("Usuário ou senha inválidos", "danger")
+        flash("Usuário ou senha inválidos", "danger")
 
     return render_template("login.html")
+
+
+
+@app.route("/reset-senha", methods=["POST"])
+@login_required
+def reset_senha():
+
+    nova_senha = request.form["senha"].strip()
+
+    if len(nova_senha) < 6:
+
+        flash(
+            "Senha muito curta (mínimo 6)",
+            "danger"
+        )
+
+        return redirect("/cadastro")
+
+    usuarios.alterar_senha(
+        current_user.id,
+        nova_senha
+    )
+
+    registrar_log(
+        "RESET SENHA",
+        "AUTH",
+        f"Usuário {current_user.id} alterou senha"
+    )
+
+    flash(
+        "Senha atualizada com sucesso!",
+        "success"
+    )
+
+    return redirect("/cadastro")
+
+@app.route("/recuperar-senha")
+def recuperar_senha_aviso():
+
+    return """
+    <div style="background:#0f172a; color:white; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif;">
+
+        <h2 style="color:#f59e0b;">
+            Esqueceu sua senha?
+        </h2>
+
+        <p>
+            Por questões de segurança, a recuperação automática está desativada.
+        </p>
+
+        <p>
+            Solicite o reset ao administrador do sistema.
+        </p>
+
+        <br>
+
+        <a href="/login"
+           style="
+                color:#f59e0b;
+                text-decoration:none;
+                border:1px solid #f59e0b;
+                padding:10px 20px;
+                border-radius:8px;
+           ">
+            Voltar para o Login
+        </a>
+
+    </div>
+    """
+
 
 @app.route("/logout")
 @login_required
@@ -184,46 +267,7 @@ def logout():
     return redirect("/login")
 
 
-@app.route("/reset-senha", methods=["POST"])
-@login_required
-def reset_senha():
 
-    nova_senha = request.form["senha"].strip()
-
-    usuario = usuarios.get(current_user.id)
-
-    if not usuario:
-        flash("Usuário não encontrado", "danger")
-        return redirect("/cadastro")
-
-    if len(nova_senha) < 6:
-        flash("Senha muito curta (mínimo 6)", "danger")
-        return redirect("/cadastro")
-
-    usuario["senha"] = generate_password_hash(nova_senha)
-
-    registrar_log(
-        "RESET SENHA",
-        "AUTH",
-        f"Usuário {current_user.id} alterou a senha"
-    )
-
-    flash("Senha atualizada com sucesso!", "success")
-
-    return redirect("/cadastro")
-
-
-@app.route("/recuperar-senha")
-def recuperar_senha_aviso():
-    return """
-    <div style="background:#0f172a; color:white; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif;">
-        <h2 style="color:#f59e0b;">Esqueceu sua senha?</h2>
-        <p>Por questões de segurança, a recuperação automática está desativada.</p>
-        <p>Solicite o reset ao administrador do sistema.</p>
-        <br>
-        <a href="/login" style="color:#f59e0b; text-decoration:none; border: 1px solid #f59e0b; padding: 10px 20px; border-radius: 8px;">Voltar para o Login</a>
-    </div>
-    """
 
 @app.route("/logs")
 @login_required
@@ -252,6 +296,7 @@ def obter_ultimos_logs(limite=10):
 
 @app.route('/auditoria')
 @login_required
+@acesso_requerido("auditoria")
 def auditoria():
     try:
         conexao = sqlite3.connect("data/confeitaria.db")
@@ -283,17 +328,30 @@ def auditoria():
 
 @app.route("/")
 @login_required
+@acesso_requerido("vendas")  # ou "dashboard" se quiser separar depois
 def dashboard():
-
+    # Obtém os dados dos seus módulos
     resumo_semanal = vendas.obter_resumo_periodo(dias=7)
-
     resumo_mensal = vendas.obter_resumo_periodo(dias=30)
-
     capacidade = produtos.calcular_capacidade_geral()
-
     insumos = estoque.listar_materia_prima()
 
+    # Filtra os insumos críticos (estoque atual <= estoque mínimo)
     criticos = [i for i in insumos if i[4] <= i[3]]
+
+    # --- PROTEÇÃO PARA O GRÁFICO ---
+    # Se a sua função 'obter_resumo_periodo' não retornar as listas para o gráfico,
+    # nós as criamos aqui para evitar erro de tela branca no navegador.
+    if not isinstance(resumo_semanal, dict):
+        resumo_semanal = {'faturamento': 0, 'lucro': 0, 'total_vendas': 0}
+
+    if 'valores_grafico' not in resumo_semanal:
+        # Substitua por dados reais do banco no futuro
+        resumo_semanal['valores_grafico'] = [0, 0, 0, 0, 0, 0, 0]
+    
+    if 'dias_grafico' not in resumo_semanal:
+        resumo_semanal['dias_grafico'] = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+    # -------------------------------
 
     return render_template(
         "dashboard.html",
@@ -302,13 +360,13 @@ def dashboard():
         capacidade=capacidade,
         criticos=criticos
     )
-
 # ========================================================
 # 2. ESTOQUE (ATUALIZADO COM LOG + EDIT)
 # ========================================================
 
 @app.route("/estoque")
 @login_required
+@acesso_requerido("estoque")
 def pagina_estoque():
 
     try:
@@ -412,6 +470,7 @@ def editar_estoque(id_mp):
 
 @app.route("/cadastro")
 @login_required
+@acesso_requerido("cadastro")
 def pagina_cadastro():
 
     lista_produtos = produtos.buscar_produto_por_nome("")
@@ -563,6 +622,7 @@ def vincular_receita():
 
 @app.route("/vendas")
 @login_required
+@acesso_requerido("vendas")
 def pagina_vendas():
 
     lista_produtos = produtos.buscar_produto_por_nome("")
@@ -783,6 +843,7 @@ def pagina_precificacao():
 
 @app.route("/financeiro")
 @login_required
+@acesso_requerido("financeiro")
 def pagina_financeiro():
 
     faturamento_mes = vendas.obter_resumo_periodo(
@@ -1082,21 +1143,163 @@ def confirmar_importacao():
         return redirect("/importacoes")
     
 
+
+
 # ========================================================
-# AJUSTES PRECISOS
+# USUARIO LOGADO
 # ========================================================
 
-    
+def usuario_logado():
+
+    return usuarios.buscar_usuario(
+        current_user.id
+    )
 
 
+# ========================================================
+# PERMISSÃO ADMIN
+# ========================================================
+
+def admin_required(f):
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+
+        usuario = usuario_logado()
+
+        if not usuario:
+            abort(403)
+
+        nivel = usuario[3]
+
+        if nivel != "admin":
+            abort(403)
+
+        return f(*args, **kwargs)
+
+    return decorated_function
 
 
+@app.route("/usuarios")
+@login_required
+@acesso_requerido("usuarios")
+def pagina_usuarios():
+
+    lista = usuarios.listar_usuarios()
+
+    return render_template(
+        "usuarios.html",
+        usuarios_lista=lista
+    )
+# ========================================================
+# CRIAR USUARIO
+# ========================================================
+
+@app.route("/criar-usuario", methods=["POST"])
+@login_required
+@admin_required
+def criar_usuario():
+
+    try:
+
+        username = request.form["username"].strip()
+        senha = request.form["senha"].strip()
+        nivel = request.form["nivel"]
+
+        if len(senha) < 6:
+
+            flash(
+                "Senha precisa ter no mínimo 6 caracteres",
+                "danger"
+            )
+
+            return redirect("/usuarios")
+
+        usuarios.criar_usuario(
+            username,
+            senha,
+            nivel
+        )
+
+        registrar_log(
+            "CRIAR USUARIO",
+            "USUARIOS",
+            f"Usuário {username} criado"
+        )
+
+        flash(
+            "Usuário criado com sucesso!",
+            "success"
+        )
+
+    except Exception as e:
+
+        flash(
+            f"Erro: {e}",
+            "danger"
+        )
+
+    return redirect("/usuarios")
 
 
+# ========================================================
+# BLOQUEAR / LIBERAR
+# ========================================================
 
+@app.route("/toggle-usuario/<int:id_usuario>")
+@login_required
+@admin_required
+def toggle_usuario(id_usuario):
 
+    usuario = usuarios.buscar_usuario_id(id_usuario)
 
+    if not usuario:
 
+        flash(
+            "Usuário não encontrado",
+            "danger"
+        )
+
+        return redirect("/usuarios")
+
+    novo_status = 0 if usuario[4] == 1 else 1
+
+    usuarios.alterar_status(
+        id_usuario,
+        novo_status
+    )
+
+    registrar_log(
+        "ALTERAR STATUS",
+        "USUARIOS",
+        f"Usuário ID {id_usuario} status {novo_status}"
+    )
+
+    flash(
+        "Status atualizado!",
+        "success"
+    )
+
+    return redirect("/usuarios")
+
+# ========================================================
+# codigos de ajustes
+# ========================================================
+
+@app.context_processor
+def inject_user():
+
+    usuario = None
+
+    if current_user.is_authenticated:
+
+        usuario = usuarios.buscar_usuario(
+            current_user.id
+        )
+
+    return dict(
+        usuario_logado=usuario
+    )
 # ========================================================
 # SERVIDOR
 # ========================================================

@@ -1,6 +1,103 @@
 from datetime import datetime
 from modules.db import conectar
+# ===================================================
+# RESUMO PARA O DASHBOARD (A que estava faltando!)
+# ===================================================
+def obter_resumo_periodo(dias=7):
+    con = None
+    try:
+        con = conectar()
+        cursor = con.cursor()
+        
+        # Define a data de início (hoje menos X dias)
+        data_inicio = datetime.now() - timedelta(days=dias)
 
+        cursor.execute("""
+            SELECT 
+                COALESCE(SUM(valor_total), 0) as faturamento,
+                COUNT(id_venda) as total_vendas
+            FROM vendas
+            WHERE data_venda >= %s
+        """, (data_inicio,))
+
+        resultado = cursor.fetchone()
+        return {
+            "faturamento": float(resultado[0]),
+            "vendas": int(resultado[1])
+        }
+    except Exception as e:
+        print(f"Erro ao obter resumo: {e}")
+        return {"faturamento": 0.0, "vendas": 0}
+    finally:
+        if con:
+            con.close()
+
+# ===================================================
+# REGISTRAR VENDA
+# ===================================================
+def registrar_venda(id_produto, quantidade, valor_total, metodo_pagamento):
+    con = None
+    try:
+        con = conectar()
+        cursor = con.cursor()
+
+        # 1. Insere a venda
+        cursor.execute("""
+            INSERT INTO vendas (id_produto, quantidade, valor_total, metodo_pagamento, data_venda)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id_venda
+        """, (id_produto, quantidade, valor_total, metodo_pagamento, datetime.now()))
+        
+        id_venda = cursor.fetchone()[0]
+
+        # 2. Busca os ingredientes para dar baixa no estoque
+        cursor.execute("""
+            SELECT id_materia_prima, quantidade_utilizada
+            FROM receitas
+            WHERE id_produto = %s
+        """, (id_produto,))
+        
+        ingredientes = cursor.fetchall()
+
+        # 3. Registra a saída de cada matéria-prima
+        for id_mp, qtd_receita in ingredientes:
+            qtd_total_saida = float(qtd_receita) * float(quantidade)
+            
+            cursor.execute("""
+                INSERT INTO movimentacao_estoque (id_materia_prima, tipo, quantidade, data_movimentacao)
+                VALUES (%s, 'saida', %s, %s)
+            """, (id_mp, qtd_total_saida, datetime.now()))
+
+        con.commit()
+        return True
+    except Exception as e:
+        if con:
+            con.rollback()
+        print(f"Erro ao registrar venda: {e}")
+        return False
+    finally:
+        if con:
+            con.close()
+
+# ===================================================
+# LISTAR VENDAS RECENTES
+# ===================================================
+def listar_vendas_recentes(limite=10):
+    con = None
+    try:
+        con = conectar()
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT v.id_venda, p.nome, v.quantidade, v.valor_total, v.data_venda
+            FROM vendas v
+            JOIN produtos p ON v.id_produto = p.id_produto
+            ORDER BY v.data_venda DESC
+            LIMIT %s
+        """, (limite,))
+        return cursor.fetchall()
+    finally:
+        if con:
+            con.close()
 # ===================================================
 # VALIDA ESTOQUE
 # ===================================================

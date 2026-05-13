@@ -10,11 +10,12 @@ def buscar_usuario(username):
         conn = conectar()
         cursor = conn.cursor()
 
+        # Removi o "AND ativo = 1" para permitir que o sistema identifique 
+        # usuários bloqueados e mande a mensagem correta no login
         cursor.execute("""
             SELECT id_usuario, username, senha, nivel, ativo, data_cadastro
             FROM usuarios
             WHERE username = %s
-            AND ativo = 1
         """, (username,))
 
         usuario = cursor.fetchone()
@@ -41,11 +42,16 @@ def criar_usuario(username, senha, nivel="funcionario"):
         if cursor.fetchone():
             raise Exception("Usuário já existe")
 
-        senha_hash = generate_password_hash(senha)
+        # Se a senha já vier com hash do app.py, não gera de novo. 
+        # Se vier texto puro, gera o hash.
+        if not senha.startswith('pbkdf2:sha256:'):
+            senha_hash = generate_password_hash(senha)
+        else:
+            senha_hash = senha
 
         cursor.execute("""
-            INSERT INTO usuarios (username, senha, nivel)
-            VALUES (%s, %s, %s)
+            INSERT INTO usuarios (username, senha, nivel, ativo)
+            VALUES (%s, %s, %s, 1)
         """, (username, senha_hash, nivel.lower()))
 
         conn.commit()
@@ -59,47 +65,63 @@ def criar_usuario(username, senha, nivel="funcionario"):
             conn.close()
 
 # =========================================================
-# ALTERAR SENHA
+# GESTÃO DE LOGS (Auditoria no Postgres)
 # =========================================================
-def alterar_senha(username, nova_senha):
+def registrar_log_db(usuario, acao, modulo, detalhe):
     conn = None
     try:
         conn = conectar()
         cursor = conn.cursor()
-
-        senha_hash = generate_password_hash(nova_senha)
-
         cursor.execute("""
-            UPDATE usuarios
-            SET senha = %s
-            WHERE username = %s
-        """, (senha_hash, username))
-
+            INSERT INTO logs (usuario, acao, modulo, detalhe)
+            VALUES (%s, %s, %s, %s)
+        """, (usuario, acao, modulo, detalhe))
         conn.commit()
         cursor.close()
-        return True
     except Exception as e:
-        print(f"Erro ao alterar senha: {e}")
-        return False
+        print(f"Erro ao registrar log no banco: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+def listar_logs_auditoria(limite=100):
+    conn = None
+    try:
+        conn = conectar()
+        # Usamos DictCursor para que o HTML possa acessar por log['usuario']
+        from psycopg2.extras import DictCursor
+        cursor = conn.cursor(cursor_factory=DictCursor)
+        
+        cursor.execute("""
+            SELECT usuario, acao, modulo, detalhe, data 
+            FROM logs 
+            ORDER BY data DESC 
+            LIMIT %s
+        """, (limite,))
+        
+        logs = cursor.fetchall()
+        cursor.close()
+        return logs
+    except Exception as e:
+        print(f"Erro ao listar auditoria: {e}")
+        return []
     finally:
         if conn:
             conn.close()
 
 # =========================================================
-# LISTAR USUÁRIOS (Painel Admin)
+# LISTAR USUÁRIOS E STATUS
 # =========================================================
 def listar_usuarios():
     conn = None
     try:
         conn = conectar()
         cursor = conn.cursor()
-
         cursor.execute("""
             SELECT id_usuario, username, nivel, ativo, data_cadastro
             FROM usuarios
             ORDER BY data_cadastro DESC
         """)
-
         dados = cursor.fetchall()
         cursor.close()
         return dados
@@ -110,21 +132,16 @@ def listar_usuarios():
         if conn:
             conn.close()
 
-# =========================================================
-# ALTERAR STATUS USUÁRIO (Ativar/Desativar)
-# =========================================================
 def alterar_status(id_usuario, ativo):
     conn = None
     try:
         conn = conectar()
         cursor = conn.cursor()
-
         cursor.execute("""
             UPDATE usuarios
             SET ativo = %s
             WHERE id_usuario = %s
         """, (ativo, id_usuario))
-
         conn.commit()
         cursor.close()
         return True
@@ -135,21 +152,16 @@ def alterar_status(id_usuario, ativo):
         if conn:
             conn.close()
 
-# =========================================================
-# BUSCAR POR ID
-# =========================================================
 def buscar_usuario_id(id_usuario):
     conn = None
     try:
         conn = conectar()
         cursor = conn.cursor()
-
         cursor.execute("""
-            SELECT id_usuario, username, nivel, ativo, data_cadastro
+            SELECT id_usuario, username, senha, nivel, ativo, data_cadastro
             FROM usuarios
             WHERE id_usuario = %s
         """, (id_usuario,))
-
         usuario = cursor.fetchone()
         cursor.close()
         return usuario
@@ -160,11 +172,20 @@ def buscar_usuario_id(id_usuario):
         if conn:
             conn.close()
 
-
-
 def atualizar_nivel(id_usuario, novo_nivel):
-    conn = conectar()
-    cur = conn.cursor()
-    cur.execute("UPDATE usuarios SET nivel = %s WHERE id = %s", (novo_nivel, id_usuario))
-    conn.commit()
-    conn.close()
+    conn = None
+    try:
+        conn = conectar()
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE usuarios 
+            SET nivel = %s 
+            WHERE id_usuario = %s
+        """, (novo_nivel.lower(), id_usuario))
+        conn.commit()
+        cursor.close()
+    except Exception as e:
+        print(f"Erro ao atualizar nível: {e}")
+    finally:
+        if conn:
+            conn.close()

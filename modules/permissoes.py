@@ -4,9 +4,10 @@ from flask_login import current_user
 from modules import usuarios
 
 # Hierarquia de acesso da Pupilos Confeitaria
+# O nome aqui deve bater exatamente com o que está no Banco de Dados
 PERMISSOES = {
-    "admin": ["usuarios", "estoque", "vendas", "financeiro", "cadastro", "auditoria"],
-    "gerente": ["estoque", "vendas", "financeiro", "cadastro", "auditoria"],
+    "admin": ["usuarios", "estoque", "vendas", "financeiro", "cadastro", "auditoria", "produtos"],
+    "gerente": ["estoque", "vendas", "financeiro", "cadastro", "auditoria", "produtos"],
     "funcionario": ["estoque", "vendas"],
     "bloqueado": []
 }
@@ -16,7 +17,7 @@ def usuario_logado():
     if not current_user.is_authenticated:
         return None
     
-    # O current_user.id geralmente vem do Flask-Login
+    # Busca os dados no banco usando o ID (username) salvo na sessão
     return usuarios.buscar_usuario_id(current_user.id)
 
 def pode_acessar(modulo):
@@ -26,25 +27,36 @@ def pode_acessar(modulo):
     if not usuario:
         return False
 
-    # No Postgres, garantimos que o nível seja tratado em minúsculo para bater com o dicionário
-    # usuario[2] ou usuario[3] dependendo da ordem do seu SELECT em usuarios.py
-    # Com base no nosso script de criação: 0:id, 1:username, 2:senha, 3:nivel
-    try:
-        nivel = str(usuario[3]).lower()
-    except (IndexError, AttributeError):
-        return False
+    # ========================================================
+    # REGRA DE OURO: SEGURANÇA MESTRE
+    # Se o username for 'admin', ele SEMPRE terá nível 'admin'.
+    # Isso resolve o problema de o banco de dados estar vazio ou com nível errado.
+    # ========================================================
+    if str(usuario[1]).lower() == 'admin':
+        nivel = 'admin'
+    else:
+        try:
+            # Tenta pegar o nível da coluna 3 do banco de dados
+            nivel = str(usuario[3]).lower() if usuario[3] else "bloqueado"
+        except (IndexError, AttributeError, TypeError):
+            # Se der qualquer erro na leitura do banco, define como bloqueado por segurança
+            nivel = "bloqueado"
 
-    permissoes = PERMISSOES.get(nivel, [])
+    # Pega a lista de módulos permitidos para o nível identificado
+    modulos_permitidos = PERMISSOES.get(nivel, [])
 
-    return modulo in permissoes
+    # Retorna True se o módulo da rota estiver na lista do usuário
+    return modulo in modulos_permitidos
 
 def acesso_requerido(modulo):
     """Decorator para proteger as rotas do Flask."""
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            # Se o usuário não tiver permissão, o Flask interrompe com erro 403 (Proibido)
+            # Se a verificação de segurança falhar, retorna Erro 403 (Proibido)
             if not pode_acessar(modulo):
+                # Log de tentativa de acesso negado (opcional)
+                print(f"Acesso NEGADO para o módulo: {modulo}")
                 abort(403)
             return f(*args, **kwargs)
         return wrapper

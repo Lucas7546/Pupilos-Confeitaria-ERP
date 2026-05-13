@@ -26,7 +26,7 @@ app.secret_key = os.getenv("SECRET_KEY", "pupilos-confeitaria-123")
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
-
+print(f"DEBUG: O SITE ESTA CONECTADO EM: {os.environ.get('DATABASE_URL')}")
 # ========================================================
 # LOGS (Postgres + Backup JSON)
 # ========================================================

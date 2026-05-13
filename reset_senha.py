@@ -7,11 +7,11 @@ conn = psycopg2.connect(os.environ["DATABASE_URL"], sslmode='require')
 cursor = conn.cursor()
 
 # 1. Defina aqui a senha que VOCÊ quer usar
-senha_texto_claro = "741963" 
+senha_texto_claro = "754620" 
 hash_da_senha = generate_password_hash(senha_texto_claro)
 
 # 2. O 'WHERE' garante que APENAS o admin seja afetado
-usuario_alvo = "amanda"
+usuario_alvo = "admin"
 
 cursor.execute("""
     UPDATE usuarios 

@@ -1300,6 +1300,18 @@ def inject_user():
     return dict(
         usuario_logado=usuario
     )
+
+@app.route("/criar-admin-teste")
+def criar_admin_teste():
+    from modules import usuarios
+
+    usuarios.criar_usuario(
+        "admin",
+        "123456",
+        "admin"
+    )
+
+    return "Admin criado com sucesso!"
 # ========================================================
 # SERVIDOR
 # ========================================================
@@ -1314,3 +1326,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=5000
     )
+
+    

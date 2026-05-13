@@ -1,6 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from modules.db import conectar
-from datetime import datetime, timedelta  # <--- Adicione o timedelta aqui
 
 # ===================================================
 # RESUMO PARA O DASHBOARD (A que estava faltando!)

@@ -1,7 +1,8 @@
 from modules.db import conectar
 
+
 # =========================================================
-# CADASTRAR / ATUALIZAR INGREDIENTE NA RECEITA
+# CADASTRAR / ATUALIZAR RECEITA
 # =========================================================
 def cadastrar_receita(id_produto, id_materia_prima, quantidade):
     con = None
@@ -44,7 +45,7 @@ def cadastrar_receita(id_produto, id_materia_prima, quantidade):
 
 
 # =========================================================
-# LISTAR INGREDIENTES DE UM PRODUTO
+# LISTAR RECEITA COMPLETA
 # =========================================================
 def listar_itens_receita(id_produto):
     con = None
@@ -97,12 +98,12 @@ def validar_estoque_suficiente(id_produto, quantidade_venda):
         ingredientes = cursor.fetchall()
 
         if not ingredientes:
-            return True  # produto sem receita
+            return True
 
         for id_mp, qtd_necessaria in ingredientes:
-            estoque_atual = calcular_estoque(id_mp)
+            estoque_atual = calcular_estoque(id_mp) or 0
 
-            if estoque_atual < (qtd_necessaria * quantidade_venda):
+            if estoque_atual < (float(qtd_necessaria) * float(quantidade_venda)):
                 return False
 
         return True
@@ -117,7 +118,7 @@ def validar_estoque_suficiente(id_produto, quantidade_venda):
 
 
 # =========================================================
-# CALCULAR CUSTO TOTAL DO PRODUTO
+# CALCULAR CUSTO TOTAL DA RECEITA
 # =========================================================
 def calcular_custo_receita(id_produto):
     con = None
@@ -134,6 +135,9 @@ def calcular_custo_receita(id_produto):
         """, (id_produto,))
 
         linhas = cursor.fetchall()
+
+        if not linhas:
+            return 0.0
 
         total = 0.0
 
@@ -152,10 +156,7 @@ def calcular_custo_receita(id_produto):
 
 
 # =========================================================
-# LISTAR INGREDIENTES SIMPLES (para importações)
+# LISTAGEM SIMPLES (IMPORTAÇÃO / FRONT)
 # =========================================================
 def listar_ingredientes_por_produto(id_produto):
-    """
-    Usado em importação/preview
-    """
     return listar_itens_receita(id_produto)

@@ -6,20 +6,48 @@ from datetime import datetime
 from functools import wraps
 
 from flask import Flask, render_template, request, redirect, flash, abort, session
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_login import (
+    LoginManager, UserMixin, login_user,
+    logout_user, login_required, current_user
+)
 from werkzeug.security import check_password_hash, generate_password_hash
 
-# Importação dos seus módulos (Certifique-se que todos usam psycopg2)
+# módulos
 from modules import usuarios, vendas, estoque, produtos, receitas
 from modules.permissoes import acesso_requerido
+from modules.usuarios import registrar_log_db
+from modules.db import conectar
 
-# SCRIPT DE CRIAÇÃO DE TABELAS (Execute uma vez para garantir)
+# =========================
+# APP
+# =========================
+app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY", "pupilos-confeitaria-senha-segura-2026")
+
+# =========================
+# LOGIN MANAGER
+# =========================
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
+
+class User(UserMixin):
+    def __init__(self, id, nivel=None):
+        self.id = id
+        self.nivel = nivel
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User(user_id)
+
+# =========================
+# CRIAR TABELA LOGS (SAFE)
+# =========================
 with app.app_context():
-    from modules.db import conectar
     try:
         conn = conectar()
         cur = conn.cursor()
-        # Cria a tabela de logs caso ela não exista
+
         cur.execute("""
             CREATE TABLE IF NOT EXISTS logs (
                 id SERIAL PRIMARY KEY,
@@ -30,47 +58,31 @@ with app.app_context():
                 data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
+
         conn.commit()
         cur.close()
         conn.close()
-        print("Tabelas verificadas com sucesso!")
+        print("✔ Logs verificados")
     except Exception as e:
-        print(f"Erro ao inicializar tabelas: {e}")
+        print(f"Erro logs: {e}")
 
-app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "pupilos-confeitaria-senha-segura-2026")
+# =========================
 
-# Configuração do Flask-Login
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = "login"
-
-class User(UserMixin):
-    def __init__(self, id):
-        self.id = id
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User(user_id)
-
-# ========================================================
-# SISTEMA DE LOGS (Migrado para PostgreSQL via módulo usuarios)
-# ========================================================
-
+# =========================
+# LOG UNIFICADO (PADRÃO)
+# =========================
 def registrar_log(acao, modulo, detalhe="", usuario_manual=None):
-    """Registra atividades no banco de dados e no console para depuração."""
-    usuario_log = usuario_manual or (current_user.id if current_user.is_authenticated else "anonimo")
-    
+    usuario_log = usuario_manual or (
+        current_user.id if current_user.is_authenticated else "anonimo"
+    )
     try:
-        # Usando a função que você já deve ter no seu módulo de banco de dados
-        usuarios.registrar_log_db(usuario_log, acao, modulo, detalhe)
+        registrar_log_db(usuario_log, acao, modulo, detalhe)
     except Exception as e:
-        print(f"ERRO CRÍTICO AO SALVAR LOG: {e}")
+        print(f"Erro log: {e}")
 
-# ========================================================
-# ROTAS DE AUTENTICAÇÃO
-# ========================================================
-
+# =========================
+# LOGIN
+# =========================
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -79,45 +91,56 @@ def login():
 
         usuario = usuarios.buscar_usuario(username)
 
-        if usuario and check_password_hash(usuario[2], senha):
-            # Verifica se está ativo (assumindo que usuario[4] é o status)
-            if len(usuario) > 4 and usuario[4] == 0:
-                flash("Usuário bloqueado. Fale com o administrador.", "danger")
-                return render_template("login.html")
+        if not usuario:
+            flash("Usuário ou senha inválidos", "danger")
+            return render_template("login.html")
 
-            user = User(username)
-            login_user(user)
-            registrar_log("LOGIN", "AUTH", f"Usuário {username} logou")
-            flash("Bem-vindo(a)!", "success")
-            return redirect("/")
-        
-        flash("Usuário ou senha inválidos", "danger")
+        id_user, user_db, senha_db, nivel, ativo = usuario[:5]
+
+        if ativo == 0:
+            flash("Usuário bloqueado", "danger")
+            return render_template("login.html")
+
+        if not check_password_hash(senha_db, senha):
+            flash("Usuário ou senha inválidos", "danger")
+            return render_template("login.html")
+
+        user = User(username)
+        login_user(user)
+
+        session["nivel"] = nivel
+        session["user_id"] = id_user
+
+        registrar_log("LOGIN", "AUTH", f"{username} logou")
+
+        flash("Bem-vindo!", "success")
+        return redirect("/")
+
     return render_template("login.html")
 
+# =========================
+# LOGOUT
+# =========================
 @app.route("/logout")
 @login_required
 def logout():
-    registrar_log("LOGOUT", "AUTH", f"Usuário {current_user.id} saiu")
+    registrar_log("LOGOUT", "AUTH", f"{current_user.id} saiu")
     logout_user()
     return redirect("/login")
 
-# ========================================================
-# DASHBOARD
-# ========================================================
 
+# =========================
+# DASHBOARD
+# =========================
 @app.route("/")
 @login_required
 def dashboard():
     try:
-        # Agora que o vendas.py tem a função, buscamos os dados reais
-        resumo_semanal = vendas.obter_resumo_periodo(dias=7)
-        resumo_mensal = vendas.obter_resumo_periodo(dias=30)
-        
-        # Outras métricas
+        resumo_semanal = vendas.obter_resumo_periodo(7)
+        resumo_mensal = vendas.obter_resumo_periodo(30)
         capacidade = produtos.calcular_capacidade_geral()
         insumos = estoque.listar_materia_prima()
-        
-        # Filtra itens onde o estoque atual (i[4]) é menor ou igual ao mínimo (i[3])
+
         criticos = [i for i in insumos if float(i[4]) <= float(i[3])]
 
         return render_template(
@@ -128,25 +151,17 @@ def dashboard():
             criticos=criticos
         )
     except Exception as e:
-        print(f"Erro no Dashboard: {e}")
-        # Se algo der errado, envia dados zerados para não travar a tela
-        return render_template(
-            "dashboard.html",
-            semana={"faturamento": 0, "vendas": 0},
-            mes={"faturamento": 0, "vendas": 0},
-            capacidade=0,
-            criticos=[]
-        )
-# ========================================================
-# GESTÃO DE ESTOQUE
-# ========================================================
+        print(e)
+        return render_template("dashboard.html")
 
+# =========================
+# ESTOQUE
+# =========================
 @app.route("/estoque")
 @login_required
 @acesso_requerido("estoque")
-def pagina_estoque():
-    dados = estoque.listar_materia_prima()
-    return render_template("estoque.html", materias=dados)
+def estoque_page():
+    return render_template("estoque.html", materias=estoque.listar_materia_prima())
 
 @app.route("/compras")
 @login_required
@@ -171,14 +186,13 @@ def registrar_compra():
         flash(f"Erro: {e}", "danger")
     return redirect("/estoque")
 
-# ========================================================
+# =========================
 # VENDAS
-# ========================================================
-
+# =========================
 @app.route("/vendas")
 @login_required
 @acesso_requerido("vendas")
-def pagina_vendas():
+def vendas_page():
     return render_template("vendas.html", produtos=produtos.buscar_produto_por_nome(""))
 
 @app.route("/vender", methods=["POST"])
@@ -187,20 +201,24 @@ def vender():
     try:
         id_p = int(request.form["id_produto"])
         qtd = int(request.form["quantidade"])
-        
-        produto_info = next((p for p in produtos.buscar_produto_por_nome("") if p[0] == id_p), None)
-        if not produto_info:
+
+        produto = next((p for p in produtos.buscar_produto_por_nome("") if p[0] == id_p), None)
+
+        if not produto:
             flash("Produto não encontrado", "danger")
             return redirect("/vendas")
 
-        sucesso, mensagem = vendas.vender_produto(id_p, qtd, produto_info[2])
+        sucesso, msg = vendas.vender_produto(id_p, qtd, produto[2])
+
         if sucesso:
-            registrar_log("VENDA", "VENDAS", f"Produto {id_p} | Qtd {qtd}")
-            flash(mensagem, "success")
+            registrar_log("VENDA", "VENDAS", f"{id_p} qtd {qtd}")
+            flash(msg, "success")
         else:
-            flash(mensagem, "danger")
+            flash(msg, "danger")
+
     except Exception as e:
-        flash(f"Erro: {e}", "danger")
+        flash(str(e), "danger")
+
     return redirect("/vendas")
 
 # ========================================================
@@ -233,15 +251,15 @@ def auditoria():
     logs_data = usuarios.listar_logs_auditoria(100)
     return render_template('auditoria.html', logs=logs_data)
 
-# ========================================================
-# GESTÃO DE USUÁRIOS (SÓ ADMIN)
-# ========================================================
-
+# =========================
+# USUÁRIOS
+# =========================
 @app.route("/usuarios")
 @login_required
 @acesso_requerido("usuarios")
-def pagina_usuarios():
+def usuarios_page():
     return render_template("usuarios.html", usuarios_lista=usuarios.listar_usuarios())
+
 
 @app.route("/criar-usuario", methods=["POST"])
 @login_required

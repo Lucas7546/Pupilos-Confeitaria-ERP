@@ -1,65 +1,72 @@
 from modules.db import conectar
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
+from psycopg2.extras import DictCursor
 
-# =========================================================
-# BUSCAR USUÁRIO (Para Login)
-# =========================================================
+
+# =========================
+# BUSCAR USUÁRIO
+# =========================
 def buscar_usuario(username):
     conn = None
     try:
         conn = conectar()
-        cursor = conn.cursor()
+        cursor = conn.cursor(cursor_factory=DictCursor)
 
-        # Removi o "AND ativo = 1" para permitir que o sistema identifique 
-        # usuários bloqueados e mande a mensagem correta no login
         cursor.execute("""
-            SELECT id_usuario, username, senha, nivel, ativo, data_cadastro
+            SELECT id_usuario, username, senha, nivel, ativo
             FROM usuarios
             WHERE username = %s
-        """, (username,))
+        """, (username.strip(),))
 
-        usuario = cursor.fetchone()
-        cursor.close()
-        return usuario
+        return cursor.fetchone()
+
     except Exception as e:
         print(f"Erro ao buscar usuário: {e}")
         return None
+
     finally:
         if conn:
             conn.close()
 
-# =========================================================
-# CRIAR USUÁRIO
-# =========================================================
+
+# =========================
+# CRIAR USUÁRIO (FORÇADO PADRÃO LIMPO)
+# =========================
 def criar_usuario(username, senha, nivel="funcionario"):
     conn = None
     try:
         conn = conectar()
         cursor = conn.cursor()
 
-        # Verifica se já existe
-        cursor.execute("SELECT id_usuario FROM usuarios WHERE username = %s", (username,))
+        username = username.strip()
+        nivel = nivel.strip().lower()
+
+        # valida nível
+        if nivel not in ["admin", "gerente", "funcionario"]:
+            raise Exception("Nível inválido")
+
+        # checar duplicado
+        cursor.execute("""
+            SELECT id_usuario FROM usuarios WHERE username = %s
+        """, (username,))
+
         if cursor.fetchone():
             raise Exception("Usuário já existe")
 
-        # Se a senha já vier com hash do app.py, não gera de novo. 
-        # Se vier texto puro, gera o hash.
-        if not senha.startswith('pbkdf2:sha256:'):
-            senha_hash = generate_password_hash(senha)
-        else:
-            senha_hash = senha
+        senha_hash = generate_password_hash(senha)
 
         cursor.execute("""
             INSERT INTO usuarios (username, senha, nivel, ativo)
             VALUES (%s, %s, %s, 1)
-        """, (username, senha_hash, nivel.lower()))
+        """, (username, senha_hash, nivel))
 
         conn.commit()
-        cursor.close()
         return True
+
     except Exception as e:
         print(f"Erro ao criar usuário: {e}")
-        raise e
+        return False
+
     finally:
         if conn:
             conn.close()
@@ -109,47 +116,69 @@ def listar_logs_auditoria(limite=100):
         if conn:
             conn.close()
 
-# =========================================================
-# LISTAR USUÁRIOS E STATUS
-# =========================================================
+# =========================
+# LISTAR USUÁRIOS
+# =========================
 def listar_usuarios():
     conn = None
     try:
         conn = conectar()
         cursor = conn.cursor()
+
         cursor.execute("""
             SELECT id_usuario, username, nivel, ativo, data_cadastro
             FROM usuarios
-            ORDER BY data_cadastro DESC
+            ORDER BY id_usuario DESC
         """)
-        dados = cursor.fetchall()
-        cursor.close()
-        return dados
-    except Exception as e:
-        print(f"Erro ao listar usuários: {e}")
-        return []
+
+        return cursor.fetchall()
+
     finally:
         if conn:
             conn.close()
 
+# =========================
+# VALIDAR LOGIN (IMPORTANTE)
+# =========================
+def validar_login(username, senha):
+    user = buscar_usuario(username)
+
+    if not user:
+        return None
+
+    if not user["ativo"]:
+        return None
+
+    if check_password_hash(user["senha"], senha):
+        return {
+            "id": user["id_usuario"],
+            "username": user["username"],
+            "nivel": user["nivel"]
+        }
+
+    return None
+
+# =========================
+# ALTERAR STATUS
+# =========================
 def alterar_status(id_usuario, ativo):
     conn = None
     try:
         conn = conectar()
         cursor = conn.cursor()
+
         cursor.execute("""
             UPDATE usuarios
             SET ativo = %s
             WHERE id_usuario = %s
         """, (ativo, id_usuario))
+
         conn.commit()
-        cursor.close()
         return True
-    except Exception as e:
-        print(f"Erro ao alterar status: {e}")
-        return False
+
     finally:
         if conn:
+            conn.close()
             conn.close()
 
 def buscar_usuario_id(id_usuario):

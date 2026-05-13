@@ -33,23 +33,19 @@ login_manager.login_view = "login"
 
 # 1. Definição da Classe User (Essencial para o Flask-Login)
 class User(UserMixin):
-    def __init__(self, id, nivel=None):
-        self.id = id
+    def __init__(self, id_usuario, username, nivel):
+        self.id = id_usuario  # O Flask-Login usa o atributo .id
+        self.username = username
         self.nivel = nivel
 
 @login_manager.user_loader
-def load_user(user_id):
-    """
-    Carrega o usuário do banco de dados ou da sessão.
-    O Flask-Login usa isso para manter o usuário logado.
-    """
-    # Recuperamos o nível de acesso que salvamos na sessão durante o login
+def load_user(id_usuario):
+    # Recuperamos os dados que guardamos na sessão no momento do login
     nivel = session.get("nivel")
-    
-    # Retornamos o objeto User com o ID e o Nível
-    # Importante: O return deve ser a última linha para o 'nivel' ser computado
-    return User(user_id, nivel=nivel)
-
+    username = session.get("username")
+    if not id_usuario:
+        return None
+    return User(id_usuario, username, nivel)
 # ========================================================
 # TABELA LOGS (FIX ORDEM)
 # ========================================================
@@ -96,38 +92,43 @@ def registrar_log(acao, modulo, detalhe="", usuario_manual=None):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form["username"].strip().lower()
-        senha = request.form["senha"].strip()
+        username_form = request.form["username"].strip().lower()
+        senha_form = request.form["senha"].strip()
 
-        usuario = usuarios.buscar_usuario(username)
+        usuario = usuarios.buscar_usuario(username_form)
 
         if not usuario:
-            flash("Usuário ou senha inválidos", "danger")
+            flash("Usuário não encontrado", "danger")
             return render_template("login.html")
 
+        # Mapeamento baseado no seu print:
+        # usuario[0] = id_usuario, usuario[1] = username, usuario[3] = nivel
         id_user = usuario[0]
+        username_db = usuario[1]
         senha_db = usuario[2]
-        nivel = usuario[3]
+        nivel_db = usuario[3]
         ativo = usuario[4]
 
         if ativo == 0:
             flash("Usuário bloqueado", "danger")
             return render_template("login.html")
 
-        if not check_password_hash(senha_db, senha):
-            flash("Usuário ou senha inválidos", "danger")
+        if not check_password_hash(senha_db, senha_form):
+            flash("Senha incorreta", "danger")
             return render_template("login.html")
 
-        user = User(username, nivel=nivel)
-        login_user(user)
+        # Criar objeto do usuário
+        user_obj = User(id_user, username_db, nivel_db)
+        login_user(user_obj)
 
-        session["nivel"] = nivel
+        # GUARDAR NA SESSÃO (Isso é o que os decoradores verificam!)
         session["user_id"] = id_user
+        session["nivel"] = nivel_db
+        session["username"] = username_db
 
-        # ✅ CORRETO AGORA
-        registrar_log("LOGIN", "AUTH", "Login realizado com sucesso")
-
-        flash("Bem-vindo!", "success")
+        registrar_log("LOGIN", "AUTH", f"Usuário {username_db} logado com sucesso")
+        
+        flash(f"Bem-vindo, {username_db}!", "success")
         return redirect("/")
 
     return render_template("login.html")

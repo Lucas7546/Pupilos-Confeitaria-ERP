@@ -31,6 +31,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
+# 1. Definição da Classe User (Essencial para o Flask-Login)
 class User(UserMixin):
     def __init__(self, id, nivel=None):
         self.id = id
@@ -38,8 +39,15 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-    # Recupera o nível da sessão para manter as permissões ativas
+    """
+    Carrega o usuário do banco de dados ou da sessão.
+    O Flask-Login usa isso para manter o usuário logado.
+    """
+    # Recuperamos o nível de acesso que salvamos na sessão durante o login
     nivel = session.get("nivel")
+    
+    # Retornamos o objeto User com o ID e o Nível
+    # Importante: O return deve ser a última linha para o 'nivel' ser computado
     return User(user_id, nivel=nivel)
 
 # ========================================================
@@ -80,6 +88,8 @@ def registrar_log(acao, modulo, detalhe="", usuario_manual=None):
         usuarios.registrar_log_db(usuario_log, acao, modulo, detalhe)
     except Exception as e:
         print(f"ERRO AO SALVAR LOG: {e}")
+
+
 # =========================
 # ROTAS DE AUTENTICAÇÃO
 # =========================
@@ -95,17 +105,10 @@ def login():
             flash("Usuário ou senha inválidos", "danger")
             return render_template("login.html")
 
-        # Tratando retorno do banco (seja tupla ou dicionário)
-        try:
-            id_user = usuario[0]
-            senha_db = usuario[2]
-            nivel = usuario[3]
-            ativo = usuario[4]
-        except KeyError:
-            id_user = usuario['id_usuario']
-            senha_db = usuario['senha']
-            nivel = usuario['nivel']
-            ativo = usuario['ativo']
+        id_user = usuario[0]
+        senha_db = usuario[2]
+        nivel = usuario[3]
+        ativo = usuario[4]
 
         if ativo == 0:
             flash("Usuário bloqueado", "danger")
@@ -121,7 +124,9 @@ def login():
         session["nivel"] = nivel
         session["user_id"] = id_user
 
-        registrar_log("LOGIN", "AUTH", f"{username} logou")
+        # ✅ CORRETO AGORA
+        registrar_log("LOGIN", "AUTH", "Login realizado com sucesso")
+
         flash("Bem-vindo!", "success")
         return redirect("/")
 

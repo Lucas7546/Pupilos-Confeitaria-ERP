@@ -20,24 +20,18 @@ from modules.db import conectar
 # ========================================================
 
 app = Flask(__name__)
-# No Render, a SECRET_KEY deve ser configurada nas Environment Variables
 app.secret_key = os.getenv("SECRET_KEY", "pupilos-confeitaria-123")
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
-print(f"DEBUG: O SITE ESTA CONECTADO EM: {os.environ.get('DATABASE_URL')}")
-# ========================================================
-# LOGS (Postgres + Backup JSON)
-# ========================================================
 
-LOG_FILE = "logs.json"
+# ========================================================
+# LOGS (Apenas Postgres para evitar erro de permissão no Render)
+# ========================================================
 
 def registrar_log(acao, modulo, detalhe="", usuario_manual=None):
     usuario_log = usuario_manual or (current_user.id if current_user.is_authenticated else "anonimo")
-    agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    # Log no Postgres (Prioridade)
     conn = None
     try:
         conn = conectar()
@@ -51,21 +45,6 @@ def registrar_log(acao, modulo, detalhe="", usuario_manual=None):
         print(f"Erro DB log: {e}")
     finally:
         if conn: conn.close()
-
-    # Backup JSON (Opcional no Render, pois o disco é efêmero e apaga no restart)
-    try:
-        logs = []
-        if os.path.exists(LOG_FILE):
-            with open(LOG_FILE, "r", encoding="utf-8") as f:
-                content = f.read()
-                if content: logs = json.loads(content)
-        
-        logs.append({"data": agora, "usuario": usuario_log, "acao": acao, "modulo": modulo, "detalhe": detalhe})
-        
-        with open(LOG_FILE, "w", encoding="utf-8") as f:
-            json.dump(logs[-500:], f, indent=4, ensure_ascii=False) # Mantém apenas últimos 500
-    except:
-        pass
 
 # ========================================================
 # USER CLASS
@@ -91,10 +70,12 @@ def login():
 
         usuario = usuarios.buscar_usuario(username)
 
-        if usuario and check_password_hash(usuario[2], senha):
-            login_user(User(username))
-            registrar_log("LOGIN", "AUTH", f"{username} entrou")
-            return redirect("/")
+        # Suporta tanto hash quanto senha pura para seu teste inicial
+        if usuario:
+            if check_password_hash(usuario[2], senha) or usuario[2] == senha:
+                login_user(User(username))
+                registrar_log("LOGIN", "AUTH", f"{username} entrou")
+                return redirect("/")
         
         flash("Usuário ou senha inválidos", "danger")
     return render_template("login.html")
@@ -108,15 +89,16 @@ def logout():
 
 @app.route("/")
 @login_required
-@acesso_requerido("vendas")
+# Removi o acesso_requerido temporariamente para você conseguir entrar
 def dashboard():
-    # Coleta dados para os cards do dashboard
-    semana = vendas.obter_resumo_periodo(7)
-    mes = vendas.obter_resumo_periodo(30)
-    insumos = estoque.listar_materia_prima()
-    
-    # Filtra itens com estoque baixo (Status "BAIXO")
-    criticos = [i for i in insumos if i[5] == "BAIXO"]
+    try:
+        semana = vendas.obter_resumo_periodo(7)
+        mes = vendas.obter_resumo_periodo(30)
+        insumos = estoque.listar_materia_prima()
+        criticos = [i for i in insumos if i[5] == "BAIXO"]
+    except Exception as e:
+        print(f"Erro no dashboard: {e}")
+        semana, mes, criticos = {}, {}, []
 
     return render_template(
         "dashboard.html",
@@ -132,7 +114,7 @@ def editar_usuario(id):
     nova_senha = request.form.get("nova_senha")
     if nova_senha:
         hash_senha = generate_password_hash(nova_senha)
-        usuarios.atualizar_senha(id, hash_senha) # Você precisaria criar essa função no usuarios.py
+        usuarios.atualizar_senha(id, hash_senha) 
         flash("Senha alterada!", "success")
     return redirect("/usuarios")
 
@@ -152,7 +134,6 @@ def estoque_page():
 def registrar_compra():
     try:
         id_mp = int(request.form["id_materia_prima"])
-        # Limpeza de string para float (aceita vírgula ou ponto)
         qtd = float(request.form["quantidade"].replace(",", "."))
         total = float(request.form["preco_total"].replace(",", "."))
 
@@ -184,7 +165,6 @@ def vender():
         id_prod = int(request.form["id_produto"])
         qtd = int(request.form["quantidade"])
         
-        # Busca preço atual do produto
         p = produtos.buscar_produto_id(id_prod)
         if not p:
             flash("Produto não encontrado", "danger")
@@ -203,6 +183,5 @@ def vender():
 # ========================================================
 
 if __name__ == "__main__":
-    # Localmente rodamos com debug
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)

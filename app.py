@@ -4,7 +4,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask import Flask, render_template, request, redirect, flash, session, abort
 from datetime import datetime
 from functools import wraps
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 import json
 import pandas as pd
 import os

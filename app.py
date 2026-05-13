@@ -34,17 +34,19 @@ login_manager.login_view = "login"
 # 1. Definição da Classe User (Essencial para o Flask-Login)
 class User(UserMixin):
     def __init__(self, id_usuario, username, nivel):
-        self.id = id_usuario  # O Flask-Login usa o atributo .id
+        self.id = id_usuario  # O Flask-Login usa 'id' por padrão
         self.username = username
         self.nivel = nivel
 
 @login_manager.user_loader
 def load_user(id_usuario):
-    # Recuperamos os dados que guardamos na sessão no momento do login
+    # Recuperamos o nível e o nome da sessão para manter o objeto User completo
     nivel = session.get("nivel")
     username = session.get("username")
+    
     if not id_usuario:
         return None
+        
     return User(id_usuario, username, nivel)
 # ========================================================
 # TABELA LOGS (FIX ORDEM)
@@ -95,19 +97,19 @@ def login():
         username_form = request.form["username"].strip().lower()
         senha_form = request.form["senha"].strip()
 
+        # Chama sua função que busca no banco
         usuario = usuarios.buscar_usuario(username_form)
 
         if not usuario:
             flash("Usuário não encontrado", "danger")
             return render_template("login.html")
 
-        # Mapeamento baseado no seu print:
-        # usuario[0] = id_usuario, usuario[1] = username, usuario[3] = nivel
-        id_user = usuario[0]
-        username_db = usuario[1]
-        senha_db = usuario[2]
-        nivel_db = usuario[3]
-        ativo = usuario[4]
+        # MAPEAMENTO CORRETO DO SEU PRINT:
+        id_user = usuario[0]    # 1 ou 4
+        username_db = usuario[1] # 'admin' ou 'amanda'
+        senha_db = usuario[2]    # o hash scrypt...
+        nivel_db = usuario[3]    # 'admin'
+        ativo = usuario[4]       # 1
 
         if ativo == 0:
             flash("Usuário bloqueado", "danger")
@@ -117,16 +119,16 @@ def login():
             flash("Senha incorreta", "danger")
             return render_template("login.html")
 
-        # Criar objeto do usuário
+        # Criar o objeto User com o nível do banco
         user_obj = User(id_user, username_db, nivel_db)
         login_user(user_obj)
 
-        # GUARDAR NA SESSÃO (Isso é o que os decoradores verificam!)
+        # SALVAR NA SESSÃO (Isso aqui é o que destrava o acesso!)
         session["user_id"] = id_user
         session["nivel"] = nivel_db
         session["username"] = username_db
 
-        registrar_log("LOGIN", "AUTH", f"Usuário {username_db} logado com sucesso")
+        registrar_log("LOGIN", "AUTH", f"Usuário {username_db} logou com sucesso")
         
         flash(f"Bem-vindo, {username_db}!", "success")
         return redirect("/")

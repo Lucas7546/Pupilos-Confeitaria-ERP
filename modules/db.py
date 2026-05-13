@@ -1,6 +1,12 @@
-import sqlite3
-
-DB_PATH = "data/confeitaria.db"
+import os
+import psycopg2
 
 def conectar():
-    return sqlite3.connect(DB_PATH)
+    """Faz a ponte de conexão usando a URL do Render."""
+    database_url = os.getenv("DATABASE_URL")
+    
+    if not database_url:
+        raise Exception("Variável DATABASE_URL não encontrada!")
+
+    # O segredo para o Render é o sslmode='require'
+    return psycopg2.connect(database_url, sslmode='require')

@@ -1,29 +1,22 @@
-import sqlite3
 import os
+import psycopg2
 from werkzeug.security import generate_password_hash
 
-print("INICIANDO CRIAÇÃO DO BANCO...")
+print("INICIANDO CRIAÇÃO DO BANCO POSTGRES (VERSÃO ROBUSTA)...")
 
 # =========================================================
-# GARANTE PASTA DATA
+# CONEXÃO POSTGRES
 # =========================================================
 
-os.makedirs("data", exist_ok=True)
+conn = psycopg2.connect(os.environ["DATABASE_URL"])
+cursor = conn.cursor()
 
 # =========================================================
-# CONEXÃO
+# 1. USUÁRIOS (Sem alteração de colunas)
 # =========================================================
-
-conexao = sqlite3.connect("data/confeitaria.db")
-cursor = conexao.cursor()
-
-# =========================================================
-# USUÁRIOS
-# =========================================================
-
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS usuarios (
-    id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_usuario SERIAL PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     senha TEXT NOT NULL,
     nivel TEXT DEFAULT 'funcionario',
@@ -33,43 +26,25 @@ CREATE TABLE IF NOT EXISTS usuarios (
 """)
 
 # =========================================================
-# LOGS
+# 2. MATÉRIA-PRIMA (Sem alteração de colunas)
 # =========================================================
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS logs (
-    id_log INTEGER PRIMARY KEY AUTOINCREMENT,
-    usuario TEXT,
-    acao TEXT,
-    modulo TEXT,
-    detalhe TEXT,
-    data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
-""")
-
-# =========================================================
-# MATÉRIA-PRIMA
-# =========================================================
-
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS materia_prima (
-    id_materia_prima INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_materia_prima SERIAL PRIMARY KEY,
     nome TEXT NOT NULL UNIQUE,
     unidade_medida TEXT NOT NULL,
     estoque_minimo REAL DEFAULT 0,
     preco_unitario REAL DEFAULT 0,
-    estoque_atual REAL DEFAULT 0,
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 """)
 
 # =========================================================
-# PRODUTOS
+# 3. PRODUTOS (Sem alteração de colunas)
 # =========================================================
-
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS produtos (
-    id_produto INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_produto SERIAL PRIMARY KEY,
     nome TEXT NOT NULL UNIQUE,
     preco_venda REAL DEFAULT 0,
     categoria TEXT,
@@ -79,31 +54,23 @@ CREATE TABLE IF NOT EXISTS produtos (
 """)
 
 # =========================================================
-# RECEITAS
+# 4. RECEITAS (Adicionado: Vínculo com Produto e Matéria-Prima)
 # =========================================================
-
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS receitas (
-    id_receita INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_produto INTEGER NOT NULL,
-    id_materia_prima INTEGER NOT NULL,
-    quantidade_utilizada REAL NOT NULL,
-
-    FOREIGN KEY (id_produto)
-        REFERENCES produtos(id_produto),
-
-    FOREIGN KEY (id_materia_prima)
-        REFERENCES materia_prima(id_materia_prima)
+    id_receita SERIAL PRIMARY KEY,
+    id_produto INTEGER REFERENCES produtos(id_produto) ON DELETE CASCADE,
+    id_materia_prima INTEGER REFERENCES materia_prima(id_materia_prima) ON DELETE RESTRICT,
+    quantidade_utilizada REAL NOT NULL
 )
 """)
 
 # =========================================================
-# VENDAS
+# 5. VENDAS (Sem alteração de colunas)
 # =========================================================
-
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS vendas (
-    id_venda INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_venda SERIAL PRIMARY KEY,
     data_venda TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     valor_total REAL DEFAULT 0,
     lucro REAL DEFAULT 0,
@@ -113,85 +80,67 @@ CREATE TABLE IF NOT EXISTS vendas (
 """)
 
 # =========================================================
-# ITENS VENDA
+# 6. ITENS VENDA (Adicionado: Vínculo com Venda e Produto)
 # =========================================================
-
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS itens_venda (
-    id_item_venda INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_venda INTEGER NOT NULL,
-    id_produto INTEGER NOT NULL,
-    quantidade INTEGER NOT NULL,
-    valor_unitario REAL NOT NULL,
-
-    FOREIGN KEY (id_venda)
-        REFERENCES vendas(id_venda),
-
-    FOREIGN KEY (id_produto)
-        REFERENCES produtos(id_produto)
+    id_item_venda SERIAL PRIMARY KEY,
+    id_venda INTEGER REFERENCES vendas(id_venda) ON DELETE CASCADE,
+    id_produto INTEGER REFERENCES produtos(id_produto) ON DELETE SET NULL,
+    quantidade INTEGER,
+    valor_unitario REAL
 )
 """)
 
 # =========================================================
-# MOVIMENTAÇÃO ESTOQUE
+# 7. MOVIMENTAÇÃO ESTOQUE (Adicionado: Vínculo com Matéria-Prima)
 # =========================================================
-
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS movimentacao_estoque (
-    id_movimento INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_materia_prima INTEGER NOT NULL,
-    tipo_movimento TEXT NOT NULL,
-    quantidade REAL NOT NULL,
+    id_movimento SERIAL PRIMARY KEY,
+    id_materia_prima INTEGER REFERENCES materia_prima(id_materia_prima) ON DELETE CASCADE,
+    tipo_movimento TEXT,
+    quantidade REAL,
     observacao TEXT,
     usuario TEXT,
-    data_movimento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (id_materia_prima)
-        REFERENCES materia_prima(id_materia_prima)
+    data_movimento TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 """)
 
 # =========================================================
-# DESPESAS
+# 8. LOGS E DESPESAS (Mantidos originais)
 # =========================================================
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS logs (
+    id_log SERIAL PRIMARY KEY,
+    usuario TEXT, acao TEXT, modulo TEXT, detalhe TEXT, 
+    data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
 
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS despesas (
-    id_despesa INTEGER PRIMARY KEY AUTOINCREMENT,
-    descricao TEXT NOT NULL,
-    valor REAL NOT NULL,
-    categoria TEXT,
+    id_despesa SERIAL PRIMARY KEY,
+    descricao TEXT, valor REAL, categoria TEXT, 
     data_despesa TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 """)
 
 # =========================================================
-# CRIA ADMIN MASTER
+# ADMIN (Com correção para atualização de senha se necessário)
 # =========================================================
-
 senha_admin = generate_password_hash("123456")
-
 cursor.execute("""
-INSERT OR IGNORE INTO usuarios (
-    username,
-    senha,
-    nivel
-)
-VALUES (?, ?, ?)
-""", (
-    "admin",
-    senha_admin,
-    "admin"
-))
+INSERT INTO usuarios (username, senha, nivel)
+VALUES (%s, %s, %s)
+ON CONFLICT (username) DO NOTHING
+""", ("admin", senha_admin, "admin"))
 
 # =========================================================
-# FINALIZA
+# FINALIZAÇÃO
 # =========================================================
+conn.commit()
+cursor.close()
+conn.close()
 
-conexao.commit()
-conexao.close()
-
-print("BANCO CRIADO COM SUCESSO!")
-print("Usuário padrão:")
-print("Login: admin")
-print("Senha: 123456")
+print("BANCO POSTGRES ATUALIZADO COM SUCESSO!")

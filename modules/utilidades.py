@@ -1,39 +1,31 @@
-print("UTILIDADES CARREGADO")
-
 import os
+import sys
 
 def limpar_tela():
+    """Limpa o console de acordo com o sistema operacional."""
     os.system("cls" if os.name == "nt" else "clear")
 
+def pausar():
+    """Apenas uma pausa simples antes de seguir o fluxo."""
+    input("\nPressione ENTER para continuar...")
+
 def voltar_menu():
+    """Pausa e limpa a tela para retornar ao menu principal."""
     input("\nENTER para voltar ao menu...")
     limpar_tela()
 
-def esperar():
-    input("\nENTER para continuar...")
-
-def finalizar_acao():
-    input("\nPressione ENTER...")
-
-def pausar():
-    input("\nPressione ENTER para continuar...")
-
 def tela_final():
+    """Oferece a opção de retornar ou encerrar o programa completamente."""
     while True:
-        opcao = input("\n[ENTER] voltar | [0] sair: ")
+        opcao = input("\n[ENTER] Voltar ao Menu | [0] Sair do Sistema: ").strip()
 
         if opcao == "0":
-            print("Encerrando sistema...")
-            exit()
+            print("\nEncerrando sistema Pupilos Confeitaria... Até logo!")
+            sys.exit() # Forma mais limpa de encerrar scripts em Python
         else:
+            limpar_tela()
             return
 
 def voltar_ou_sair():
-    while True:
-        opcao = input("\n[ENTER] voltar | [0] sair: ")
-
-        if opcao == "0":
-            print("Encerrando sistema...")
-            exit()
-        else:
-            return
+    """Alias para tela_final, mantendo compatibilidade com seu código atual."""
+    return tela_final()

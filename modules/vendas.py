@@ -1,140 +1,135 @@
-import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime
 from modules.db import conectar
-from modules.receitas import validar_estoque_suficiente, calcular_custo_receita
 
 # ===================================================
-# GESTÃO DE ESTOQUE VINCULADO À VENDA
+# VALIDA ESTOQUE
 # ===================================================
-def baixar_estoque_por_receita(id_produto, quantidade_vendida):
-    conexao = conectar()
-    cursor = conexao.cursor()
-    
-    cursor.execute("""
-        SELECT id_materia_prima, quantidade_utilizada 
-        FROM receitas 
-        WHERE id_produto = ?
-    """, (id_produto,))
-    
-    ingredientes = cursor.fetchall()
-    
-    for id_mp, qtd_na_receita in ingredientes:
-        qtd_total_saida = qtd_na_receita * quantidade_vendida
-        
+def validar_estoque_suficiente(id_produto, quantidade_venda):
+    from modules.estoque import calcular_estoque
+
+    con = None
+    try:
+        con = conectar()
+        cursor = con.cursor()
+
         cursor.execute("""
-            INSERT INTO movimentacao_estoque (
-                id_materia_prima, tipo_movimento, quantidade, observacao
-            )
-            VALUES (?, 'saida', ?, ?)
-        """, (id_mp, qtd_total_saida, f"Baixa automática: Venda de {quantidade_vendida} unid."))
-        
-    conexao.commit()
-    conexao.close()
+            SELECT id_materia_prima, quantidade_utilizada
+            FROM receitas
+            WHERE id_produto = %s
+        """, (id_produto,))
 
-# =========================
-# OPERAÇÃO DE VENDA
-# =========================
-def vender_produto(id_produto, quantidade, preco, canal="manual"):
-    if not validar_estoque_suficiente(id_produto, quantidade):
-        return False, "Estoque insuficiente para produzir esta quantidade."
+        ingredientes = cursor.fetchall()
 
-    conexao = conectar()
-    cursor = conexao.cursor()
+        for id_mp, qtd_necessaria in ingredientes:
+            estoque_atual = calcular_estoque(id_mp)
 
-    custo_unitario = calcular_custo_receita(id_produto)
-    receita_total = float(preco) * int(quantidade)
-    lucro_total = receita_total - (custo_unitario * int(quantidade))
-    data_venda = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            if estoque_atual < (qtd_necessaria * quantidade_venda):
+                return False
 
-    cursor.execute("""
-        INSERT INTO vendas (valor_total, canal_venda, lucro, data_venda)
-        VALUES (?, ?, ?, ?)
-    """, (receita_total, canal, lucro_total, data_venda))
+        return True
 
-    id_venda = cursor.lastrowid
+    except Exception as e:
+        print(f"Erro validação estoque: {e}")
+        return False
 
-    cursor.execute("""
-        INSERT INTO itens_venda (id_venda, id_produto, quantidade, valor_unitario)
-        VALUES (?, ?, ?, ?)
-    """, (id_venda, id_produto, quantidade, preco))
+    finally:
+        if con:
+            con.close()
 
-    conexao.commit()
-    conexao.close()
-
-    baixar_estoque_por_receita(id_produto, quantidade)
-    return True, "Venda realizada com sucesso!"
 
 # ===================================================
-# GESTÃO DE DESPESAS (CUSTOS FIXOS)
+# CUSTO DA RECEITA
 # ===================================================
-def registrar_despesa(descricao, valor, categoria):
-    conn = conectar()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO despesas (descricao, valor, categoria) 
-        VALUES (?, ?, ?)
-    """, (descricao, valor, categoria))
-    conn.commit()
-    conn.close()
+def calcular_custo_receita(id_produto):
+    con = None
+    try:
+        con = conectar()
+        cursor = con.cursor()
 
-def listar_despesas(dias=30):
-    conn = conectar()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id_despesa, descricao, valor, categoria 
-        FROM despesas 
-        WHERE data_despesa >= datetime('now', ?)
-    """, (f'-{dias} days',))
-    dados = cursor.fetchall()
-    conn.close()
-    return dados
+        cursor.execute("""
+            SELECT r.quantidade_utilizada, mp.preco_unitario
+            FROM receitas r
+            JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
+            WHERE r.id_produto = %s
+        """, (id_produto,))
+
+        linhas = cursor.fetchall()
+
+        total = sum(float(q) * float(p) for q, p in linhas)
+
+        return round(total, 2)
+
+    except Exception as e:
+        print(f"Erro custo receita: {e}")
+        return 0.0
+
+    finally:
+        if con:
+            con.close()
+
 
 # ===================================================
-# RELATÓRIOS E INTELIGÊNCIA FINANCEIRA
+# CADASTRAR / VINCULAR RECEITA
 # ===================================================
-def obter_custo_total_vendas(dias=30):
-    conn = conectar()
-    cursor = conn.cursor()
-    query = """
-    SELECT SUM(iv.quantidade * r.quantidade_utilizada * mp.preco_unitario)
-    FROM itens_venda iv
-    JOIN vendas v ON iv.id_venda = v.id_venda
-    JOIN receitas r ON iv.id_produto = r.id_produto
-    JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
-    WHERE v.data_venda >= datetime('now', ?)
-    """
-    cursor.execute(query, (f'-{dias} days',))
-    resultado = cursor.fetchone()[0]
-    conn.close()
-    return resultado if resultado else 0
+def cadastrar_receita(id_produto, id_materia_prima, quantidade):
+    con = None
+    try:
+        con = conectar()
+        cursor = con.cursor()
 
-def obter_resumo_periodo(dias=7):
-    conexao = conectar()
-    cursor = conexao.cursor()
-    data_inicio = (datetime.now() - timedelta(days=dias)).strftime('%Y-%m-%d %H:%M:%S')
-    
-    cursor.execute("""
-        SELECT SUM(valor_total), SUM(lucro), COUNT(id_venda) 
-        FROM vendas 
-        WHERE data_venda >= ?
-    """, (data_inicio,))
-    res = cursor.fetchone()
-    
-    cursor.execute("""
-        SELECT p.nome, SUM(iv.quantidade), SUM(iv.quantidade * iv.valor_unitario)
-        FROM itens_venda iv
-        JOIN produtos p ON iv.id_produto = p.id_produto
-        JOIN vendas v ON iv.id_venda = v.id_venda
-        WHERE v.data_venda >= ?
-        GROUP BY p.nome
-        ORDER BY SUM(iv.quantidade) DESC
-    """, (data_inicio,))
-    ranking = cursor.fetchall()
-    
-    conexao.close()
-    return {
-        "faturamento": res[0] or 0.0,
-        "lucro": res[1] or 0.0,
-        "total_vendas": res[2] or 0,
-        "ranking": ranking
-    }
+        cursor.execute("""
+            SELECT id_receita
+            FROM receitas
+            WHERE id_produto = %s
+            AND id_materia_prima = %s
+        """, (id_produto, id_materia_prima))
+
+        existe = cursor.fetchone()
+
+        if existe:
+            cursor.execute("""
+                UPDATE receitas
+                SET quantidade_utilizada = %s
+                WHERE id_produto = %s
+                AND id_materia_prima = %s
+            """, (quantidade, id_produto, id_materia_prima))
+        else:
+            cursor.execute("""
+                INSERT INTO receitas (id_produto, id_materia_prima, quantidade_utilizada)
+                VALUES (%s, %s, %s)
+            """, (id_produto, id_materia_prima, quantidade))
+
+        con.commit()
+        return True
+
+    except Exception as e:
+        print(f"Erro receita: {e}")
+        return False
+
+    finally:
+        if con:
+            con.close()
+
+
+# ===================================================
+# LISTAR RECEITA
+# ===================================================
+def listar_itens_receita(id_produto):
+    con = None
+    try:
+        con = conectar()
+        cursor = con.cursor()
+
+        cursor.execute("""
+            SELECT mp.nome, r.quantidade_utilizada, mp.unidade_medida, mp.preco_unitario
+            FROM receitas r
+            JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
+            WHERE r.id_produto = %s
+            ORDER BY mp.nome ASC
+        """, (id_produto,))
+
+        return cursor.fetchall()
+
+    finally:
+        if con:
+            con.close()

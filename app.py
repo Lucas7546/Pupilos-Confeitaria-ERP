@@ -830,24 +830,23 @@ def editar_usuario(id_usuario):
 
 
 # =========================================================
-# PAINEL ADMIN
+# PAINEL DE CONFIGURAÇÃO ADMIN
 # =========================================================
-@app.route("/admin/logs") # <--- Verifique se o nome aqui é este
+@app.route("/admin/config")
 @login_required
-@acesso_requerido("auditoria")
-def auditoria():
-    con = None
+def area_admin(): # Nome único para não conflitar com 'auditoria'
     try:
-        con = conectar()
-        cur = con.cursor()
-        cur.execute("SELECT id_log, usuario, acao, modulo, detalhe, data FROM logs ORDER BY data DESC")
-        logs = cur.fetchall()
-        return render_template("auditoria.html", logs=logs)
+        # Apenas pega o total de usuários para o card do painel
+        total_usuarios = len(usuarios.listar_usuarios())
+        
+        return render_template(
+            "admin_panel.html",
+            total_usuarios=total_usuarios
+        )
     except Exception as e:
-        flash(f"Erro ao carregar logs: {e}", "danger")
-        return redirect(url_for('area_admin'))
-    finally:
-        if con: con.close()
+        print(f"Erro no painel admin: {e}")
+        flash(f"Erro ao acessar painel: {e}", "danger")
+        return redirect(url_for("dashboard"))
     
 
 # =========================================================

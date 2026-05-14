@@ -60,18 +60,21 @@
                     <h4 class="fw-bold text-white mb-0">
                         <i class="bi bi-journal-text me-2 text-warning"></i>Logs de Atividade
                     </h4>
-                    <span class="badge bg-secondary">Auditoria</span>
+                    <span class="badge bg-secondary text-uppercase" style="letter-spacing: 1px; font-size: 0.7rem;">Segurança</span>
                 </div>
                 
                 <div class="card-body px-4 pb-4">
-                    <p class="text-white-50">Para garantir a performance do painel, a visualização completa de todos os logs do sistema (quem vendeu, quem alterou estoque, quem logou) deve ser acessada na página dedicada de auditoria.</p>
+                    <p class="text-white-50 fs-6 mb-4">
+                        A visualização detalhada de auditoria permite rastrear todas as movimentações de estoque, 
+                        vendas realizadas e alterações de usuários para garantir a integridade dos dados da confeitaria.
+                    </p>
                     
-                    <div class="d-flex gap-3">
-                        <a href="/admin/logs" class="btn btn-warning fw-bold px-4">
+                    <div class="d-flex flex-wrap gap-3">
+                        <a href="{{ url_for('auditoria') }}" class="btn btn-warning fw-bold px-4 py-2 transition-btn">
                             <i class="bi bi-search me-2"></i>ABRIR AUDITORIA COMPLETA
                         </a>
                         
-                        <a href="/usuarios" class="btn btn-outline-light border-opacity-25 px-4">
+                        <a href="/usuarios" class="btn btn-outline-light border-opacity-25 px-4 py-2 transition-btn">
                             <i class="bi bi-person-gear me-2"></i>GERENCIAR USUÁRIOS
                         </a>
                     </div>
@@ -80,7 +83,7 @@
                 <div class="card-footer bg-black bg-opacity-20 border-0 py-3 px-4">
                     <small class="text-white-50">
                         <i class="bi bi-info-circle me-1"></i> 
-                        Ações críticas são registradas automaticamente com IP e Data/Hora.
+                        O sistema registra automaticamente o autor e a data de cada modificação importante.
                     </small>
                 </div>
             </div>
@@ -89,7 +92,9 @@
 </div>
 
 <style>
+    /* Estilização Interna */
     .bg-dark-card { background: #1e293b !important; border-radius: 20px; }
+    
     .icon-box {
         width: 50px;
         height: 50px;
@@ -98,11 +103,23 @@
         justify-content: center;
         border-radius: 12px;
     }
+
+    .transition-btn {
+        transition: all 0.3s ease;
+    }
+
+    .transition-btn:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.1);
+    }
+
     .animate-in { animation: fadeInBlur 0.5s ease-out; }
+    
     @keyframes fadeInBlur {
         from { opacity: 0; filter: blur(10px); transform: translateY(10px); }
         to { opacity: 1; filter: blur(0); transform: translateY(0); }
     }
+    
     .fw-extrabold { font-weight: 800; }
 </style>
 {% endblock %}

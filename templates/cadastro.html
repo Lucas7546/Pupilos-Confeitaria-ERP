@@ -11,7 +11,7 @@
     </div>
 
     <div class="row g-4">
-        <!-- Card 1: Matéria-Prima (Insumos) -->
+        <!-- Card 1: Matéria-Prima -->
         <div class="col-lg-6">
             <div class="card h-100 bg-dark-card border-0 shadow-lg p-2">
                 <div class="card-header border-0 bg-transparent py-4 px-4">
@@ -23,7 +23,6 @@
                             <label class="form-label text-white-50 small fw-bold">NOME DO INGREDIENTE</label>
                             <input name="nome" type="text" class="form-control form-control-lg custom-input" placeholder="Ex: Chocolate 70%" required>
                         </div>
-
                         <div class="row g-3">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label text-white-50 small fw-bold">UNIDADE DE MEDIDA</label>
@@ -40,7 +39,6 @@
                                 <input type="number" step="0.001" name="estoque_atual" class="form-control custom-input" placeholder="0.000" required>
                             </div>
                         </div>
-
                         <div class="row g-3">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label text-white-50 small fw-bold">PREÇO DE CUSTO (R$)</label>
@@ -54,7 +52,6 @@
                                 <input type="number" step="0.01" name="estoque_minimo" class="form-control custom-input" placeholder="Ponto de pedido" required>
                             </div>
                         </div>
-
                         <button type="submit" class="btn btn-warning w-100 fw-bold py-3 shadow-sm rounded-4 text-dark transition-btn">
                             <i class="bi bi-plus-circle-fill me-2"></i>SALVAR INGREDIENTE NO BANCO
                         </button>
@@ -75,7 +72,6 @@
                             <label class="form-label text-white-50 small fw-bold">NOME COMERCIAL</label>
                             <input name="nome" type="text" class="form-control form-control-lg custom-input" placeholder="Ex: Brownie Supremo" required>
                         </div>
-
                         <div class="row g-3">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label text-white-50 small fw-bold">VALOR DE VENDA</label>
@@ -95,7 +91,6 @@
                                 </select>
                             </div>
                         </div>
-
                         <button type="submit" class="btn btn-info w-100 fw-bold py-3 text-white shadow-sm rounded-4 transition-btn">
                             <i class="bi bi-check-all me-2"></i>FINALIZAR CADASTRO DE PRODUTO
                         </button>
@@ -104,17 +99,16 @@
             </div>
         </div>
 
-        <!-- Card 3: Ficha Técnica (Engenharia de Produto) -->
+        <!-- Card 3: Engenharia de Produto -->
         <div class="col-12 mt-4">
             <div class="card bg-dark-card border-0 shadow-lg">
                 <div class="card-header border-0 bg-success bg-opacity-10 py-4 px-4">
                     <h4 class="fw-bold text-success mb-0"><i class="bi bi-diagram-3 me-2"></i>Engenharia de Produto (Ficha Técnica)</h4>
-                    <p class="text-muted small mb-0 mt-1">Vincule os insumos gastos para produzir uma unidade do produto final.</p>
                 </div>
                 <div class="card-body px-4 py-4">
                     <form action="/vincular-receita" method="POST" class="row g-3 align-items-end">
                         <div class="col-md-4">
-                            <label class="form-label text-white-50 small fw-bold text-uppercase">Produto Base</label>
+                            <label class="form-label text-white-50 small fw-bold">PRODUTO BASE</label>
                             <select name="id_produto" class="form-select custom-input" required>
                                 <option value="" disabled selected>Selecione o produto...</option>
                                 {% for p in produtos %}
@@ -123,7 +117,7 @@
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label text-white-50 small fw-bold text-uppercase">Ingrediente Utilizado</label>
+                            <label class="form-label text-white-50 small fw-bold">INGREDIENTE UTILIZADO</label>
                             <select name="id_materia_prima" class="form-select custom-input" required>
                                 <option value="" disabled selected>Selecione o insumo...</option>
                                 {% for m in materias %}
@@ -132,11 +126,11 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label text-white-50 small fw-bold text-uppercase">Gasto (Qtd)</label>
+                            <label class="form-label text-white-50 small fw-bold">GASTO (QTD)</label>
                             <input type="number" step="0.001" name="quantidade" class="form-control custom-input" placeholder="Ex: 0.250" required>
                         </div>
                         <div class="col-md-2">
-                            <button type="submit" class="btn btn-success w-100 fw-bold py-2 rounded-3 shadow-sm transition-btn">
+                            <button type="submit" class="btn btn-success w-100 fw-bold py-2 rounded-3 transition-btn">
                                 <i class="bi bi-plus-lg"></i> ADICIONAR
                             </button>
                         </div>
@@ -149,7 +143,6 @@
 
 <style>
     .bg-dark-card { background: #1e293b !important; border-radius: 24px; }
-    
     .custom-input {
         background-color: #0f172a !important;
         border: 1px solid #334155 !important;
@@ -157,32 +150,9 @@
         border-radius: 12px !important;
         padding: 0.75rem 1rem;
     }
-
-    .custom-input:focus {
-        border-color: #f59e0b !important;
-        box-shadow: 0 0 0 0.25rem rgba(245, 158, 11, 0.1) !important;
-        background-color: #0f172a !important;
-    }
-
-    .transition-btn {
-        transition: all 0.3s ease;
-    }
-
-    .transition-btn:hover {
-        transform: translateY(-2px);
-        filter: brightness(1.1);
-    }
-
-    /* Estilo para as opções do select no PostgreSQL */
-    select.custom-input option {
-        background-color: #1e293b;
-        color: white;
-    }
-
-    .animate-in { 
-        animation: fadeInBlur 0.6s ease-out; 
-    }
-
+    .transition-btn { transition: all 0.3s ease; }
+    .transition-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+    .animate-in { animation: fadeInBlur 0.6s ease-out; }
     @keyframes fadeInBlur {
         from { opacity: 0; filter: blur(5px); transform: translateY(15px); }
         to { opacity: 1; filter: blur(0); transform: translateY(0); }

@@ -5,7 +5,7 @@ import io
 from datetime import datetime
 from functools import wraps
 
-from flask import Flask, render_template, request, redirect, flash, abort, session
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
 from flask_login import (
     LoginManager, UserMixin, login_user,
     logout_user, login_required, current_user
@@ -220,6 +220,70 @@ def registrar_compra():
     except Exception as e:
         flash(f"Erro: {e}", "danger")
     return redirect("/estoque")
+
+
+# --- ROTA PRINCIPAL DA CENTRAL DE CADASTROS ---
+@app.route("/cadastro")
+@login_required
+def render_cadastro():
+    # Carrega dados para preencher os selects da Ficha Técnica (Engenharia de Produto)
+    try:
+        lista_produtos = produtos.listar_todos() 
+        lista_materias = materias.listar_todas()
+        return render_template("cadastro.html", produtos=lista_produtos, materias=lista_materias)
+    except Exception as e:
+        flash(f"Erro ao carregar dados: {e}", "danger")
+        return redirect(url_for('index'))
+
+# --- AÇÃO: CADASTRAR MATÉRIA-PRIMA (INSUMOS) ---
+@app.route("/cadastrar-mp", methods=["POST"])
+@login_required
+def cadastrar_mp():
+    nome = request.form.get("nome")
+    unidade = request.form.get("unidade")
+    estoque_at = request.form.get("estoque_atual")
+    preco = request.form.get("preco")
+    estoque_min = request.form.get("estoque_minimo")
+    
+    # Chama a função do seu módulo materias.py
+    # Ajuste os argumentos conforme sua função original aceita
+    if materias.cadastrar_materia(nome, unidade, preco, estoque_at, estoque_min):
+        flash(f"Insumo '{nome}' salvo no PostgreSQL!", "success")
+    else:
+        flash("Erro técnico ao salvar insumo.", "danger")
+    
+    return redirect(url_for('render_cadastro'))
+
+# --- AÇÃO: CADASTRAR PRODUTO FINAL ---
+@app.route("/cadastrar-produto", methods=["POST"])
+@login_required
+def cadastrar_produto_final():
+    nome = request.form.get("nome")
+    preco = request.form.get("preco")
+    categoria = request.form.get("categoria")
+    
+    if produtos.cadastrar_produto(nome, preco, categoria):
+        flash(f"Produto '{nome}' cadastrado com sucesso!", "success")
+    else:
+        flash("Erro ao cadastrar produto final.", "danger")
+        
+    return redirect(url_for('render_cadastro'))
+
+# --- AÇÃO: VINCULAR RECEITA (ENGENHARIA) ---
+@app.route("/vincular-receita", methods=["POST"])
+@login_required
+def vincular_receita():
+    id_produto = request.form.get("id_produto")
+    id_materia = request.form.get("id_materia_prima")
+    quantidade = request.form.get("quantidade")
+    
+    # Aqui chama a função que cria o vínculo na tabela de receitas/fichas técnicas
+    if produtos.vincular_insumo(id_produto, id_materia, quantidade):
+        flash("Ingrediente vinculado ao produto!", "success")
+    else:
+        flash("Erro ao vincular ingrediente.", "danger")
+        
+    return redirect(url_for('render_cadastro'))
 
 # =========================
 # VENDAS

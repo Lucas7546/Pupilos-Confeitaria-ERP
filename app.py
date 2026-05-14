@@ -786,6 +786,49 @@ def toggle_usuario(id_usuario):
 
     return redirect(url_for("listar_usuarios"))
 
+
+@app.route("/usuarios/editar/<int:id_usuario>", methods=["POST"])
+@login_required
+def editar_usuario(id_usuario):
+    nivel = request.form.get("nivel")
+    nova_senha = request.form.get("nova_senha")
+    
+    con = None
+    try:
+        con = conectar()
+        cur = con.cursor()
+        
+        if nova_senha and len(nova_senha.strip()) > 0:
+            # Atualiza nível e senha
+            senha_hash = generate_password_hash(nova_senha)
+            cur.execute("""
+                UPDATE usuarios 
+                SET nivel = %s, senha = %s 
+                WHERE id_usuario = %s
+            """, (nivel, senha_hash, id_usuario))
+        else:
+            # Atualiza apenas nível
+            cur.execute("""
+                UPDATE usuarios 
+                SET nivel = %s 
+                WHERE id_usuario = %s
+            """, (nivel, id_usuario))
+            
+        con.commit()
+        flash("Dados atualizados com sucesso!", "success")
+        registrar_log_db(current_user.username, "EDIÇÃO", "USUARIOS", f"Alterou dados do ID {id_usuario}")
+        
+    except Exception as e:
+        if con: con.rollback()
+        flash(f"Erro ao atualizar: {e}", "danger")
+    finally:
+        if con: con.close()
+        
+    return redirect(url_for('gerenciar_usuarios'))
+
+
+
+
 # =========================================================
 # PAINEL ADMIN
 # =========================================================

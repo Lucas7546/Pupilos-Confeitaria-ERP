@@ -550,34 +550,33 @@ def pagina_financeiro():
         return redirect("/")
     
 
-# --- ROTA: TELA DE AUDITORIA ---
+# =========================================================
+# ROTA: TELA DE AUDITORIA (Visualizar Logs no Navegador)
+# =========================================================
 @app.route("/auditoria")
 @login_required
+@acesso_requerido("auditoria") # Substitui o session.get antigo
 def auditoria():
-    # Segurança em duas camadas: Decorator + Verificação de Nível
-    if session.get("nivel") != "admin":
-        flash("Acesso restrito! Somente administradores podem ver a auditoria.", "danger")
-        return redirect(url_for('dashboard'))
-    
     try:
-        # Busca os últimos 100 logs
+        # Busca os últimos 100 logs do banco PostgreSQL
         logs_data = usuarios.listar_logs_auditoria(100)
         return render_template('auditoria.html', logs=logs_data)
     except Exception as e:
-        flash(f"Erro ao carregar logs: {e}", "danger")
+        print(f"Erro ao carregar logs: {e}")
+        flash(f"Erro ao carregar auditoria: {e}", "danger")
         return redirect(url_for('dashboard'))
 
-# --- ROTA: EXPORTAR LOGS (Atualizada para PostgreSQL) ---
+# =========================================================
+# ROTA: EXPORTAR LOGS (Apenas gera o download do arquivo)
+# =========================================================
 @app.route("/logs/exportar")
 @login_required
-@acesso_requerido("auditoria") # Usa o sistema de permissões que já criamos
+@acesso_requerido("auditoria")
 def exportar_logs():
     try:
-        # Busca os logs usando a função do módulo usuarios
-        # Note: verifique se em modules/usuarios.py a função se chama listar_logs_auditoria
+        # Busca 1000 registros para o backup
         logs_brutos = usuarios.listar_logs_auditoria(1000) 
         
-        # Formata os logs para um formato de dicionário mais legível no JSON
         logs_formatados = []
         for log in logs_brutos:
             logs_formatados.append({
@@ -586,13 +585,12 @@ def exportar_logs():
                 "acao": log[2],
                 "modulo": log[3],
                 "detalhe": log[4],
-                "data": str(log[5]) # Converte datetime para string
+                "data": str(log[5])
             })
         
-        # Converte os dados para JSON formatado
         json_output = json.dumps(logs_formatados, indent=4, ensure_ascii=False)
         
-        # Registra no log que alguém exportou os dados (Segurança)
+        # Log de segurança: registra quem baixou o backup
         usuarios.registrar_log_db(
             usuario=current_user.id,
             acao="EXPORT_LOGS",
@@ -607,9 +605,8 @@ def exportar_logs():
         )
 
     except Exception as e:
-        print(f"Erro ao exportar logs: {e}")
-        flash(f"Erro ao gerar arquivo de exportação: {e}", "danger")
-        return redirect(url_for('area_admin'))
+        flash(f"Erro ao exportar: {e}", "danger")
+        return redirect(url_for('auditoria'))
 
 # =========================================================
 # GERENCIAR EQUIPE
@@ -858,25 +855,25 @@ def editar_usuario(id_usuario):
 # =========================================================
 # PAINEL DE ADMINISTRAÇÃO (GESTÃO DE USUÁRIOS)
 # =========================================================
+# 1. A ROTA CERTA DO PAINEL (Onde mostra os usuários)
 @app.route("/admin/config")
 @login_required
-@acesso_requerido("usuarios") # Garante que só admin/gerente entre
+@acesso_requerido("usuarios")
 def area_admin():
     try:
-        # Busca a lista completa de usuários do banco
+        # Busca usuários para listar no painel
         lista_usuarios = usuarios.listar_usuarios() 
         total = len(lista_usuarios)
         
+        # Renderiza a tela de gestão de usuários
         return render_template(
             "admin_panel.html",
             total_usuarios=total,
-            usuarios=lista_usuarios # Passamos a lista para o HTML
+            usuarios=lista_usuarios
         )
     except Exception as e:
-        print(f"Erro no painel admin: {e}")
-        flash(f"Erro ao carregar gestão de usuários: {e}", "danger")
+        flash(f"Erro ao acessar painel: {e}", "danger")
         return redirect(url_for("dashboard"))
-
 # =========================================================
 # CENTRAL DE CADASTRO
 # =========================================================

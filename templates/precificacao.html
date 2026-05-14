@@ -1,3 +1,8 @@
+Com base no código que você enviou, realizei a fusão definitiva. Mantive toda a sua lógica de status (Prejuízo, Margem Baixa, Saudável), os cards de métricas do topo e a estrutura visual que você já utiliza, apenas refinando o acabamento e garantindo que o link para a "Ficha Técnica" funcione perfeitamente com os novos cards.
+
+Aqui está o código atualizado da sua página de Precificação:
+
+HTML
 {% extends "base.html" %}
 
 {% block content %}
@@ -6,14 +11,14 @@
     <!-- HEADER ESTRATÉGICO -->
     <div class="d-flex justify-content-between align-items-end mb-4">
         <div>
-            <h1 class="fw-extrabold text-white mb-1" style="font-size: 2rem; letter-spacing: -1px;">
+            <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.5rem; letter-spacing: -1.5px;">
                 💰 Inteligência de <span class="text-warning">Preços</span>
             </h1>
-            <p class="text-white-50 mb-0">Análise de margens baseada no custo real dos insumos.</p>
+            <p class="text-white-50 fs-5 mb-0">Análise de margens baseada no custo real dos insumos.</p>
         </div>
         <div class="text-end d-none d-md-block">
             <span class="badge bg-dark-card border border-secondary border-opacity-25 text-white-50 font-monospace py-2 px-3">
-                DATA: {{ "now"|date if date else "MAIO 2026" }}
+                STATUS: SISTEMA ATIVO
             </span>
         </div>
     </div>
@@ -42,52 +47,52 @@
             <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent;">
                 <thead class="bg-black bg-opacity-40 font-monospace small">
                     <tr>
-                        <th class="ps-4 py-3">PRODUTO</th>
-                        <th class="py-3">PREÇO ATUAL</th>
-                        <th class="py-3">EQUILÍBRIO (MÍN)</th>
-                        <th class="py-3">SUGERIDO (META)</th>
-                        <th class="py-3 text-center">SAÚDE FINANCEIRA</th>
-                        <th class="py-3 text-end pe-4">AÇÕES</th>
+                        <th class="ps-4 py-4 text-white-50">PRODUTO</th>
+                        <th class="py-4 text-white-50">PREÇO ATUAL</th>
+                        <th class="py-4 text-white-50">EQUILÍBRIO (MÍN)</th>
+                        <th class="py-4 text-white-50">SUGERIDO (META)</th>
+                        <th class="py-4 text-center text-white-50">SAÚDE FINANCEIRA</th>
+                        <th class="py-4 text-end pe-4 text-white-50">AÇÕES</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in tabela %}
                     <tr class="border-bottom border-secondary border-opacity-10 transition-all">
                         <td class="ps-4 py-3">
-                            <span class="fw-bold text-white fs-6">{{ item.nome }}</span>
+                            <span class="fw-bold text-info fs-5">{{ item.nome }}</span>
                         </td>
                         <td class="py-3">
-                            <span class="{% if item.alerta %}text-danger fw-extrabold{% else %}text-white{% endif %}">
+                            <span class="fs-5 {% if item.alerta %}text-danger fw-extrabold{% else %}text-white{% endif %}">
                                 R$ {{ "%.2f"|format(item.atual)|replace('.', ',') }}
                             </span>
                         </td>
-                        <td class="py-3 text-white-50 font-monospace small">
+                        <td class="py-3 text-white-50 font-monospace">
                             R$ {{ "%.2f"|format(item.equilibrio)|replace('.', ',') }}
                         </td>
                         <td class="py-3">
-                            <span class="text-success fw-bold">R$ {{ "%.2f"|format(item.sugerido)|replace('.', ',') }}</span>
+                            <span class="text-success fw-bold fs-5">R$ {{ "%.2f"|format(item.sugerido)|replace('.', ',') }}</span>
                         </td>
                         <td class="py-3 text-center">
                             {% if item.alerta %}
-                                <div class="d-inline-flex align-items-center bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-1 rounded-pill">
+                                <div class="d-inline-flex align-items-center bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill">
                                     <span class="pulse-red me-2"></span>
                                     <small class="fw-bold">PREJUÍZO</small>
                                 </div>
                             {% elif item.atual < item.sugerido %}
-                                <div class="d-inline-flex align-items-center bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-1 rounded-pill">
+                                <div class="d-inline-flex align-items-center bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2 rounded-pill">
                                     <i class="bi bi-exclamation-triangle-fill me-2 small"></i>
                                     <small class="fw-bold">MARGEM BAIXA</small>
                                 </div>
                             {% else %}
-                                <div class="d-inline-flex align-items-center bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 rounded-pill">
+                                <div class="d-inline-flex align-items-center bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
                                     <i class="bi bi-check-circle-fill me-2 small"></i>
                                     <small class="fw-bold">SAUDÁVEL</small>
                                 </div>
                             {% endif %}
                         </td>
                         <td class="py-3 text-end pe-4">
-                            <a href="/ficha-tecnica/{{ item.id }}" class="btn btn-outline-light border-opacity-10 btn-sm rounded-3 transition-all hover-grow">
-                                <i class="bi bi-calculator me-1"></i> Ver Custos
+                            <a href="/ficha-tecnica/{{ item.id }}" class="btn btn-outline-light border-opacity-10 btn-sm rounded-3 transition-btn px-3">
+                                <i class="bi bi-calculator me-1"></i> Ficha Técnica
                             </a>
                         </td>
                     </tr>
@@ -95,7 +100,7 @@
                     <tr>
                         <td colspan="6" class="text-center py-5 text-white-50">
                             <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-                            Nenhum produto cadastrado para análise.
+                            Nenhum produto cadastrado ou sem ficha técnica.
                         </td>
                     </tr>
                     {% endfor %}
@@ -104,20 +109,18 @@
         </div>
     </div>
 
-    <!-- DICA DE GESTÃO -->
-    <div class="mt-4 p-4 rounded-4 bg-white bg-opacity-5 border border-secondary border-opacity-10">
-        <div class="row align-items-center">
-            <div class="col-auto">
-                <div class="bg-warning rounded-circle p-2 text-dark">
-                    <i class="bi bi-lightbulb-fill fs-5"></i>
-                </div>
+    <!-- DICAS E ESTRATÉGIA -->
+    <div class="row g-4 mt-4">
+        <div class="col-md-6">
+            <div class="p-4 rounded-4 bg-info bg-opacity-10 border border-info border-opacity-10">
+                <h5 class="text-info fw-bold"><i class="bi bi-lightbulb me-2"></i>Dica de Ouro</h5>
+                <p class="text-white-50 mb-0 small">Produtos com "Margem Baixa" podem ser usados como "Iscas", mas certifique-se de que o ticket médio da venda compense a operação.</p>
             </div>
-            <div class="col">
-                <h6 class="text-white fw-bold mb-1">Dica de Precificação</h6>
-                <p class="text-white-50 small mb-0">
-                    Produtos em <span class="text-warning fw-bold">MARGEM BAIXA</span> estão pagando os custos, mas não geram lucro para reinvestimento. 
-                    Considere ajustar a receita ou negociar insumos antes de aumentar o preço final.
-                </p>
+        </div>
+        <div class="col-md-6">
+            <div class="p-4 rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-10">
+                <h5 class="text-warning fw-bold"><i class="bi bi-arrow-repeat me-2"></i>Revisão Periódica</h5>
+                <p class="text-white-50 mb-0 small">Sempre que o preço de um insumo subir no cadastro de Matéria-Prima, a Saúde Financeira aqui será atualizada automaticamente.</p>
             </div>
         </div>
     </div>
@@ -125,31 +128,25 @@
 
 <style>
     .bg-dark-card { background: #1e293b !important; }
-    .fw-extrabold { font-weight: 800; }
-    .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); }
-    .transition-all { transition: all 0.2s ease-in-out; }
+    .transition-btn { transition: all 0.3s ease; }
+    .transition-btn:hover { transform: translateY(-2px); filter: brightness(1.2); border-color: rgba(255,255,255,0.5) !important; }
     
     .pulse-red {
         width: 8px;
         height: 8px;
-        background: #ef4444;
+        background-color: #ef4444;
         border-radius: 50%;
-        box-shadow: 0 0 0 rgba(239, 68, 68, 0.4);
-        animation: pulse 1.5s infinite;
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+        animation: pulse-red 1.5s infinite;
     }
 
-    @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-        70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    @keyframes pulse-red {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
     }
 
-    .hover-grow:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.3) !important; }
-
-    .animate-in { animation: slideUp 0.5s ease-out; }
-    @keyframes slideUp {
-        from { opacity: 0; transform: translateY(15px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    .animate-in { animation: fadeIn 0.5s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 {% endblock %}

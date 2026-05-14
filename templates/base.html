@@ -1,212 +1,652 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Agatha's ERP | Gestão de Confeitaria</title>
-    
+
     <!-- Bootstrap 5.3 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Fonts: Inter -->
+
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
+    <!-- APEX CHARTS -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <!-- XLSX EXPORT -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+    <!-- HTML2PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
+
         :root {
+
             --sidebar-width: 280px;
+
             --bg-dark: #0f172a;
             --bg-body: #1e293b;
+
             --accent: #f59e0b;
+            --accent-hover: #fbbf24;
+
             --text-muted: #94a3b8;
+
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+            --info-light: #0ea5e9;
+            --danger-light: #ef4444;
+            --success-light: #10b981;
+
+            --card-bg: #1e293b;
+            --border-color: #334155;
+
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
         }
 
         body {
+
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-body);
+
+            background:
+                radial-gradient(circle at top left, rgba(14,165,233,0.08), transparent 25%),
+                radial-gradient(circle at bottom right, rgba(245,158,11,0.08), transparent 25%),
+                var(--bg-body);
+
             color: #f8fafc;
+
             margin: 0;
+
             display: flex;
+
+            overflow-x: hidden;
         }
 
+        /* SIDEBAR */
+
         .sidebar {
+
             width: var(--sidebar-width);
-            background: var(--bg-dark);
+
+            background: rgba(15, 23, 42, 0.95);
+
+            backdrop-filter: blur(10px);
+
             height: 100vh;
+
             position: fixed;
+
             left: 0;
             top: 0;
-            border-right: 1px solid #334155;
+
+            border-right: 1px solid rgba(255,255,255,0.05);
+
             display: flex;
+
             flex-direction: column;
+
             z-index: 1050;
+
+            box-shadow: 10px 0 25px rgba(0,0,0,0.25);
         }
 
         .sidebar-header {
+
             padding: 2rem 1.5rem;
+
             display: flex;
+
             align-items: center;
+
             gap: 12px;
+
+            border-bottom: 1px solid rgba(255,255,255,0.04);
         }
 
         .sidebar-header h4 {
+
             font-weight: 800;
+
             margin: 0;
+
             color: var(--accent);
+
             letter-spacing: -0.5px;
         }
 
         .menu-container {
+
             flex-grow: 1;
+
             overflow-y: auto;
+
             padding: 0 1rem;
         }
 
         .menu-title {
+
             font-size: 0.7rem;
+
             text-transform: uppercase;
+
             letter-spacing: 1.2px;
+
             color: #475569;
+
             padding: 1.5rem 1rem 0.5rem;
+
             font-weight: 800;
         }
 
         .nav-link-custom {
+
             display: flex;
+
             align-items: center;
-            padding: 12px 16px;
+
+            padding: 13px 16px;
+
             color: var(--text-muted);
+
             text-decoration: none;
-            border-radius: 12px;
-            margin-bottom: 4px;
+
+            border-radius: 14px;
+
+            margin-bottom: 6px;
+
             transition: var(--transition);
+
             font-weight: 500;
+
+            position: relative;
+
+            overflow: hidden;
+        }
+
+        .nav-link-custom::before {
+
+            content: "";
+
+            position: absolute;
+
+            left: -100%;
+
+            top: 0;
+
+            width: 100%;
+            height: 100%;
+
+            background: rgba(255,255,255,0.04);
+
+            transition: 0.4s;
+        }
+
+        .nav-link-custom:hover::before {
+            left: 0;
         }
 
         .nav-link-custom i {
-            font-size: 1.3rem;
+
+            font-size: 1.2rem;
+
             margin-right: 12px;
+
             transition: var(--transition);
         }
 
         .nav-link-custom:hover {
+
             background: rgba(245, 158, 11, 0.1);
+
             color: var(--accent);
+
+            transform: translateX(3px);
         }
 
         .nav-link-custom.active {
-            background: var(--accent);
+
+            background: linear-gradient(135deg, var(--accent), #fb923c);
+
             color: #000;
-            font-weight: 600;
+
+            font-weight: 700;
+
+            box-shadow: 0 10px 20px rgba(245,158,11,0.2);
         }
 
+        .nav-link-custom.active i {
+            transform: scale(1.1);
+        }
+
+        /* LINK PREVISÃO */
+
+        .nav-link-previsao:hover {
+
+            background: rgba(14, 165, 233, 0.12) !important;
+
+            color: var(--info-light) !important;
+        }
+
+        .nav-link-previsao.active {
+
+            background: linear-gradient(135deg, #0ea5e9, #38bdf8) !important;
+
+            color: white !important;
+        }
+
+        /* MAIN */
+
         .main-content {
+
             margin-left: var(--sidebar-width);
+
             width: calc(100% - var(--sidebar-width));
+
             min-height: 100vh;
+
             padding: 2.5rem;
         }
 
+        /* ALERTAS */
+
         .alert-custom {
-            background: #0f172a;
-            border: 1px solid #334155;
+
+            background: rgba(15, 23, 42, 0.95);
+
+            border: 1px solid rgba(255,255,255,0.05);
+
             color: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+
+            border-radius: 18px;
+
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15);
+
+            backdrop-filter: blur(8px);
         }
 
-        .menu-container::-webkit-scrollbar { width: 4px; }
-        .menu-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        /* CARDS */
+
+        .card {
+
+            border-radius: 24px !important;
+
+            overflow: hidden;
+
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+        }
+
+        /* SCROLL */
+
+        .menu-container::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .menu-container::-webkit-scrollbar-thumb {
+
+            background: #334155;
+
+            border-radius: 10px;
+        }
+
+        /* BOTÕES */
+
+        .btn {
+
+            border-radius: 14px !important;
+
+            transition: var(--transition);
+
+            font-weight: 600;
+        }
+
+        .btn:hover {
+
+            transform: translateY(-2px);
+
+            filter: brightness(1.05);
+        }
+
+        /* TABELAS */
+
+        .table {
+            border-color: rgba(255,255,255,0.05);
+        }
+
+        .table-hover tbody tr:hover {
+
+            background: rgba(255,255,255,0.03);
+        }
+
+        /* INPUTS */
+
+        .form-control,
+        .form-select {
+
+            background: #0f172a !important;
+
+            border: 1px solid rgba(255,255,255,0.08) !important;
+
+            color: white !important;
+
+            border-radius: 14px !important;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+
+            box-shadow: 0 0 0 0.2rem rgba(245,158,11,0.15) !important;
+
+            border-color: var(--accent) !important;
+        }
+
+        /* BADGES */
+
+        .badge {
+            border-radius: 999px !important;
+        }
+
+        /* ANIMAÇÃO */
+
+        .animate-page {
+
+            animation: fadePage 0.5s ease;
+        }
+
+        @keyframes fadePage {
+
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* RESPONSIVO */
+
+        @media (max-width: 992px) {
+
+            .sidebar {
+
+                width: 90px;
+            }
+
+            .sidebar-header h4,
+            .menu-title,
+            .nav-link-custom span {
+                display: none;
+            }
+
+            .main-content {
+
+                margin-left: 90px;
+
+                width: calc(100% - 90px);
+
+                padding: 1.5rem;
+            }
+
+            .nav-link-custom {
+
+                justify-content: center;
+            }
+
+            .nav-link-custom i {
+                margin-right: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+
+            .main-content {
+                padding: 1rem;
+            }
+        }
+
     </style>
 </head>
+
 <body>
 
+    <!-- SIDEBAR -->
     <aside class="sidebar">
+
         <div class="sidebar-header">
+
             <i class="bi bi-magic fs-3 text-warning"></i>
+
             <h4>Agatha's ERP</h4>
+
         </div>
 
         <div class="menu-container">
+
+            <!-- PRINCIPAL -->
             <div class="menu-title">Principal</div>
+
             <a href="/" class="nav-link-custom">
-                <i class="bi bi-grid-1x2-fill"></i> Dashboard
+                <i class="bi bi-grid-1x2-fill"></i>
+                <span>Dashboard</span>
             </a>
+
             <a href="/vendas" class="nav-link-custom">
-                <i class="bi bi-cart-check-fill"></i> Vendas
+                <i class="bi bi-cart-check-fill"></i>
+                <span>Vendas</span>
             </a>
+
             <a href="/estoque" class="nav-link-custom">
-                <i class="bi bi-box-seam-fill"></i> Estoque
+                <i class="bi bi-box-seam-fill"></i>
+                <span>Estoque</span>
             </a>
 
+            <a href="/compras" class="nav-link-custom">
+                <i class="bi bi-cart-plus-fill"></i>
+                <span>Compras</span>
+            </a>
+
+            <!-- PREVISÃO -->
+            <a href="/previsao-estoque" class="nav-link-custom nav-link-previsao">
+                <i class="bi bi-lightning-charge-fill"></i>
+                <span>Previsão Demanda</span>
+            </a>
+
+            <!-- CONFIG -->
             <div class="menu-title">Configurações</div>
+
             <a href="/cadastro" class="nav-link-custom">
-                <i class="bi bi-pencil-square"></i> Central de Cadastros
+                <i class="bi bi-pencil-square"></i>
+                <span>Central Cadastros</span>
             </a>
+
             <a href="/precificacao" class="nav-link-custom">
-                <i class="bi bi-tags-fill"></i> Precificação
+                <i class="bi bi-tags-fill"></i>
+                <span>Precificação</span>
             </a>
 
-            <!-- VISÍVEL APENAS PARA ADMIN E GERENTE -->
+            <a href="/importacoes" class="nav-link-custom">
+                <i class="bi bi-cloud-arrow-down-fill"></i>
+                <span>Importações</span>
+            </a>
+
+            <!-- GERENTE -->
             {% if session.get('nivel') in ['admin', 'gerente'] %}
+
             <a href="/usuarios" class="nav-link-custom">
-                <i class="bi bi-people-fill"></i> Gerenciar Equipe
+                <i class="bi bi-people-fill"></i>
+                <span>Gerenciar Equipe</span>
             </a>
+
             {% endif %}
 
-            <!-- VISÍVEL APENAS PARA ADMIN -->
+            <!-- ADMIN -->
             {% if session.get('nivel') == 'admin' %}
+
             <div class="menu-title">Administração</div>
+
             <a href="/admin/logs" class="nav-link-custom">
-                <i class="bi bi-shield-lock-fill"></i> Painel Admin
+                <i class="bi bi-shield-lock-fill"></i>
+                <span>Painel Admin</span>
             </a>
+
+            <a href="/auditoria" class="nav-link-custom">
+                <i class="bi bi-eye-fill"></i>
+                <span>Auditoria</span>
+            </a>
+
             {% endif %}
 
+            <!-- FINANCEIRO -->
             <div class="menu-title">Financeiro</div>
+
             <a href="/fluxo-caixa" class="nav-link-custom">
-                <i class="bi bi-cash-coin"></i> Fluxo de Caixa
+                <i class="bi bi-cash-coin"></i>
+                <span>Fluxo de Caixa</span>
             </a>
+
+            <a href="/financeiro" class="nav-link-custom">
+                <i class="bi bi-bank"></i>
+                <span>Financeiro</span>
+            </a>
+
             <a href="/relatorios" class="nav-link-custom">
-                <i class="bi bi-bar-chart-line-fill"></i> Relatórios
+                <i class="bi bi-bar-chart-line-fill"></i>
+                <span>Relatórios</span>
             </a>
+
         </div>
 
+        <!-- FOOTER -->
         <div class="p-3 border-top border-secondary border-opacity-10">
+
+            <div class="small text-white-50 mb-3 px-2">
+
+                <div class="fw-bold text-warning">
+                    {{ session.get('nivel', 'usuario')|upper }}
+                </div>
+
+                <small>Sistema Inteligente ERP</small>
+
+            </div>
+
             <a href="/logout" class="nav-link-custom text-danger">
-                <i class="bi bi-power"></i> Sair do Sistema
+                <i class="bi bi-power"></i>
+                <span>Sair do Sistema</span>
             </a>
+
         </div>
+
     </aside>
 
-    <main class="main-content">
-        <!-- NOTIFICAÇÕES (FLASH MESSAGES) -->
+    <!-- MAIN -->
+    <main class="main-content animate-page">
+
+        <!-- FLASH -->
         {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert alert-{{ category }} alert-dismissible fade show alert-custom mb-4 px-4 py-3" role="alert">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-info-circle-fill me-3 text-warning"></i>
-                    <span>{{ message }}</span>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
-              </div>
-            {% endfor %}
-          {% endif %}
+
+            {% if messages %}
+
+                {% for category, message in messages %}
+
+                    <div class="alert alert-{{ category }} alert-dismissible fade show alert-custom mb-4 px-4 py-3"
+                         role="alert">
+
+                        <div class="d-flex align-items-center">
+
+                            <i class="bi bi-info-circle-fill me-3 text-warning"></i>
+
+                            <span>{{ message }}</span>
+
+                        </div>
+
+                        <button type="button"
+                                class="btn-close btn-close-white"
+                                data-bs-dismiss="alert">
+                        </button>
+
+                    </div>
+
+                {% endfor %}
+
+            {% endif %}
+
         {% endwith %}
 
-        <!-- CONTEÚDO DAS PÁGINAS -->
+        <!-- CONTEÚDO -->
         {% block content %}{% endblock %}
+
     </main>
 
+    <!-- BOOTSTRAP -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
-        // Mantém o link do menu ativo conforme a página atual
+
+        // MENU ATIVO
         document.querySelectorAll('.nav-link-custom').forEach(link => {
+
             if (window.location.pathname === link.getAttribute('href')) {
+
                 link.classList.add('active');
             }
         });
+
+        // EXPORTAÇÃO PDF
+        function exportarPDF(elementoId = "conteudo-relatorio") {
+
+            const elemento = document.getElementById(elementoId);
+
+            if (!elemento) return;
+
+            html2pdf()
+                .set({
+                    margin: 0.5,
+                    filename: 'relatorio_agathas_erp.pdf',
+                    image: { type: 'jpeg', quality: 1 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: {
+                        unit: 'in',
+                        format: 'a4',
+                        orientation: 'portrait'
+                    }
+                })
+                .from(elemento)
+                .save();
+        }
+
+        // EXPORTAÇÃO EXCEL
+        function exportarExcel(tabelaId = "tabela-export") {
+
+            const tabela = document.getElementById(tabelaId);
+
+            if (!tabela) return;
+
+            const workbook = XLSX.utils.table_to_book(tabela, { sheet: "Relatorio" });
+
+            XLSX.writeFile(workbook, "relatorio_agathas_erp.xlsx");
+        }
+
     </script>
+
 </body>
 </html>

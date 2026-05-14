@@ -3,14 +3,14 @@
 {% block content %}
 <div class="container-fluid py-4 animate-in">
     <!-- HEADER -->
-    <div class="mb-5">
+    <div class="mb-5 px-md-4">
         <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.5rem; letter-spacing: -1.5px;">
             📝 Central de <span class="text-warning">Cadastros</span>
         </h1>
         <p class="text-white-50 fs-5">Gerencie insumos e produtos integrados ao <span class="text-info fw-bold">PostgreSQL</span>.</p>
     </div>
 
-    <div class="row g-4">
+    <div class="row g-4 px-md-4">
         <!-- Card 1: Matéria-Prima -->
         <div class="col-lg-6">
             <div class="card h-100 bg-dark-card border-0 shadow-lg p-2">
@@ -112,7 +112,7 @@
                             <select name="id_produto" class="form-select custom-input" required>
                                 <option value="" disabled selected>Selecione o produto...</option>
                                 {% for p in produtos %}
-                                    <option value="{{ p[0] }}">{{ p[1] }}</option>
+                                <option value="{{ p[0] }}">{{ p[1] }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -121,7 +121,7 @@
                             <select name="id_materia_prima" class="form-select custom-input" required>
                                 <option value="" disabled selected>Selecione o insumo...</option>
                                 {% for m in materias %}
-                                    <option value="{{ m[0] }}">{{ m[1] }} ({{ m[2] }})</option>
+                                <option value="{{ m[0] }}">{{ m[1] }} ({{ m[2] }})</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -150,6 +150,7 @@
         border-radius: 12px !important;
         padding: 0.75rem 1rem;
     }
+    .custom-input:focus { border-color: #6366f1 !important; box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.25); }
     .transition-btn { transition: all 0.3s ease; }
     .transition-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
     .animate-in { animation: fadeInBlur 0.6s ease-out; }

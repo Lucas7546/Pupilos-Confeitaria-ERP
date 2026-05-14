@@ -4,7 +4,7 @@ import pandas as pd
 import io
 from datetime import datetime
 from functools import wraps
-
+from modules import previsao
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
 from flask_login import (
     LoginManager, UserMixin, login_user,
@@ -379,7 +379,70 @@ def pagina_financeiro():
     except Exception as e:
         flash("Erro ao carregar dados financeiros", "warning")
         return redirect("/")
+    
+# --- ROTA: PRECIFICAÇÃO ---
+from psycopg2.extras import RealDictCursor
 
+@app.route("/precificacao")
+@login_required
+def precificacao():
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        # Esta Query faz a mágica:
+        # 1. Pega todos os produtos.
+        # 2. Procura na tabela 'receitas' os ingredientes vinculados.
+        # 3. Pega o preço de cada ingrediente na tabela 'materia_prima'.
+        # 4. Multiplica (quantidade_da_receita * preco_do_ingrediente) e soma tudo.
+        query = """
+            SELECT 
+                p.id, 
+                p.nome, 
+                p.preco as preco_venda,
+                COALESCE(SUM(r.quantidade * mp.preco), 0) as custo_producao
+            FROM produtos p
+            LEFT JOIN receitas r ON p.id = r.id_produto
+            LEFT JOIN materia_prima mp ON r.id_materia_prima = mp.id
+            GROUP BY p.id, p.nome, p.preco
+            ORDER BY p.nome ASC
+        """
+        cursor.execute(query)
+        produtos_db = cursor.fetchall()
+        
+        tabela_formatada = []
+        
+        for p in produtos_db:
+            custo = float(p['custo_producao'])
+            venda = float(p['preco_venda'])
+            
+            # Lógica das suas metas (Dashboard):
+            # 1. Equilíbrio: Custo + 10% de margem de segurança
+            equilibrio = custo * 1.10
+            
+            # 2. Sugerido: Markup para garantir 30% de margem líquida
+            # Fórmula: Preço = Custo / (1 - Margem Desejada)
+            sugerido = custo / 0.7 if custo > 0 else 0
+            
+            # 3. Regra de Alerta: Se o preço de venda for menor que o custo + 10%
+            alerta = venda < equilibrio if custo > 0 else False
+            
+            tabela_formatada.append({
+                "id": p['id'],
+                "nome": p['nome'],
+                "atual": venda,
+                "equilibrio": equilibrio,
+                "sugerido": sugerido,
+                "alerta": alerta
+            })
+
+    except Exception as e:
+        print(f"Erro ao calcular precificação: {e}")
+        tabela_formatada = []
+    finally:
+        cursor.close()
+
+    # IMPORTANTE: Enviamos a lista como 'tabela', que é o nome que você usou no {% for item in tabela %}
+    return render_template("precificacao.html", tabela=tabela_formatada)
 # --- ROTA: TELA DE AUDITORIA ---
 @app.route("/auditoria")
 @login_required
@@ -417,6 +480,21 @@ def exportar_logs():
 # =========================
 # GESTÃO DE USUÁRIOS & EQUIPE
 # =========================
+
+
+# --- ROTA: GERENCIAR EQUIPE ---
+@app.route("/equipe")
+@login_required
+def gerenciar_equipe():
+    if session.get("nivel") not in ["admin", "gerente"]:
+        abort(403)
+    return render_template("equipe.html")
+
+# --- ROTA: CENTRAL DE CADASTRO ---
+@app.route("/cadastro-central")
+@login_required
+def cadastro_central():
+    return render_template("cadastro_central.html")
 
 # --- ROTA: LISTAR EQUIPE (Acesso: Admin e Gerente) ---
 @app.route("/usuarios")
@@ -514,6 +592,139 @@ def importar_ifood():
         registrar_log("IMPORT_IFOOD", "VENDAS", f"Arquivo: {arquivo.filename}")
         flash("Processamento de iFood iniciado!", "info")
     return redirect("/importacoes")
+
+
+@app.route("/ficha-tecnica/<int:id_produto>")
+@login_required
+def ficha_tecnica(id_produto):
+    cursor = conn.cursor()
+    
+    # 1. Busca os dados básicos do produto
+    cursor.execute("SELECT id, nome, preco FROM produtos WHERE id = %s", (id_produto,))
+    produto = cursor.fetchone()
+    
+    if not produto:
+        return "Produto não encontrado", 404
+
+    # 2. Busca os ingredientes (itens da ficha técnica)
+    # Aqui fazemos um JOIN para pegar o nome e o preço unitário da matéria-prima
+    query_itens = """
+        SELECT 
+            mp.nome as item, 
+            r.quantidade as qtd, 
+            (r.quantidade * mp.preco) as custo_subtotal
+        FROM receitas r
+        JOIN materia_prima mp ON r.id_materia_prima = mp.id
+        WHERE r.id_produto = %s
+    """
+    cursor.execute(query_itens, (id_produto,))
+    # Transformamos em dicionário para facilitar o acesso no HTML i.item, i.qtd...
+    colunas = [desc[0] for desc in cursor.description]
+    itens = [dict(zip(colunas, row)) for row in cursor.fetchall()]
+    
+    # 3. Cálculos Financeiros
+    total_custo = sum(item['custo_subtotal'] for item in itens)
+    preco_venda = float(produto[2])
+    lucro = preco_venda - total_custo
+    
+    # Margem de lucro (evita divisão por zero)
+    margem = (lucro / preco_venda * 100) if preco_venda > 0 else 0
+    
+    return render_template(
+        "ficha_tecnica.html", 
+        produto=produto, 
+        itens=itens, 
+        total=total_custo, 
+        lucro=lucro, 
+        margem=margem
+    )
+
+
+
+@app.route("/previsao-estoque")
+def previsao_estoque():
+
+    conn = sqlite3.connect("erp.db")
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    # BUSCA MATÉRIAS-PRIMAS
+    cursor.execute("""
+        SELECT id, nome, estoque_atual, unidade
+        FROM materias_primas
+    """)
+
+    materias = cursor.fetchall()
+
+    previsoes = []
+
+    for materia in materias:
+
+        # VENDAS ÚLTIMOS 30 DIAS
+        cursor.execute("""
+            SELECT quantidade
+            FROM movimentacoes_estoque
+            WHERE materia_prima_id = ?
+            AND tipo = 'saida'
+            AND data_movimentacao >= date('now', '-30 day')
+        """, (materia["id"],))
+
+        movimentacoes = cursor.fetchall()
+
+        total_consumido = sum(m["quantidade"] for m in movimentacoes)
+
+        media_diaria = total_consumido / 30 if total_consumido > 0 else 0
+
+        # IA SIMPLES → tendência
+        fator_tendencia = 1.15
+
+        consumo_previsto_7d = round(media_diaria * 7 * fator_tendencia, 2)
+
+        consumo_previsto_15d = round(media_diaria * 15 * fator_tendencia, 2)
+
+        # dias restantes
+        if media_diaria > 0:
+            dias_restantes = round(materia["estoque_atual"] / media_diaria, 1)
+        else:
+            dias_restantes = 999
+
+        # nível de risco
+        if dias_restantes <= 2:
+            risco = "CRÍTICO"
+        elif dias_restantes <= 5:
+            risco = "ALTO"
+        elif dias_restantes <= 10:
+            risco = "MODERADO"
+        else:
+            risco = "BAIXO"
+
+        # sugestão compra
+        sugestao_compra = max(
+            round(consumo_previsto_15d - materia["estoque_atual"], 2),
+            0
+        )
+
+        previsoes.append({
+            "materia_prima": materia["nome"],
+            "estoque_atual": materia["estoque_atual"],
+            "unidade": materia["unidade"],
+            "consumo_previsto": consumo_previsto_7d,
+            "dias_restantes": dias_restantes,
+            "media_diaria": round(media_diaria, 2),
+            "consumo_15d": consumo_previsto_15d,
+            "risco": risco,
+            "sugestao_compra": sugestao_compra
+        })
+
+    conn.close()
+
+    # ordena pelo maior risco
+    previsoes.sort(key=lambda x: x["dias_restantes"])
+
+    return render_template(
+        "previsao.html",
+        previsoes=previsoes
+    )
 
 # =========================
 # INICIALIZAÇÃO

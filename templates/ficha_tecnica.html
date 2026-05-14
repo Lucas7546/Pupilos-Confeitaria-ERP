@@ -2,7 +2,6 @@
 
 {% block content %}
 <div class="container py-4 animate-in">
-    
     <!-- HEADER COM NAVEGAÇÃO -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
@@ -66,17 +65,17 @@
 
         <!-- COLUNA DA DIREITA: ANÁLISE COMERCIAL -->
         <div class="col-lg-5">
-            <div class="card bg-dark-card border-0 shadow-lg rounded-4 h-100">
-                <div class="card-header bg-black bg-opacity-30 border-0 py-3 px-4 text-center">
-                    <h5 class="mb-0 text-white fw-bold small text-uppercase tracking-wider">Performance Financeira</h5>
-                </div>
-                <div class="card-body p-4 d-flex flex-column justify-content-between">
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 h-100 p-4 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="card-header bg-transparent border-0 p-0 text-center mb-4">
+                        <h5 class="mb-0 text-white fw-bold small text-uppercase tracking-wider">Performance Financeira</h5>
+                    </div>
                     
                     <div class="text-center mb-4">
                         <span class="text-white-50 small text-uppercase">Preço de Venda</span>
                         <div class="display-5 fw-extrabold text-success mb-1">R$ {{ "%.2f"|format(produto[2]) }}</div>
                         <div class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
-                            Preço sugerido OK
+                            {% if margem >= 30 %}Preço sugerido OK{% else %}Preço abaixo da meta{% endif %}
                         </div>
                     </div>
 
@@ -117,12 +116,12 @@
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="mt-4 pt-4 border-top border-secondary border-opacity-10">
-                        <button class="btn btn-outline-info w-100 rounded-3 py-2 fw-bold">
-                            <i class="bi bi-graph-up-arrow me-2"></i>Simular Novo Preço
-                        </button>
-                    </div>
+                <div class="mt-4 pt-4 border-top border-secondary border-opacity-10">
+                    <button class="btn btn-outline-info w-100 rounded-3 py-2 fw-bold transition-btn" onclick="alert('Funcionalidade de simulação em desenvolvimento!')">
+                        <i class="bi bi-graph-up-arrow me-2"></i>Simular Novo Preço
+                    </button>
                 </div>
             </div>
         </div>
@@ -130,25 +129,17 @@
 </div>
 
 <style>
-    .bg-dark-card { background: #1e293b !important; }
+    .bg-dark-card { background: #1e293b !important; border-radius: 24px; }
     .tracking-wider { letter-spacing: 0.05em; }
     .fw-extrabold { font-weight: 800; }
     .font-monospace { font-family: 'JetBrains Mono', monospace !important; }
-    
-    .animate-in { 
-        animation: slideIn 0.5s ease-out forwards; 
-    }
-
-    @keyframes slideIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
+    .transition-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+    .animate-in { animation: slideIn 0.5s ease-out forwards; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @media print {
-        .btn, .breadcrumb, .alert-info-button { display: none !important; }
+        .btn, .breadcrumb { display: none !important; }
         .bg-dark-card { background: white !important; color: black !important; border: 1px solid #ddd !important; }
         .table-dark { --bs-table-bg: white !important; color: black !important; }
-        .text-white, .text-white-50 { color: black !important; }
+        .text-white, .text-white-50, .text-info, .text-success, .text-warning { color: black !important; }
     }
 </style>
-{% endblock %}

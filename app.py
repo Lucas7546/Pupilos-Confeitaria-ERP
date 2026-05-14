@@ -832,39 +832,25 @@ def editar_usuario(id_usuario):
 # =========================================================
 # PAINEL ADMIN
 # =========================================================
-@app.route("/admin/config")
 @login_required
 def area_admin():
-
-    if session.get("nivel") != "admin":
-
-        flash(
-            "Acesso restrito ao administrador.",
-            "danger"
-        )
-
+    # Usando o current_user que é mais confiável com Flask-Login
+    if current_user.nivel != "admin":
+        flash("Acesso restrito ao administrador.", "danger")
         return redirect(url_for("dashboard"))
 
     try:
-
-        total_usuarios = len(
-            usuarios.listar_usuarios()
-        )
+        # Busca a lista para contar
+        lista = usuarios.listar_usuarios()
+        total_usuarios = len(lista) if lista else 0
 
         return render_template(
             "admin_panel.html",
             total_usuarios=total_usuarios
         )
-
     except Exception as e:
-
         print(f"Erro painel admin: {e}")
-
-        flash(
-            f"Erro painel admin: {e}",
-            "danger"
-        )
-
+        flash(f"Erro ao carregar painel: {e}", "danger")
         return redirect(url_for("dashboard"))
     
 

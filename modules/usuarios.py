@@ -218,3 +218,18 @@ def atualizar_nivel(id_usuario, novo_nivel):
     finally:
         if conn:
             conn.close()
+
+
+def excluir_usuario(id_usuario):
+    conn = conectar_banco() # Sua função de conexão
+    cur = conn.cursor()
+    try:
+        cur.execute("DELETE FROM usuarios WHERE id_usuario = %s", (id_usuario,))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Erro ao excluir: {e}")
+        return False
+    finally:
+        cur.close()
+        conn.close()

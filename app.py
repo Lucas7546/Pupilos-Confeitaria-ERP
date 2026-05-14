@@ -143,6 +143,18 @@ def logout():
     session.clear()
     return redirect("/login")
 
+
+@app.route("/usuarios/excluir/<int:id>", methods=["POST"])
+@login_required
+@acesso_requerido("admin") # Garante que só admin deleta
+def deletar_user(id):
+    if usuarios.excluir_usuario(id):
+        flash("Usuário removido com sucesso!", "success")
+    else:
+        flash("Erro ao tentar remover usuário.", "danger")
+    
+    return redirect("/usuarios")
+
 # =========================
 # DASHBOARD
 # =========================

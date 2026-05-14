@@ -1,42 +1,47 @@
-from modules.db import conectar
+import psycopg2
 
-username = input("Usuário para deletar: ").strip()
+# 1. COLE AQUI sua "External Database URL" do Render
+DATABASE_URL = "postgresql://auto:1peVWgi0dFxVFmAK0m6ZXoG8wTUuzEto@dpg-d8286f6k1jcs73e67gd0-a.ohio-postgres.render.com/pupilos"
 
-conn = conectar()
-cursor = conn.cursor()
-
-cursor.execute("""
-    DELETE FROM usuarios
-    WHERE username = %s
-""", (username,))
-
-conn.commit()
-conn.close()
-
-print("Usuário deletado com sucesso!")
-
-
-
-import psycopg2 # ou sqlite3 se ainda estiver local
-
-def criar_super_admin():
-    # Conecte ao seu banco (ajuste os dados se for Postgres)
-    conn = psycopg2.connect("sua_url_do_render_aqui")
-    cur = conn.cursor()
+def excluir_por_terminal():
+    print("=== EXCLUSOR DE USUÁRIOS (NUVEM) ===")
     
-    # 1. Deleta o usuário antigo se ele existir
-    cur.execute("DELETE FROM usuarios WHERE usuario = 'amanda'")
-    
-    # 2. Cria o novo usuário com nível 'admin' e ativo (1)
-    # Assumindo a ordem: usuario, senha, nivel, ativo
-    cur.execute("""
-        INSERT INTO usuarios (usuario, senha, nivel, ativo) 
-        VALUES (%s, %s, %s, %s)
-    """, ('amanda', '741963', 'gerente', 2))
-    
-    conn.commit()
-    cur.close()
-    conn.close()
-    print("✔ Super Admin criado com sucesso!")
+    # Vamos pedir o nome do usuário para facilitar sua vida
+    username = input("Digite o 'username' de quem deseja excluir: ").strip().lower()
 
-criar_super_admin()
+    if not username:
+        print("❌ Você precisa digitar um nome.")
+        return
+
+    confirmacao = input(f"⚠️ TEM CERTEZA que deseja apagar '{username}'? (sim/não): ").strip().lower()
+    if confirmacao != 'sim':
+        print("Ufa! Operação cancelada.")
+        return
+
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+
+        # Primeiro verificamos se o cara existe
+        cur.execute("SELECT id_usuario FROM usuarios WHERE username = %s", (username,))
+        resultado = cur.fetchone()
+
+        if not resultado:
+            print(f"❌ Usuário '{username}' não foi encontrado no banco.")
+            return
+
+        # Se existe, deletamos
+        cur.execute("DELETE FROM usuarios WHERE username = %s", (username,))
+        
+        conn.commit()
+        print(f"\n✔ Usuário '{username}' foi removido com sucesso do banco do Render!")
+
+    except Exception as e:
+        print(f"❌ Erro ao conectar ou excluir: {e}")
+    finally:
+        if 'conn' in locals():
+            cur.close()
+            conn.close()
+
+if __name__ == "__main__":
+    excluir_por_terminal()

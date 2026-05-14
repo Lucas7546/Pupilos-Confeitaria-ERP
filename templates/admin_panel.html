@@ -2,7 +2,6 @@
 
 {% block content %}
 <div class="container-fluid py-4 animate-in">
-    <!-- HEADER -->
     <div class="mb-5">
         <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.5rem; letter-spacing: -1.5px;">
             🛡️ Painel de <span class="text-warning">Administração</span>
@@ -10,10 +9,9 @@
         <p class="text-white-50 fs-5">Controle de segurança, logs de auditoria e configurações críticas.</p>
     </div>
 
-    <!-- CARDS DE RESUMO RÁPIDO -->
     <div class="row g-4 mb-5">
         <div class="col-md-4">
-            <div class="card bg-dark-card border-0 shadow-sm p-3">
+            <div class="card bg-dark-card border-0 shadow-sm p-3 h-100">
                 <div class="d-flex align-items-center">
                     <div class="icon-box bg-warning bg-opacity-10 text-warning me-3">
                         <i class="bi bi-shield-check fs-3"></i>
@@ -25,15 +23,30 @@
                 </div>
             </div>
         </div>
+        
         <div class="col-md-4">
-            <div class="card bg-dark-card border-0 shadow-sm p-3">
+            <div class="card bg-dark-card border-0 shadow-sm p-3 h-100">
                 <div class="d-flex align-items-center">
                     <div class="icon-box bg-info bg-opacity-10 text-info me-3">
                         <i class="bi bi-people fs-3"></i>
                     </div>
                     <div>
-                        <h6 class="text-white-50 mb-0 small">SESSÕES ATIVAS</h6>
-                        <span class="fw-bold text-white">Monitorando conexões</span>
+                        <h6 class="text-white-50 mb-0 small">USUÁRIOS CADASTRADOS</h6>
+                        <span class="fw-bold text-white">{{ total_usuarios }} Contas</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-dark-card border-0 shadow-sm p-3 h-100">
+                <div class="d-flex align-items-center">
+                    <div class="icon-box bg-success bg-opacity-10 text-success me-3">
+                        <i class="bi bi-lock fs-3"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-white-50 mb-0 small">SEGURANÇA</h6>
+                        <span class="fw-bold text-white">SSL Ativo</span>
                     </div>
                 </div>
             </div>
@@ -41,48 +54,34 @@
     </div>
 
     <div class="row g-4">
-        <!-- SEÇÃO DE LOGS/AUDITORIA -->
         <div class="col-12">
             <div class="card bg-dark-card border-0 shadow-lg">
                 <div class="card-header border-0 bg-transparent py-4 px-4 d-flex justify-content-between align-items-center">
-                    <h4 class="fw-bold text-white mb-0"><i class="bi bi-journal-text me-2 text-warning"></i>Logs de Atividade Recentes</h4>
-                    <span class="badge bg-secondary">Apenas leitura</span>
+                    <h4 class="fw-bold text-white mb-0">
+                        <i class="bi bi-journal-text me-2 text-warning"></i>Logs de Atividade
+                    </h4>
+                    <span class="badge bg-secondary">Auditoria</span>
                 </div>
-                <div class="card-body px-0 pt-0">
-                    <div class="table-responsive">
-                        <table class="table table-dark table-hover mb-0 align-middle">
-                            <thead class="bg-black bg-opacity-20">
-                                <tr>
-                                    <th class="px-4 py-3 border-0 small text-white-50">DATA/HORA</th>
-                                    <th class="py-3 border-0 small text-white-50">USUÁRIO</th>
-                                    <th class="py-3 border-0 small text-white-50">AÇÃO</th>
-                                    <th class="py-3 border-0 small text-white-50">MÓDULO</th>
-                                    <th class="px-4 py-3 border-0 small text-white-50">DETALHES</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Exemplo de como os logs apareceriam -->
-                                <tr>
-                                    <td class="px-4 small">14/05/2026 01:20</td>
-                                    <td><span class="badge bg-warning text-dark">admin</span></td>
-                                    <td>CRIAR_USER</td>
-                                    <td>USUARIOS</td>
-                                    <td class="px-4 text-white-50">Criou novo usuário: 'agatha_gerente'</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-4 small">14/05/2026 01:15</td>
-                                    <td><span class="badge bg-info">gerente</span></td>
-                                    <td>CADASTRO_MP</td>
-                                    <td>ESTOQUE</td>
-                                    <td class="px-4 text-white-50">Cadastrou insumo: 'Farinha de Trigo'</td>
-                                </tr>
-                                <!-- Aqui você faria um loop {% for log in logs %} no futuro -->
-                            </tbody>
-                        </table>
+                
+                <div class="card-body px-4 pb-4">
+                    <p class="text-white-50">Para garantir a performance do painel, a visualização completa de todos os logs do sistema (quem vendeu, quem alterou estoque, quem logou) deve ser acessada na página dedicada de auditoria.</p>
+                    
+                    <div class="d-flex gap-3">
+                        <a href="/admin/logs" class="btn btn-warning fw-bold px-4">
+                            <i class="bi bi-search me-2"></i>ABRIR AUDITORIA COMPLETA
+                        </a>
+                        
+                        <a href="/usuarios" class="btn btn-outline-light border-opacity-25 px-4">
+                            <i class="bi bi-person-gear me-2"></i>GERENCIAR USUÁRIOS
+                        </a>
                     </div>
                 </div>
-                <div class="card-footer bg-transparent border-0 text-center py-3">
-                    <a href="#" class="btn btn-sm btn-outline-secondary">Ver histórico completo</a>
+
+                <div class="card-footer bg-black bg-opacity-20 border-0 py-3 px-4">
+                    <small class="text-white-50">
+                        <i class="bi bi-info-circle me-1"></i> 
+                        Ações críticas são registradas automaticamente com IP e Data/Hora.
+                    </small>
                 </div>
             </div>
         </div>
@@ -99,13 +98,11 @@
         justify-content: center;
         border-radius: 12px;
     }
-    .table-hover tbody tr:hover {
-        background-color: rgba(255, 255, 255, 0.03) !important;
-    }
     .animate-in { animation: fadeInBlur 0.5s ease-out; }
     @keyframes fadeInBlur {
         from { opacity: 0; filter: blur(10px); transform: translateY(10px); }
         to { opacity: 1; filter: blur(0); transform: translateY(0); }
     }
+    .fw-extrabold { font-weight: 800; }
 </style>
 {% endblock %}

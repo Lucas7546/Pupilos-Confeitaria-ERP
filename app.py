@@ -285,6 +285,42 @@ def vincular_receita():
         
     return redirect(url_for('render_cadastro'))
 
+
+# --- ROTA: EXCLUIR PRODUTO ---
+@app.route("/excluir-produto/<int:id_produto>")
+@login_required
+def deletar_produto(id_produto):
+    if session.get("nivel") not in ["admin", "gerente"]:
+        flash("Acesso negado! Apenas Gerentes podem excluir produtos.", "danger")
+        return redirect(url_for('listar_estoque')) # Ajuste para sua rota de estoque
+
+    try:
+        usuarios.excluir_produto(id_produto)
+        # Registrar na auditoria que você já tem pronta
+        registrar_log(session.get('user'), "EXCLUIR", "ESTOQUE", f"Removeu produto ID {id_produto}")
+        flash("Produto removido com sucesso!", "success")
+    except Exception as e:
+        flash(f"Erro ao excluir: {e}", "danger")
+    
+    return redirect(url_for('listar_estoque'))
+
+# --- ROTA: EXCLUIR MATÉRIA-PRIMA ---
+@app.route("/excluir-mp/<int:id_mp>")
+@login_required
+def deletar_mp(id_mp):
+    if session.get("nivel") not in ["admin", "gerente"]:
+        flash("Permissão insuficiente.", "danger")
+        return redirect(url_for('listar_estoque'))
+
+    try:
+        usuarios.excluir_materia_prima(id_mp)
+        registrar_log(session.get('user'), "EXCLUIR", "MATERIA_PRIMA", f"Removeu insumo ID {id_mp}")
+        flash("Matéria-prima removida!", "info")
+    except Exception as e:
+        flash(f"Erro ao excluir: {e}", "danger")
+        
+    return redirect(url_for('listar_estoque'))
+
 # =========================
 # VENDAS
 # =========================
@@ -344,49 +380,123 @@ def pagina_financeiro():
         flash("Erro ao carregar dados financeiros", "warning")
         return redirect("/")
 
+# --- ROTA: TELA DE AUDITORIA ---
 @app.route("/auditoria")
 @login_required
-@acesso_requerido("auditoria")
 def auditoria():
-    logs_data = usuarios.listar_logs_auditoria(100)
-    return render_template('auditoria.html', logs=logs_data)
+    # Segurança em duas camadas: Decorator + Verificação de Nível
+    if session.get("nivel") != "admin":
+        flash("Acesso restrito! Somente administradores podem ver a auditoria.", "danger")
+        return redirect(url_for('index'))
+    
+    try:
+        # Busca os últimos 100 logs
+        logs_data = usuarios.listar_logs_auditoria(100)
+        return render_template('auditoria.html', logs=logs_data)
+    except Exception as e:
+        flash(f"Erro ao carregar logs: {e}", "danger")
+        return redirect(url_for('index'))
 
+# --- ROTA: EXPORTAR LOGS (Para o botão do HTML funcionar) ---
+@app.route("/logs/exportar")
+@login_required
+def exportar_logs():
+    if session.get("nivel") != "admin":
+        abort(403)
+        
+    logs_data = usuarios.listar_logs_auditoria(500) # Exporta mais logs para o arquivo
+    
+    # Converte os dados para JSON formatado
+    json_output = json.dumps(logs_data, indent=4, default=str)
+    
+    return Response(
+        json_output,
+        mimetype="application/json",
+        headers={"Content-disposition": "attachment; filename=auditoria_agatha_erp.json"}
+    )
 # =========================
-# GESTÃO DE USUÁRIOS
+# GESTÃO DE USUÁRIOS & EQUIPE
 # =========================
+
+# --- ROTA: LISTAR EQUIPE (Acesso: Admin e Gerente) ---
 @app.route("/usuarios")
 @login_required
-@acesso_requerido("usuarios")
-def usuarios_page():
-    return render_template("usuarios.html", usuarios_lista=usuarios.listar_usuarios())
+def listar_usuarios():
+    # Bloqueio de segurança: Se não for admin ou gerente, volta para a index
+    if session.get("nivel") not in ["admin", "gerente"]:
+        flash("Acesso negado! Área exclusiva para Gerência ou Admin.", "danger")
+        return redirect(url_for('index'))
+    
+    # Busca a lista de usuários no banco (PostgreSQL)
+    try:
+        lista = usuarios.listar_todos() 
+        return render_template("usuarios.html", equipe=lista)
+    except Exception as e:
+        flash(f"Erro ao carregar equipe: {e}", "danger")
+        return redirect(url_for('index'))
 
+# --- ROTA: CRIAR USUÁRIO (Acesso: APENAS Admin) ---
 @app.route("/criar-usuario", methods=["POST"])
 @login_required
-@acesso_requerido("usuarios")
 def criar_usuario():
-    user = request.form["username"].strip().lower()
-    passw = request.form["senha"].strip()
-    nivel = request.form["nivel"]
+    # Trava de segurança: Apenas Admin pode criar novos perfis
+    if session.get("nivel") != "admin":
+        flash("Apenas Administradores podem criar novos usuários.", "danger")
+        return redirect(url_for('listar_usuarios'))
+
+    user = request.form.get("username").strip().lower()
+    passw = request.form.get("senha").strip()
+    nivel = request.form.get("nivel") # admin, gerente, vendedor, etc.
     
     if len(passw) < 6:
-        flash("Senha curta demais!", "danger")
+        flash("A senha deve ter no mínimo 6 caracteres!", "warning")
     else:
-        hash_senha = generate_password_hash(passw)
-        usuarios.criar_usuario(user, hash_senha, nivel)
-        registrar_log("CRIAR_USER", "USUARIOS", f"Criou {user}")
-        flash("Usuário criado!", "success")
-    return redirect("/usuarios")
+        try:
+            hash_senha = generate_password_hash(passw)
+            if usuarios.criar_usuario(user, hash_senha, nivel):
+                # registrar_log é opcional, caso você tenha essa função de auditoria
+                # registrar_log("CRIAR_USER", "USUARIOS", f"Criou {user}")
+                flash(f"Usuário '{user}' criado com sucesso!", "success")
+            else:
+                flash("Erro ao salvar no banco. Verifique se o login já existe.", "danger")
+        except Exception as e:
+            flash(f"Erro técnico: {e}", "danger")
 
+    return redirect(url_for('listar_usuarios'))
+
+# --- ROTA: ATIVAR/DESATIVAR USUÁRIO (Acesso: APENAS Admin) ---
 @app.route("/toggle-usuario/<int:id_usuario>")
 @login_required
-@acesso_requerido("usuarios")
 def toggle_usuario(id_usuario):
-    user_db = usuarios.buscar_usuario_id(id_usuario)
-    if user_db:
-        novo_status = 0 if user_db[4] == 1 else 1
-        usuarios.alterar_status(id_usuario, novo_status)
-        flash("Status alterado!", "success")
-    return redirect("/usuarios")
+    # Trava de segurança: Gerentes vêem a lista, mas só Admin desativa pessoas
+    if session.get("nivel") != "admin":
+        flash("Permissão insuficiente para alterar status de usuários.", "danger")
+        return redirect(url_for('listar_usuarios'))
+
+    try:
+        user_db = usuarios.buscar_usuario_id(id_usuario)
+        if user_db:
+            # Assume-se que o status está na coluna índice 4 (ajuste conforme seu banco)
+            # Se status for 1 (ativo), vira 0 (inativo) e vice-versa
+            novo_status = 0 if user_db[4] == 1 else 1
+            usuarios.alterar_status(id_usuario, novo_status)
+            
+            status_txt = "Ativado" if novo_status == 1 else "Desativado"
+            flash(f"Usuário {user_db[1]} foi {status_txt}!", "info")
+        else:
+            flash("Usuário não encontrado.", "warning")
+    except Exception as e:
+        flash(f"Erro ao alterar status: {e}", "danger")
+
+    return redirect(url_for('listar_usuarios'))
+
+# --- ROTA: PAINEL DE CONFIGURAÇÃO (Acesso: APENAS Admin) ---
+@app.route("/admin/config")
+@login_required
+def area_admin():
+    if session.get("nivel") != "admin":
+        abort(403) 
+    return render_template("admin_panel.html") # <--- Este nome
 
 # =========================
 # IMPORTAÇÕES

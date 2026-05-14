@@ -233,3 +233,16 @@ def excluir_usuario(id_usuario):
     finally:
         cur.close()
         conn.close()
+
+
+def excluir_produto(id_produto):
+    with conectar_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM produtos WHERE id = %s", (id_produto,))
+        conn.commit()
+
+def excluir_materia_prima(id_mp):
+    with conectar_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM materia_prima WHERE id = %s", (id_mp,))
+        conn.commit()

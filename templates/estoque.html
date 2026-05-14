@@ -77,11 +77,23 @@
                             {% endif %}
                         </td>
                         <td class="text-end pe-4">
-                            <button class="btn btn-outline-warning btn-sm px-3 rounded-3 fw-bold"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#modalEditar{{ item[0] }}">
-                                <i class="bi bi-pencil-square"></i> AJUSTAR
-                            </button>
+                            <div class="d-flex justify-content-end gap-2">
+                                <!-- BOTÃO AJUSTAR (Sempre visível) -->
+                                <button class="btn btn-outline-warning btn-sm px-3 rounded-3 fw-bold"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalEditar{{ item[0] }}">
+                                    <i class="bi bi-pencil-square"></i> AJUSTAR
+                                </button>
+
+                                <!-- BOTÃO EXCLUIR (Apenas Admin/Gerente) -->
+                                {% if session.get('nivel') in ['admin', 'gerente'] %}
+                                <a href="/excluir-mp/{{ item[0] }}" 
+                                   class="btn btn-outline-danger btn-sm px-2 rounded-3"
+                                   onclick="return confirm('ATENÇÃO: Deseja realmente excluir {{ item[1] }} do estoque?')">
+                                    <i class="bi bi-trash3"></i>
+                                </a>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
 
@@ -131,6 +143,12 @@
     .transition-all { transition: all 0.2s ease-in-out; }
     tr:hover { background-color: rgba(255, 255, 255, 0.02) !important; }
     
+    .btn-outline-danger:hover {
+        background-color: #dc3545 !important;
+        color: white !important;
+        box-shadow: 0 0 15px rgba(220, 53, 69, 0.4);
+    }
+
     .font-monospace { font-family: 'JetBrains Mono', 'Courier New', monospace !important; }
     
     .animate-in { 

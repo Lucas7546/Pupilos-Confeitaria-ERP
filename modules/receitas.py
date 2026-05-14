@@ -49,30 +49,17 @@ def listar_itens_receita(id_produto):
     try:
         con = conectar()
         cursor = con.cursor()
-
         cursor.execute("""
             SELECT 
-                mp.id_materia_prima,
-                mp.nome,
-                r.quantidade_utilizada,
-                mp.unidade_medida,
-                mp.preco_unitario
+                mp.id_materia_prima, mp.nome, r.quantidade_utilizada, mp.unidade_medida, mp.preco_unitario
             FROM receitas r
-            JOIN materia_prima mp 
-                ON mp.id_materia_prima = r.id_materia_prima
+            JOIN materia_prima mp ON mp.id_materia_prima = r.id_materia_prima
             WHERE r.id_produto = %s
             ORDER BY mp.nome ASC
         """, (id_produto,))
-
         return cursor.fetchall()
-
-    except Exception as e:
-        print(f"Erro ao listar receita: {e}")
-        return []
-
     finally:
-        if con:
-            con.close()
+        if con: con.close()
 
 
 # =========================================================
@@ -122,34 +109,17 @@ def calcular_custo_receita(id_produto):
     try:
         con = conectar()
         cursor = con.cursor()
-
         cursor.execute("""
             SELECT r.quantidade_utilizada, mp.preco_unitario
             FROM receitas r
-            JOIN materia_prima mp 
-                ON mp.id_materia_prima = r.id_materia_prima
+            JOIN materia_prima mp ON mp.id_materia_prima = r.id_materia_prima
             WHERE r.id_produto = %s
         """, (id_produto,))
-
         linhas = cursor.fetchall()
-
-        if not linhas:
-            return 0.0
-
-        total = 0.0
-
-        for qtd, preco in linhas:
-            total += float(qtd or 0) * float(preco or 0)
-
+        total = sum(float(qtd or 0) * float(preco or 0) for qtd, preco in linhas)
         return round(total, 2)
-
-    except Exception as e:
-        print(f"Erro ao calcular custo: {e}")
-        return 0.0
-
     finally:
-        if con:
-            con.close()
+        if con: con.close()
 
 
 # =========================================================

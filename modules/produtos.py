@@ -1,53 +1,42 @@
 from modules.db import conectar
 
-def cadastrar_produto(nome, preco_venda):
-    """
-    Cadastra um novo produto no banco Postgres.
-    """
+def cadastrar_produto(nome, preco_venda, categoria="Geral"):
     con = None
     try:
         con = conectar()
         cur = con.cursor()
-
         cur.execute("""
-            INSERT INTO produtos (nome, preco_venda)
-            VALUES (%s, %s)
-        """, (nome, preco_venda))
-
+            INSERT INTO produtos (nome, preco_venda, categoria)
+            VALUES (%s, %s, %s)
+        """, (nome, preco_venda, categoria))
         con.commit()
-        cur.close()
         return True
-
     except Exception as e:
         print(f"Erro ao cadastrar produto: {e}")
         return False
     finally:
-        if con:
-            con.close()
+        if con: con.close()
 
 def buscar_produto_por_nome(nome):
-    """
-    Busca produtos usando busca textual insensível a maiúsculas (ILIKE).
-    """
     con = None
     try:
         con = conectar()
         cur = con.cursor()
 
-        # O Postgres usa %s para parâmetros e ILIKE para busca parcial sem case-sensitive
         cur.execute("""
-            SELECT id_produto, nome, preco_venda
+            SELECT 
+                id_produto,
+                nome,
+                preco_venda,
+                categoria
             FROM produtos
             WHERE nome ILIKE %s
+            AND ativo = 1
             ORDER BY nome ASC
         """, ('%' + nome + '%',))
 
-        produtos = cur.fetchall()
-        cur.close()
-        return produtos
-    except Exception as e:
-        print(f"Erro ao buscar produtos: {e}")
-        return []
+        return cur.fetchall()
+
     finally:
         if con:
             con.close()
@@ -81,14 +70,45 @@ def calcular_cenarios_preco(id_produto, preco_venda_atual):
         "custo_real": round(custo_base, 2)
     }
 
+
+
+def listar_todos():
+    con = None
+    try:
+        con = conectar()
+        cur = con.cursor()
+        # id_produto, nome, preco_venda conforme seu SQL
+        cur.execute("SELECT id_produto, nome, preco_venda, categoria FROM produtos ORDER BY nome ASC")
+        return cur.fetchall()
+    finally:
+        if con: con.close()
+
+
+def vincular_insumo(id_produto, id_materia, quantidade):
+    con = None
+    try:
+        con = conectar()
+        cur = con.cursor()
+        cur.execute("SELECT id_receita FROM receitas WHERE id_produto = %s AND id_materia_prima = %s", (id_produto, id_materia))
+        existe = cur.fetchone()
+        
+        if existe:
+            cur.execute("UPDATE receitas SET quantidade_utilizada = %s WHERE id_receita = %s", (quantidade, existe[0]))
+        else:
+            cur.execute("INSERT INTO receitas (id_produto, id_materia_prima, quantidade_utilizada) VALUES (%s, %s, %s)", 
+                        (id_produto, id_materia, quantidade))
+        con.commit()
+        return True
+    finally:
+        if con: con.close()
+
 def calcular_capacidade_geral():
-    """
-    Calcula quantos produtos podem ser feitos com o estoque atual de matéria-prima.
-    """
+
     from modules.estoque import calcular_estoque
 
     produtos_lista = buscar_produto_por_nome("")
     capacidade_total = []
+
     con = None
 
     try:
@@ -96,10 +116,14 @@ def calcular_capacidade_geral():
         cur = con.cursor()
 
         for p in produtos_lista:
-            id_p, nome_p, preco = p
+
+            id_p = p[0]
+            nome_p = p[1]
 
             cur.execute("""
-                SELECT id_materia_prima, quantidade_utilizada
+                SELECT
+                    id_materia_prima,
+                    quantidade_utilizada
                 FROM receitas
                 WHERE id_produto = %s
             """, (id_p,))
@@ -112,10 +136,10 @@ def calcular_capacidade_geral():
             limites = []
 
             for id_mp, qtd_necessaria in ingredientes:
+
                 saldo_atual = calcular_estoque(id_mp)
 
                 if qtd_necessaria > 0:
-                    # Divisão inteira no Python (//) para saber unidades completas
                     pode_fazer = saldo_atual // qtd_necessaria
                     limites.append(pode_fazer)
 
@@ -125,10 +149,12 @@ def calcular_capacidade_geral():
                 "nome": nome_p,
                 "qtd": capacidade_real
             })
-        
+
         cur.close()
+
     except Exception as e:
-        print(f"Erro ao calcular capacidade: {e}")
+        print(f"Erro calcular capacidade: {e}")
+
     finally:
         if con:
             con.close()

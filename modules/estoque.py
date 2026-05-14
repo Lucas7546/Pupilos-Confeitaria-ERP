@@ -88,75 +88,44 @@ def listar_materia_prima():
     try:
         con = conectar()
         cur = con.cursor()
-
         cur.execute("""
             SELECT 
-                m.id_materia_prima,
-                m.nome,
-                m.unidade_medida,
-                m.estoque_minimo,
-                m.preco_unitario,
-                (
-                    SELECT COALESCE(SUM(CASE WHEN tipo_movimento IN ('entrada', 'ajuste') THEN quantidade ELSE 0 END), 0)
-                    - COALESCE(SUM(CASE WHEN tipo_movimento = 'saida' THEN quantidade ELSE 0 END), 0)
-                    FROM movimentacao_estoque mov
-                    WHERE mov.id_materia_prima = m.id_materia_prima
-                ) as saldo_atual
+                m.id_materia_prima, m.nome, m.unidade_medida, m.estoque_minimo, m.preco_unitario,
+                COALESCE(SUM(CASE WHEN mov.tipo_movimento IN ('entrada', 'ajuste') THEN mov.quantidade ELSE 0 END), 0) -
+                COALESCE(SUM(CASE WHEN mov.tipo_movimento = 'saida' THEN mov.quantidade ELSE 0 END), 0) as saldo
             FROM materia_prima m
+            LEFT JOIN movimentacao_estoque mov ON m.id_materia_prima = mov.id_materia_prima
+            GROUP BY m.id_materia_prima, m.nome, m.unidade_medida, m.estoque_minimo, m.preco_unitario
             ORDER BY m.nome ASC
         """)
-
-        materias_db = cur.fetchall()
-
-        dados_formatados = []
-
-        for m in materias_db:
-            id_mp, nome, unidade, minimo, preco, atual = m
-
-            status = "BAIXO" if float(atual or 0) <= float(minimo or 0) else "OK"
-
-            dados_formatados.append((
-                id_mp,
-                nome,
-                unidade,
-                minimo,
-                float(atual or 0),
-                status
-            ))
-
-        return dados_formatados
-
+        materias = cur.fetchall()
+        return [(m[0], m[1], m[2], m[3], float(m[5]), "BAIXO" if float(m[5]) <= float(m[3]) else "OK") for m in materias]
     finally:
-        if con:
-            con.close()
-
+        if con: con.close()
 
 # =========================================================
 # CADASTRAR MATÉRIA PRIMA
 # =========================================================
-def cadastrar_materia_prima(nome, unidade, minimo, preco):
+def cadastrar_materia(nome, unidade, preco, estoque_inicial, estoque_minimo):
     con = None
     try:
         con = conectar()
         cur = con.cursor()
-
         cur.execute("""
-            INSERT INTO materia_prima 
-            (nome, unidade_medida, estoque_minimo, preco_unitario)
-            VALUES (%s, %s, %s, %s)
-        """, (nome, unidade, float(minimo), float(preco)))
-
+            INSERT INTO materia_prima (nome, unidade_medida, preco_unitario, estoque_minimo)
+            VALUES (%s, %s, %s, %s) RETURNING id_materia_prima
+        """, (nome, unidade, preco, estoque_minimo))
+        id_mp = cur.fetchone()[0]
+        
+        if estoque_inicial > 0:
+            cur.execute("""
+                INSERT INTO movimentacao_estoque (id_materia_prima, tipo_movimento, quantidade, observacao)
+                VALUES (%s, 'entrada', %s, 'Estoque inicial')
+            """, (id_mp, estoque_inicial))
         con.commit()
         return True
-
-    except Exception as e:
-        print(f"Erro cadastrar_materia_prima: {e}")
-        return False
-
     finally:
-        if con:
-            con.close()
-
+        if con: con.close()
 
 # =========================================================
 # REGISTRAR COMPRA (ENTRADA + ATUALIZA PREÇO)

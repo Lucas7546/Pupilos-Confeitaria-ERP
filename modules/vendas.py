@@ -36,47 +36,123 @@ def obter_resumo_periodo(dias=7):
 # ===================================================
 # REGISTRAR VENDA
 # ===================================================
-def registrar_venda(id_produto, quantidade, valor_total, metodo_pagamento):
+def registrar_venda(id_produto, quantidade, valor_total, usuario="Sistema"):
     con = None
+
     try:
         con = conectar()
         cursor = con.cursor()
 
-        # 1. Insere a venda
+        # =====================================================
+        # CALCULA CUSTO/LUCRO
+        # =====================================================
+
+        custo_unitario = calcular_custo_receita(id_produto)
+
+        lucro_total = float(valor_total) - (
+            float(custo_unitario) * float(quantidade)
+        )
+
+        # =====================================================
+        # CRIA VENDA
+        # =====================================================
+
         cursor.execute("""
-            INSERT INTO vendas (id_produto, quantidade, valor_total, metodo_pagamento, data_venda)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO vendas (
+                valor_total,
+                lucro,
+                canal_venda,
+                usuario
+            )
+            VALUES (%s, %s, %s, %s)
             RETURNING id_venda
-        """, (id_produto, quantidade, valor_total, metodo_pagamento, datetime.now()))
-        
+        """, (
+            valor_total,
+            lucro_total,
+            'Sistema',
+            usuario
+        ))
+
         id_venda = cursor.fetchone()[0]
 
-        # 2. Busca os ingredientes para dar baixa no estoque
+        # =====================================================
+        # BUSCA PREÇO UNITÁRIO
+        # =====================================================
+
         cursor.execute("""
-            SELECT id_materia_prima, quantidade_utilizada
+            SELECT preco_venda
+            FROM produtos
+            WHERE id_produto = %s
+        """, (id_produto,))
+
+        preco_unitario = float(cursor.fetchone()[0])
+
+        # =====================================================
+        # SALVA ITEM VENDA
+        # =====================================================
+
+        cursor.execute("""
+            INSERT INTO itens_venda (
+                id_venda,
+                id_produto,
+                quantidade,
+                valor_unitario
+            )
+            VALUES (%s, %s, %s, %s)
+        """, (
+            id_venda,
+            id_produto,
+            quantidade,
+            preco_unitario
+        ))
+
+        # =====================================================
+        # BAIXA ESTOQUE
+        # =====================================================
+
+        cursor.execute("""
+            SELECT
+                id_materia_prima,
+                quantidade_utilizada
             FROM receitas
             WHERE id_produto = %s
         """, (id_produto,))
-        
+
         ingredientes = cursor.fetchall()
 
-        # 3. Registra a saída de cada matéria-prima
         for id_mp, qtd_receita in ingredientes:
-            qtd_total_saida = float(qtd_receita) * float(quantidade)
-            
+
+            qtd_saida = float(qtd_receita) * float(quantidade)
+
             cursor.execute("""
-                INSERT INTO movimentacao_estoque (id_materia_prima, tipo, quantidade, data_movimentacao)
+                INSERT INTO movimentacao_estoque (
+                    id_materia_prima,
+                    tipo_movimento,
+                    quantidade,
+                    observacao
+                )
                 VALUES (%s, 'saida', %s, %s)
-            """, (id_mp, qtd_total_saida, datetime.now()))
+            """, (
+                id_mp,
+                qtd_saida,
+                f'Venda Produto ID {id_produto}'
+            ))
 
         con.commit()
+
         return True
+
     except Exception as e:
+
         if con:
             con.rollback()
-        print(f"Erro ao registrar venda: {e}")
+
+        print(f"Erro registrar_venda: {e}")
+
         return False
+
     finally:
+
         if con:
             con.close()
 
@@ -84,19 +160,37 @@ def registrar_venda(id_produto, quantidade, valor_total, metodo_pagamento):
 # LISTAR VENDAS RECENTES
 # ===================================================
 def listar_vendas_recentes(limite=10):
+
     con = None
+
     try:
         con = conectar()
         cursor = con.cursor()
+
         cursor.execute("""
-            SELECT v.id_venda, p.nome, v.quantidade, v.valor_total, v.data_venda
+            SELECT
+                v.id_venda,
+                p.nome,
+                iv.quantidade,
+                v.valor_total,
+                v.data_venda
             FROM vendas v
-            JOIN produtos p ON v.id_produto = p.id_produto
+
+            JOIN itens_venda iv
+                ON iv.id_venda = v.id_venda
+
+            JOIN produtos p
+                ON p.id_produto = iv.id_produto
+
             ORDER BY v.data_venda DESC
+
             LIMIT %s
         """, (limite,))
+
         return cursor.fetchall()
+
     finally:
+
         if con:
             con.close()
 # ===================================================
@@ -229,5 +323,91 @@ def listar_itens_receita(id_produto):
         return cursor.fetchall()
 
     finally:
+        if con:
+            con.close()
+
+
+# ===================================================
+# CUSTO TOTAL DAS VENDAS
+# ===================================================
+def obter_custo_total_vendas(dias=30):
+
+    con = None
+
+    try:
+
+        con = conectar()
+        cursor = con.cursor()
+
+        data_inicio = datetime.now() - timedelta(days=dias)
+
+        cursor.execute("""
+            SELECT COALESCE(SUM(lucro), 0)
+            FROM vendas
+            WHERE data_venda >= %s
+        """, (data_inicio,))
+
+        lucro_total = float(cursor.fetchone()[0] or 0)
+
+        cursor.execute("""
+            SELECT COALESCE(SUM(valor_total), 0)
+            FROM vendas
+            WHERE data_venda >= %s
+        """, (data_inicio,))
+
+        faturamento = float(cursor.fetchone()[0] or 0)
+
+        custo = faturamento - lucro_total
+
+        return round(custo, 2)
+
+    except Exception as e:
+
+        print(f"Erro custo vendas: {e}")
+
+        return 0.0
+
+    finally:
+
+        if con:
+            con.close()
+
+
+# ===================================================
+# LISTAR DESPESAS
+# ===================================================
+def listar_despesas(dias=30):
+
+    con = None
+
+    try:
+
+        con = conectar()
+        cursor = con.cursor()
+
+        data_inicio = datetime.now() - timedelta(days=dias)
+
+        cursor.execute("""
+            SELECT
+                id_despesa,
+                descricao,
+                valor,
+                categoria,
+                data_despesa
+            FROM despesas
+            WHERE data_despesa >= %s
+            ORDER BY data_despesa DESC
+        """, (data_inicio,))
+
+        return cursor.fetchall()
+
+    except Exception as e:
+
+        print(f"Erro listar despesas: {e}")
+
+        return []
+
+    finally:
+
         if con:
             con.close()

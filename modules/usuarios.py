@@ -179,7 +179,7 @@ def alterar_status(id_usuario, ativo):
     finally:
         if conn:
             conn.close()
-            conn.close()
+            
 
 def buscar_usuario_id(id_usuario):
     conn = None
@@ -220,29 +220,100 @@ def atualizar_nivel(id_usuario, novo_nivel):
             conn.close()
 
 
+# =========================
+# EXCLUIR USUÁRIO
+# =========================
 def excluir_usuario(id_usuario):
-    conn = conectar_banco() # Sua função de conexão
-    cur = conn.cursor()
+    conn = None
+
     try:
-        cur.execute("DELETE FROM usuarios WHERE id_usuario = %s", (id_usuario,))
+        conn = conectar()
+        cur = conn.cursor()
+
+        cur.execute("""
+            DELETE FROM usuarios
+            WHERE id_usuario = %s
+        """, (id_usuario,))
+
         conn.commit()
+
         return True
+
     except Exception as e:
-        print(f"Erro ao excluir: {e}")
+
+        print(f"Erro ao excluir usuário: {e}")
+
         return False
+
     finally:
-        cur.close()
-        conn.close()
+
+        if conn:
+            conn.close()
 
 
+
+
+# =========================
+# EXCLUIR PRODUTO
+# =========================
 def excluir_produto(id_produto):
-    with conectar_db() as conn:
+
+    conn = None
+
+    try:
+
+        conn = conectar()
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM produtos WHERE id = %s", (id_produto,))
+
+        cursor.execute("""
+            DELETE FROM produtos
+            WHERE id_produto = %s
+        """, (id_produto,))
+
         conn.commit()
 
+        return True
+
+    except Exception as e:
+
+        print(f"Erro excluir produto: {e}")
+
+        return False
+
+    finally:
+
+        if conn:
+            conn.close()
+
+
+# =========================
+# EXCLUIR MATÉRIA PRIMA
+# =========================
 def excluir_materia_prima(id_mp):
-    with conectar_db() as conn:
+
+    conn = None
+
+    try:
+
+        conn = conectar()
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM materia_prima WHERE id = %s", (id_mp,))
+
+        cursor.execute("""
+            DELETE FROM materia_prima
+            WHERE id_materia_prima = %s
+        """, (id_mp,))
+
         conn.commit()
+
+        return True
+
+    except Exception as e:
+
+        print(f"Erro excluir matéria-prima: {e}")
+
+        return False
+
+    finally:
+
+        if conn:
+            conn.close()

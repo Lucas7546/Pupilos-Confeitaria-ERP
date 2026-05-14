@@ -1,4 +1,6 @@
 from modules.db import conectar
+from modules.estoque import calcular_estoque
+
 
 def prever_consumo_materia_prima(dias_previsao=7):
 
@@ -16,7 +18,7 @@ def prever_consumo_materia_prima(dias_previsao=7):
                 id_produto,
                 COALESCE(SUM(quantidade), 0) / 30.0 AS media_diaria
             FROM vendas
-            WHERE data >= CURRENT_DATE - INTERVAL '30 days'
+            WHERE data_venda >= CURRENT_DATE - INTERVAL '30 days'
             GROUP BY id_produto
         """)
 
@@ -36,7 +38,6 @@ def prever_consumo_materia_prima(dias_previsao=7):
                 SELECT
                     mp.id_materia_prima,
                     mp.nome,
-                    mp.estoque_atual,
                     mp.unidade_medida,
                     r.quantidade_utilizada
                 FROM receitas r
@@ -51,13 +52,17 @@ def prever_consumo_materia_prima(dias_previsao=7):
 
                 id_mp = item[0]
                 nome_mp = item[1]
-                estoque_atual = float(item[2] or 0)
-                unidade = item[3]
-                qtd_receita = float(item[4] or 0)
+                unidade = item[2]
+                qtd_receita = float(item[3] or 0)
 
-                # ==================================================
+                # ==========================================
+                # ESTOQUE REAL
+                # ==========================================
+                estoque_atual = calcular_estoque(id_mp)
+
+                # ==========================================
                 # CONSUMO PREVISTO
-                # ==================================================
+                # ==========================================
                 consumo_previsto = (
                     media_diaria *
                     qtd_receita *
@@ -69,17 +74,17 @@ def prever_consumo_materia_prima(dias_previsao=7):
                     if dias_previsao > 0 else 0
                 )
 
-                # ==================================================
+                # ==========================================
                 # DIAS RESTANTES
-                # ==================================================
+                # ==========================================
                 dias_restantes = (
                     estoque_atual / consumo_diario
                     if consumo_diario > 0 else 999
                 )
 
-                # ==================================================
+                # ==========================================
                 # IA DE REPOSIÇÃO
-                # ==================================================
+                # ==========================================
                 dias_operacao = 15
 
                 necessidade_total = (
@@ -95,9 +100,9 @@ def prever_consumo_materia_prima(dias_previsao=7):
                 if quantidade_compra < 0:
                     quantidade_compra = 0
 
-                # ==================================================
-                # AGRUPA ITENS REPETIDOS
-                # ==================================================
+                # ==========================================
+                # AGRUPA ITENS
+                # ==========================================
                 if id_mp not in previsao_dict:
 
                     previsao_dict[id_mp] = {
@@ -105,7 +110,8 @@ def prever_consumo_materia_prima(dias_previsao=7):
                         "estoque_atual": round(estoque_atual, 3),
                         "consumo_previsto": round(consumo_previsto, 3),
                         "dias_restantes": round(dias_restantes, 1),
-                        "quantidade_compra": round(quantidade_compra, 3),
+                        "sugestao_compra": round(quantidade_compra, 3),
+                        "media_diaria": round(consumo_diario, 3),
                         "unidade": unidade
                     }
 

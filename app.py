@@ -1,3 +1,5 @@
+import pandas as pd
+from flask import send_filepip
 import os
 import json
 import pandas as pd
@@ -11,7 +13,7 @@ from flask_login import (
     logout_user, login_required, current_user
 )
 from werkzeug.security import check_password_hash, generate_password_hash
-
+from modules.previsao import prever_consumo_materia_prima
 # módulos
 from modules import usuarios, vendas, estoque, produtos, receitas
 from modules.permissoes import acesso_requerido
@@ -185,7 +187,7 @@ def dashboard():
             "dashboard.html",
             semana={"faturamento": 0, "vendas": 0},
             mes={"faturamento": 0, "vendas": 0},
-            capacidade=0,
+            capacidade=[],
             criticos=[]
         )
 
@@ -222,50 +224,63 @@ def registrar_compra():
     return redirect("/estoque")
 
 
+# =========================
+# CADASTRO PRODUTOS/MATERIA-PRIMA
+# =========================
 # --- ROTA PRINCIPAL DA CENTRAL DE CADASTROS ---
 @app.route("/cadastro")
 @login_required
 def render_cadastro():
-    # Carrega dados para preencher os selects da Ficha Técnica (Engenharia de Produto)
     try:
+        # Carrega dados para preencher os selects da Ficha Técnica
+        # Certifique-se que seus módulos 'produtos' e 'estoque' retornam listas
         lista_produtos = produtos.listar_todos() 
-        lista_materias = materias.listar_todas()
-        return render_template("cadastro.html", produtos=lista_produtos, materias=lista_materias)
+        lista_materias = estoque.listar_materia_prima()
+        
+        return render_template("cadastro.html", 
+                               produtos=lista_produtos, 
+                               materias=lista_materias)
     except Exception as e:
+        print(f"Erro ao carregar cadastro: {e}")
         flash(f"Erro ao carregar dados: {e}", "danger")
-        return redirect(url_for('index'))
+        return redirect("/")
 
 # --- AÇÃO: CADASTRAR MATÉRIA-PRIMA (INSUMOS) ---
 @app.route("/cadastrar-mp", methods=["POST"])
 @login_required
 def cadastrar_mp():
-    nome = request.form.get("nome")
-    unidade = request.form.get("unidade")
-    estoque_at = request.form.get("estoque_atual")
-    preco = request.form.get("preco")
-    estoque_min = request.form.get("estoque_minimo")
-    
-    # Chama a função do seu módulo materias.py
-    # Ajuste os argumentos conforme sua função original aceita
-    if materias.cadastrar_materia(nome, unidade, preco, estoque_at, estoque_min):
-        flash(f"Insumo '{nome}' salvo no PostgreSQL!", "success")
-    else:
-        flash("Erro técnico ao salvar insumo.", "danger")
-    
+    try:
+        nome = request.form.get("nome")
+        unidade = request.form.get("unidade")
+        preco = float(request.form.get("preco").replace(",", "."))
+        estoque_at = float(request.form.get("estoque_atual").replace(",", "."))
+        estoque_min = float(request.form.get("estoque_minimo").replace(",", "."))
+        
+        # Usando a função do estoque.py que já mapeamos para o banco
+        if estoque.cadastrar_materia(nome, unidade, preco, estoque_at, estoque_min):
+            flash(f"Insumo '{nome}' salvo!", "success")
+        else:
+            flash("Erro ao salvar no banco.", "danger")
+    except Exception as e:
+        flash(f"Erro: {e}", "danger")
     return redirect(url_for('render_cadastro'))
 
 # --- AÇÃO: CADASTRAR PRODUTO FINAL ---
 @app.route("/cadastrar-produto", methods=["POST"])
 @login_required
 def cadastrar_produto_final():
-    nome = request.form.get("nome")
-    preco = request.form.get("preco")
-    categoria = request.form.get("categoria")
-    
-    if produtos.cadastrar_produto(nome, preco, categoria):
-        flash(f"Produto '{nome}' cadastrado com sucesso!", "success")
-    else:
-        flash("Erro ao cadastrar produto final.", "danger")
+    try:
+        nome = request.form.get("nome")
+        preco = float(request.form.get("preco").replace(",", "."))
+        categoria = request.form.get("categoria")
+        
+        if produtos.cadastrar_produto(nome, preco, categoria):
+            registrar_log("CADASTRO", "PRODUTO", f"Novo produto: {nome}")
+            flash(f"Produto '{nome}' cadastrado com sucesso!", "success")
+        else:
+            flash("Erro ao cadastrar produto final.", "danger")
+    except Exception as e:
+        flash(f"Erro nos dados: {e}", "danger")
         
     return redirect(url_for('render_cadastro'))
 
@@ -273,16 +288,18 @@ def cadastrar_produto_final():
 @app.route("/vincular-receita", methods=["POST"])
 @login_required
 def vincular_receita():
-    id_produto = request.form.get("id_produto")
-    id_materia = request.form.get("id_materia_prima")
-    quantidade = request.form.get("quantidade")
-    
-    # Aqui chama a função que cria o vínculo na tabela de receitas/fichas técnicas
-    if produtos.vincular_insumo(id_produto, id_materia, quantidade):
-        flash("Ingrediente vinculado ao produto!", "success")
-    else:
-        flash("Erro ao vincular ingrediente.", "danger")
+    try:
+        # Pegando os IDs que vêm do formulário HTML
+        id_p = request.form.get("id_produto")
+        id_m = request.form.get("id_materia_prima")
+        qtd = float(request.form.get("quantidade").replace(",", "."))
         
+        if produtos.vincular_insumo(id_p, id_m, qtd):
+            flash("Ingrediente vinculado!", "success")
+        else:
+            flash("Erro ao vincular.", "danger")
+    except Exception as e:
+        flash(f"Erro: {e}", "danger")
     return redirect(url_for('render_cadastro'))
 
 
@@ -321,6 +338,56 @@ def deletar_mp(id_mp):
         
     return redirect(url_for('listar_estoque'))
 
+
+
+# --- ROTA: PRECIFICAÇÃO ---
+from psycopg2.extras import RealDictCursor
+
+@app.route("/precificacao")
+@login_required
+def precificacao():
+    con = None
+    try:
+        con = conectar()
+        cursor = con.cursor(cursor_factory=RealDictCursor)
+        
+        # SQL ajustado para os nomes exatos das suas tabelas
+        query = """
+            SELECT 
+                p.id_produto, 
+                p.nome, 
+                p.preco_venda,
+                COALESCE(SUM(r.quantidade_utilizada * mp.preco_unitario), 0) as custo_producao
+            FROM produtos p
+            LEFT JOIN receitas r ON p.id_produto = r.id_produto
+            LEFT JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
+            WHERE p.ativo = 1
+            GROUP BY p.id_produto, p.nome, p.preco_venda
+            ORDER BY p.nome ASC
+        """
+        cursor.execute(query)
+        produtos_db = cursor.fetchall()
+        
+        tabela_formatada = []
+        for p in produtos_db:
+            custo = float(p['custo_producao'])
+            venda = float(p['preco_venda'])
+            
+            equilibrio = custo * 1.10
+            sugerido = custo / 0.7 if custo > 0 else 0
+            
+            tabela_formatada.append({
+                "id": p['id_produto'],
+                "nome": p['nome'],
+                "atual": venda,
+                "equilibrio": equilibrio,
+                "sugerido": sugerido,
+                "alerta": venda < equilibrio if custo > 0 else False
+            })
+
+        return render_template("precificacao.html", tabela=tabela_formatada)
+    finally:
+        if con: con.close()
 # =========================
 # VENDAS
 # =========================
@@ -330,29 +397,103 @@ def deletar_mp(id_mp):
 def vendas_page():
     return render_template("vendas.html", produtos=produtos.buscar_produto_por_nome(""))
 
+
+
+
 @app.route("/vender", methods=["POST"])
 @login_required
 def vender():
+
     try:
+
         id_p = int(request.form["id_produto"])
         qtd = int(request.form["quantidade"])
 
+        # =====================================================
+        # BUSCA PRODUTO
+        # =====================================================
+
         prods = produtos.buscar_produto_por_nome("")
-        produto = next((p for p in prods if p[0] == id_p), None)
+
+        produto = next(
+            (p for p in prods if p[0] == id_p),
+            None
+        )
 
         if not produto:
+
             flash("Produto não encontrado", "danger")
+
             return redirect("/vendas")
 
-        sucesso, msg = vendas.vender_produto(id_p, qtd, produto[2])
+        # =====================================================
+        # VALOR TOTAL
+        # =====================================================
+
+        valor_total = float(produto[2]) * qtd
+
+        # =====================================================
+        # VALIDA ESTOQUE
+        # =====================================================
+
+        estoque_ok = vendas.validar_estoque_suficiente(
+            id_p,
+            qtd
+        )
+
+        if not estoque_ok:
+
+            flash(
+                "Estoque insuficiente para produzir essa venda.",
+                "danger"
+            )
+
+            return redirect("/vendas")
+
+        # =====================================================
+        # REGISTRA VENDA
+        # =====================================================
+
+        sucesso = vendas.registrar_venda(
+            id_produto=id_p,
+            quantidade=qtd,
+            valor_total=valor_total,
+            usuario=current_user.username
+        )
+
+        # =====================================================
+        # RESULTADO
+        # =====================================================
 
         if sucesso:
-            registrar_log("VENDA", "VENDAS", f"ID {id_p} | Qtd {qtd}")
-            flash(msg, "success")
+
+            registrar_log(
+                "VENDA",
+                "VENDAS",
+                f"Produto {id_p} | Qtd {qtd}"
+            )
+
+            flash(
+                "Venda registrada com sucesso!",
+                "success"
+            )
+
         else:
-            flash(msg, "danger")
+
+            flash(
+                "Erro ao registrar venda.",
+                "danger"
+            )
+
     except Exception as e:
-        flash(f"Erro ao vender: {e}", "danger")
+
+        print(f"Erro rota vender: {e}")
+
+        flash(
+            f"Erro ao vender: {e}",
+            "danger"
+        )
+
     return redirect("/vendas")
 
 # =========================
@@ -380,69 +521,7 @@ def pagina_financeiro():
         flash("Erro ao carregar dados financeiros", "warning")
         return redirect("/")
     
-# --- ROTA: PRECIFICAÇÃO ---
-from psycopg2.extras import RealDictCursor
 
-@app.route("/precificacao")
-@login_required
-def precificacao():
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    
-    try:
-        # Esta Query faz a mágica:
-        # 1. Pega todos os produtos.
-        # 2. Procura na tabela 'receitas' os ingredientes vinculados.
-        # 3. Pega o preço de cada ingrediente na tabela 'materia_prima'.
-        # 4. Multiplica (quantidade_da_receita * preco_do_ingrediente) e soma tudo.
-        query = """
-            SELECT 
-                p.id, 
-                p.nome, 
-                p.preco as preco_venda,
-                COALESCE(SUM(r.quantidade * mp.preco), 0) as custo_producao
-            FROM produtos p
-            LEFT JOIN receitas r ON p.id = r.id_produto
-            LEFT JOIN materia_prima mp ON r.id_materia_prima = mp.id
-            GROUP BY p.id, p.nome, p.preco
-            ORDER BY p.nome ASC
-        """
-        cursor.execute(query)
-        produtos_db = cursor.fetchall()
-        
-        tabela_formatada = []
-        
-        for p in produtos_db:
-            custo = float(p['custo_producao'])
-            venda = float(p['preco_venda'])
-            
-            # Lógica das suas metas (Dashboard):
-            # 1. Equilíbrio: Custo + 10% de margem de segurança
-            equilibrio = custo * 1.10
-            
-            # 2. Sugerido: Markup para garantir 30% de margem líquida
-            # Fórmula: Preço = Custo / (1 - Margem Desejada)
-            sugerido = custo / 0.7 if custo > 0 else 0
-            
-            # 3. Regra de Alerta: Se o preço de venda for menor que o custo + 10%
-            alerta = venda < equilibrio if custo > 0 else False
-            
-            tabela_formatada.append({
-                "id": p['id'],
-                "nome": p['nome'],
-                "atual": venda,
-                "equilibrio": equilibrio,
-                "sugerido": sugerido,
-                "alerta": alerta
-            })
-
-    except Exception as e:
-        print(f"Erro ao calcular precificação: {e}")
-        tabela_formatada = []
-    finally:
-        cursor.close()
-
-    # IMPORTANTE: Enviamos a lista como 'tabela', que é o nome que você usou no {% for item in tabela %}
-    return render_template("precificacao.html", tabela=tabela_formatada)
 # --- ROTA: TELA DE AUDITORIA ---
 @app.route("/auditoria")
 @login_required
@@ -450,7 +529,7 @@ def auditoria():
     # Segurança em duas camadas: Decorator + Verificação de Nível
     if session.get("nivel") != "admin":
         flash("Acesso restrito! Somente administradores podem ver a auditoria.", "danger")
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard'))
     
     try:
         # Busca os últimos 100 logs
@@ -458,7 +537,7 @@ def auditoria():
         return render_template('auditoria.html', logs=logs_data)
     except Exception as e:
         flash(f"Erro ao carregar logs: {e}", "danger")
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard'))
 
 # --- ROTA: EXPORTAR LOGS (Para o botão do HTML funcionar) ---
 @app.route("/logs/exportar")
@@ -477,104 +556,258 @@ def exportar_logs():
         mimetype="application/json",
         headers={"Content-disposition": "attachment; filename=auditoria_agatha_erp.json"}
     )
-# =========================
-# GESTÃO DE USUÁRIOS & EQUIPE
-# =========================
 
 
-# --- ROTA: GERENCIAR EQUIPE ---
+# =========================================================
+# GERENCIAR EQUIPE
+# =========================================================
 @app.route("/equipe")
 @login_required
 def gerenciar_equipe():
+
     if session.get("nivel") not in ["admin", "gerente"]:
-        abort(403)
-    return render_template("equipe.html")
 
-# --- ROTA: CENTRAL DE CADASTRO ---
-@app.route("/cadastro-central")
-@login_required
-def cadastro_central():
-    return render_template("cadastro_central.html")
+        flash(
+            "Acesso negado!",
+            "danger"
+        )
 
-# --- ROTA: LISTAR EQUIPE (Acesso: Admin e Gerente) ---
+        return redirect(url_for("dashboard"))
+
+    try:
+
+        lista_usuarios = usuarios.listar_usuarios()
+
+        return render_template(
+            "equipe.html",
+            equipe=lista_usuarios
+        )
+
+    except Exception as e:
+
+        print(f"Erro equipe: {e}")
+
+        flash(
+            f"Erro ao carregar equipe: {e}",
+            "danger"
+        )
+
+        return redirect(url_for("dashboard"))
+
+
+
+# =========================================================
+# LISTAR USUÁRIOS
+# =========================================================
 @app.route("/usuarios")
 @login_required
 def listar_usuarios():
-    # Bloqueio de segurança: Se não for admin ou gerente, volta para a index
-    if session.get("nivel") not in ["admin", "gerente"]:
-        flash("Acesso negado! Área exclusiva para Gerência ou Admin.", "danger")
-        return redirect(url_for('index'))
-    
-    # Busca a lista de usuários no banco (PostgreSQL)
-    try:
-        lista = usuarios.listar_todos() 
-        return render_template("usuarios.html", equipe=lista)
-    except Exception as e:
-        flash(f"Erro ao carregar equipe: {e}", "danger")
-        return redirect(url_for('index'))
 
-# --- ROTA: CRIAR USUÁRIO (Acesso: APENAS Admin) ---
+    if session.get("nivel") not in ["admin", "gerente"]:
+
+        flash(
+            "Acesso negado!",
+            "danger"
+        )
+
+        return redirect(url_for("dashboard"))
+
+    try:
+
+        lista = usuarios.listar_usuarios()
+
+        return render_template(
+            "usuarios.html",
+            equipe=lista
+        )
+
+    except Exception as e:
+
+        print(f"Erro usuários: {e}")
+
+        flash(
+            f"Erro ao carregar usuários: {e}",
+            "danger"
+        )
+
+        return redirect(url_for("dashboard"))
+
+# =========================================================
+# CRIAR USUÁRIO
+# =========================================================
 @app.route("/criar-usuario", methods=["POST"])
 @login_required
 def criar_usuario():
-    # Trava de segurança: Apenas Admin pode criar novos perfis
+
     if session.get("nivel") != "admin":
-        flash("Apenas Administradores podem criar novos usuários.", "danger")
-        return redirect(url_for('listar_usuarios'))
 
-    user = request.form.get("username").strip().lower()
-    passw = request.form.get("senha").strip()
-    nivel = request.form.get("nivel") # admin, gerente, vendedor, etc.
-    
-    if len(passw) < 6:
-        flash("A senha deve ter no mínimo 6 caracteres!", "warning")
-    else:
-        try:
-            hash_senha = generate_password_hash(passw)
-            if usuarios.criar_usuario(user, hash_senha, nivel):
-                # registrar_log é opcional, caso você tenha essa função de auditoria
-                # registrar_log("CRIAR_USER", "USUARIOS", f"Criou {user}")
-                flash(f"Usuário '{user}' criado com sucesso!", "success")
-            else:
-                flash("Erro ao salvar no banco. Verifique se o login já existe.", "danger")
-        except Exception as e:
-            flash(f"Erro técnico: {e}", "danger")
+        flash(
+            "Somente administradores podem criar usuários.",
+            "danger"
+        )
 
-    return redirect(url_for('listar_usuarios'))
+        return redirect(url_for("listar_usuarios"))
 
-# --- ROTA: ATIVAR/DESATIVAR USUÁRIO (Acesso: APENAS Admin) ---
+    try:
+
+        username = request.form.get("username").strip().lower()
+
+        senha = request.form.get("senha").strip()
+
+        nivel = request.form.get("nivel").strip().lower()
+
+        sucesso = usuarios.criar_usuario(
+            username,
+            senha,
+            nivel
+        )
+
+        if sucesso:
+
+            registrar_log(
+                "CRIAR_USUARIO",
+                "USUARIOS",
+                f"Usuário criado: {username}"
+            )
+
+            flash(
+                "Usuário criado com sucesso!",
+                "success"
+            )
+
+        else:
+
+            flash(
+                "Erro ao criar usuário.",
+                "danger"
+            )
+
+    except Exception as e:
+
+        print(f"Erro criar usuário: {e}")
+
+        flash(
+            f"Erro: {e}",
+            "danger"
+        )
+
+    return redirect(url_for("listar_usuarios"))
+
+# =========================================================
+# ATIVAR / DESATIVAR USUÁRIO
+# =========================================================
 @app.route("/toggle-usuario/<int:id_usuario>")
 @login_required
 def toggle_usuario(id_usuario):
-    # Trava de segurança: Gerentes vêem a lista, mas só Admin desativa pessoas
+
     if session.get("nivel") != "admin":
-        flash("Permissão insuficiente para alterar status de usuários.", "danger")
-        return redirect(url_for('listar_usuarios'))
+
+        flash(
+            "Permissão insuficiente.",
+            "danger"
+        )
+
+        return redirect(url_for("listar_usuarios"))
 
     try:
-        user_db = usuarios.buscar_usuario_id(id_usuario)
-        if user_db:
-            # Assume-se que o status está na coluna índice 4 (ajuste conforme seu banco)
-            # Se status for 1 (ativo), vira 0 (inativo) e vice-versa
-            novo_status = 0 if user_db[4] == 1 else 1
-            usuarios.alterar_status(id_usuario, novo_status)
-            
-            status_txt = "Ativado" if novo_status == 1 else "Desativado"
-            flash(f"Usuário {user_db[1]} foi {status_txt}!", "info")
-        else:
-            flash("Usuário não encontrado.", "warning")
+
+        usuario = usuarios.buscar_usuario_id(id_usuario)
+
+        if not usuario:
+
+            flash(
+                "Usuário não encontrado.",
+                "warning"
+            )
+
+            return redirect(url_for("listar_usuarios"))
+
+        ativo_atual = usuario[4]
+
+        novo_status = 0 if ativo_atual == 1 else 1
+
+        usuarios.alterar_status(
+            id_usuario,
+            novo_status
+        )
+
+        status_txt = (
+            "ativado"
+            if novo_status == 1
+            else "desativado"
+        )
+
+        registrar_log(
+            "ALTERAR_STATUS",
+            "USUARIOS",
+            f"Usuário {usuario[1]} foi {status_txt}"
+        )
+
+        flash(
+            f"Usuário {status_txt} com sucesso!",
+            "success"
+        )
+
     except Exception as e:
-        flash(f"Erro ao alterar status: {e}", "danger")
 
-    return redirect(url_for('listar_usuarios'))
+        print(f"Erro toggle usuário: {e}")
 
-# --- ROTA: PAINEL DE CONFIGURAÇÃO (Acesso: APENAS Admin) ---
+        flash(
+            f"Erro: {e}",
+            "danger"
+        )
+
+    return redirect(url_for("listar_usuarios"))
+
+# =========================================================
+# PAINEL ADMIN
+# =========================================================
 @app.route("/admin/config")
 @login_required
 def area_admin():
+
     if session.get("nivel") != "admin":
-        abort(403) 
-    return render_template("admin_panel.html") # <--- Este nome
+
+        flash(
+            "Acesso restrito ao administrador.",
+            "danger"
+        )
+
+        return redirect(url_for("dashboard"))
+
+    try:
+
+        total_usuarios = len(
+            usuarios.listar_usuarios()
+        )
+
+        return render_template(
+            "admin_panel.html",
+            total_usuarios=total_usuarios
+        )
+
+    except Exception as e:
+
+        print(f"Erro painel admin: {e}")
+
+        flash(
+            f"Erro painel admin: {e}",
+            "danger"
+        )
+
+        return redirect(url_for("dashboard"))
+    
+
+# =========================================================
+# CENTRAL DE CADASTRO
+# =========================================================
+@app.route("/cadastro-central")
+@login_required
+def cadastro_central():
+
+    return redirect(
+        url_for("render_cadastro")
+    )
 
 # =========================
 # IMPORTAÇÕES
@@ -641,91 +874,201 @@ def ficha_tecnica(id_produto):
 
 
 
+
+# =========================================================
+# PREVISÃO DE DEMANDA IA
+# =========================================================
 @app.route("/previsao-estoque")
 def previsao_estoque():
 
-    conn = sqlite3.connect("erp.db")
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    from modules.db import conectar
 
-    # BUSCA MATÉRIAS-PRIMAS
-    cursor.execute("""
-        SELECT id, nome, estoque_atual, unidade
-        FROM materias_primas
-    """)
+    con = None
 
-    materias = cursor.fetchall()
+    try:
+        con = conectar()
+        cur = con.cursor()
 
-    previsoes = []
+        # =====================================================
+        # BUSCA TODAS MATÉRIAS-PRIMAS
+        # =====================================================
+        cur.execute("""
+            SELECT
+                id_materia_prima,
+                nome,
+                unidade_medida
+            FROM materia_prima
+            ORDER BY nome ASC
+        """)
 
-    for materia in materias:
+        materias = cur.fetchall()
 
-        # VENDAS ÚLTIMOS 30 DIAS
-        cursor.execute("""
-            SELECT quantidade
-            FROM movimentacoes_estoque
-            WHERE materia_prima_id = ?
-            AND tipo = 'saida'
-            AND data_movimentacao >= date('now', '-30 day')
-        """, (materia["id"],))
+        previsoes = []
 
-        movimentacoes = cursor.fetchall()
+        # =====================================================
+        # LOOP MATÉRIAS-PRIMAS
+        # =====================================================
+        for materia in materias:
 
-        total_consumido = sum(m["quantidade"] for m in movimentacoes)
+            id_mp = materia[0]
+            nome_mp = materia[1]
+            unidade = materia[2]
 
-        media_diaria = total_consumido / 30 if total_consumido > 0 else 0
+            # =====================================================
+            # ESTOQUE ATUAL
+            # =====================================================
+            cur.execute("""
+                SELECT
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN tipo_movimento IN ('entrada', 'ajuste')
+                                    THEN quantidade
+                                ELSE 0
+                            END
+                        ), 0
+                    )
+                    -
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN tipo_movimento = 'saida'
+                                    THEN quantidade
+                                ELSE 0
+                            END
+                        ), 0
+                    )
+                FROM movimentacao_estoque
+                WHERE id_materia_prima = %s
+            """, (id_mp,))
 
-        # IA SIMPLES → tendência
-        fator_tendencia = 1.15
+            estoque_atual = float(cur.fetchone()[0] or 0)
 
-        consumo_previsto_7d = round(media_diaria * 7 * fator_tendencia, 2)
+            # =====================================================
+            # CONSUMO ÚLTIMOS 30 DIAS
+            # =====================================================
+            cur.execute("""
+                SELECT
+                    COALESCE(SUM(quantidade), 0)
+                FROM movimentacao_estoque
+                WHERE id_materia_prima = %s
+                AND tipo_movimento = 'saida'
+                AND data_movimentacao >= CURRENT_DATE - INTERVAL '30 days'
+            """, (id_mp,))
 
-        consumo_previsto_15d = round(media_diaria * 15 * fator_tendencia, 2)
+            total_consumido = float(cur.fetchone()[0] or 0)
 
-        # dias restantes
-        if media_diaria > 0:
-            dias_restantes = round(materia["estoque_atual"] / media_diaria, 1)
-        else:
-            dias_restantes = 999
+            # =====================================================
+            # MÉDIA DIÁRIA
+            # =====================================================
+            media_diaria = total_consumido / 30 if total_consumido > 0 else 0
 
-        # nível de risco
-        if dias_restantes <= 2:
-            risco = "CRÍTICO"
-        elif dias_restantes <= 5:
-            risco = "ALTO"
-        elif dias_restantes <= 10:
-            risco = "MODERADO"
-        else:
-            risco = "BAIXO"
+            # =====================================================
+            # IA SIMPLES → TENDÊNCIA
+            # =====================================================
+            fator_tendencia = 1.15
 
-        # sugestão compra
-        sugestao_compra = max(
-            round(consumo_previsto_15d - materia["estoque_atual"], 2),
-            0
+            consumo_previsto_7d = round(
+                media_diaria * 7 * fator_tendencia,
+                2
+            )
+
+            consumo_previsto_15d = round(
+                media_diaria * 15 * fator_tendencia,
+                2
+            )
+
+            # =====================================================
+            # DIAS RESTANTES
+            # =====================================================
+            if media_diaria > 0:
+                dias_restantes = round(
+                    estoque_atual / media_diaria,
+                    1
+                )
+            else:
+                dias_restantes = 999
+
+            # =====================================================
+            # NÍVEL DE RISCO
+            # =====================================================
+            if dias_restantes <= 2:
+                risco = "CRÍTICO"
+
+            elif dias_restantes <= 5:
+                risco = "ALTO"
+
+            elif dias_restantes <= 10:
+                risco = "MODERADO"
+
+            else:
+                risco = "BAIXO"
+
+            # =====================================================
+            # SUGESTÃO DE COMPRA
+            # =====================================================
+            sugestao_compra = max(
+                round(consumo_previsto_15d - estoque_atual, 2),
+                0
+            )
+
+            # =====================================================
+            # APPEND
+            # =====================================================
+            previsoes.append({
+
+                "materia_prima": nome_mp,
+
+                "estoque_atual": round(
+                    estoque_atual,
+                    2
+                ),
+
+                "unidade": unidade,
+
+                "consumo_previsto": consumo_previsto_7d,
+
+                "dias_restantes": dias_restantes,
+
+                "media_diaria": round(
+                    media_diaria,
+                    2
+                ),
+
+                "consumo_15d": consumo_previsto_15d,
+
+                "risco": risco,
+
+                "sugestao_compra": sugestao_compra
+            })
+
+        # =====================================================
+        # ORDENA POR RISCO
+        # =====================================================
+        previsoes.sort(
+            key=lambda x: x["dias_restantes"]
         )
 
-        previsoes.append({
-            "materia_prima": materia["nome"],
-            "estoque_atual": materia["estoque_atual"],
-            "unidade": materia["unidade"],
-            "consumo_previsto": consumo_previsto_7d,
-            "dias_restantes": dias_restantes,
-            "media_diaria": round(media_diaria, 2),
-            "consumo_15d": consumo_previsto_15d,
-            "risco": risco,
-            "sugestao_compra": sugestao_compra
-        })
+        return render_template(
+            "previsao.html",
+            previsoes=previsoes
+        )
 
-    conn.close()
+    except Exception as e:
 
-    # ordena pelo maior risco
-    previsoes.sort(key=lambda x: x["dias_restantes"])
+        print(f"Erro previsão estoque: {e}")
 
-    return render_template(
-        "previsao.html",
-        previsoes=previsoes
-    )
+        flash(
+            f"Erro ao gerar previsão: {e}",
+            "danger"
+        )
 
+        return redirect("/")
+
+    finally:
+
+        if con:
+            con.close()
 # =========================
 # INICIALIZAÇÃO
 # =========================

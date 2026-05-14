@@ -1,21 +1,48 @@
-import pandas as pd
-from flask import send_filepip
 import os
+import io
 import json
 import pandas as pd
-import io
+
 from datetime import datetime
 from functools import wraps
-from modules import previsao
-from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
-from flask_login import (
-    LoginManager, UserMixin, login_user,
-    logout_user, login_required, current_user
+
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    abort,
+    session,
+    send_file
 )
-from werkzeug.security import check_password_hash, generate_password_hash
-from modules.previsao import prever_consumo_materia_prima
+
+from flask_login import (
+    LoginManager,
+    UserMixin,
+    login_user,
+    logout_user,
+    login_required,
+    current_user
+)
+
+from werkzeug.security import (
+    check_password_hash,
+    generate_password_hash
+)
+
 # módulos
-from modules import usuarios, vendas, estoque, produtos, receitas
+from modules import (
+    usuarios,
+    vendas,
+    estoque,
+    produtos,
+    receitas,
+    previsao
+)
+
+from modules.previsao import prever_consumo_materia_prima
 from modules.permissoes import acesso_requerido
 from modules.usuarios import registrar_log_db
 from modules.db import conectar

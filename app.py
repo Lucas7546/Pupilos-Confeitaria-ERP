@@ -2,7 +2,7 @@ import os
 import io
 import json
 import pandas as pd
-
+from flask import Response
 from datetime import datetime
 from functools import wraps
 
@@ -46,6 +46,7 @@ from modules.previsao import prever_consumo_materia_prima
 from modules.permissoes import acesso_requerido
 from modules.usuarios import registrar_log_db
 from modules.db import conectar
+import psycopg2
 
 # =========================
 # APP
@@ -566,24 +567,49 @@ def auditoria():
         flash(f"Erro ao carregar logs: {e}", "danger")
         return redirect(url_for('dashboard'))
 
-# --- ROTA: EXPORTAR LOGS (Para o botão do HTML funcionar) ---
+# --- ROTA: EXPORTAR LOGS (Atualizada para PostgreSQL) ---
 @app.route("/logs/exportar")
 @login_required
+@acesso_requerido("auditoria") # Usa o sistema de permissões que já criamos
 def exportar_logs():
-    if session.get("nivel") != "admin":
-        abort(403)
+    try:
+        # Busca os logs usando a função do módulo usuarios
+        # Note: verifique se em modules/usuarios.py a função se chama listar_logs_auditoria
+        logs_brutos = usuarios.listar_logs_auditoria(1000) 
         
-    logs_data = usuarios.listar_logs_auditoria(500) # Exporta mais logs para o arquivo
-    
-    # Converte os dados para JSON formatado
-    json_output = json.dumps(logs_data, indent=4, default=str)
-    
-    return Response(
-        json_output,
-        mimetype="application/json",
-        headers={"Content-disposition": "attachment; filename=auditoria_agatha_erp.json"}
-    )
+        # Formata os logs para um formato de dicionário mais legível no JSON
+        logs_formatados = []
+        for log in logs_brutos:
+            logs_formatados.append({
+                "id": log[0],
+                "usuario": log[1],
+                "acao": log[2],
+                "modulo": log[3],
+                "detalhe": log[4],
+                "data": str(log[5]) # Converte datetime para string
+            })
+        
+        # Converte os dados para JSON formatado
+        json_output = json.dumps(logs_formatados, indent=4, ensure_ascii=False)
+        
+        # Registra no log que alguém exportou os dados (Segurança)
+        usuarios.registrar_log_db(
+            usuario=current_user.id,
+            acao="EXPORT_LOGS",
+            modulo="AUDITORIA",
+            detalhe="Backup de logs exportado via JSON"
+        )
+        
+        return Response(
+            json_output,
+            mimetype="application/json",
+            headers={"Content-disposition": "attachment; filename=auditoria_pupilos_erp.json"}
+        )
 
+    except Exception as e:
+        print(f"Erro ao exportar logs: {e}")
+        flash(f"Erro ao gerar arquivo de exportação: {e}", "danger")
+        return redirect(url_for('area_admin'))
 
 # =========================================================
 # GERENCIAR EQUIPE
@@ -830,24 +856,26 @@ def editar_usuario(id_usuario):
 
 
 # =========================================================
-# PAINEL DE CONFIGURAÇÃO ADMIN
+# PAINEL DE ADMINISTRAÇÃO (GESTÃO DE USUÁRIOS)
 # =========================================================
 @app.route("/admin/config")
 @login_required
-def area_admin(): # Nome único para não conflitar com 'auditoria'
+@acesso_requerido("usuarios") # Garante que só admin/gerente entre
+def area_admin():
     try:
-        # Apenas pega o total de usuários para o card do painel
-        total_usuarios = len(usuarios.listar_usuarios())
+        # Busca a lista completa de usuários do banco
+        lista_usuarios = usuarios.listar_usuarios() 
+        total = len(lista_usuarios)
         
         return render_template(
             "admin_panel.html",
-            total_usuarios=total_usuarios
+            total_usuarios=total,
+            usuarios=lista_usuarios # Passamos a lista para o HTML
         )
     except Exception as e:
         print(f"Erro no painel admin: {e}")
-        flash(f"Erro ao acessar painel: {e}", "danger")
+        flash(f"Erro ao carregar gestão de usuários: {e}", "danger")
         return redirect(url_for("dashboard"))
-    
 
 # =========================================================
 # CENTRAL DE CADASTRO
@@ -860,72 +888,101 @@ def cadastro_central():
         url_for("render_cadastro")
     )
 
-# =========================
-# IMPORTAÇÕES
-# =========================
+# =========================================================
+# CENTRAL DE IMPORTAÇÕES (AUDITADO)
+# =========================================================
 @app.route("/importacoes")
 @login_required
+@acesso_requerido("cadastro") # Protege a rota para níveis autorizados
 def central_importacoes():
     return render_template("central_importacoes.html")
 
 @app.route("/importar-ifood", methods=["POST"])
 @login_required
+@acesso_requerido("cadastro")
 def importar_ifood():
-    arquivo = request.files.get("arquivo")
-    if arquivo:
-        registrar_log("IMPORT_IFOOD", "VENDAS", f"Arquivo: {arquivo.filename}")
-        flash("Processamento de iFood iniciado!", "info")
-    return redirect("/importacoes")
+    try:
+        arquivo = request.files.get("arquivo")
+        
+        if not arquivo or arquivo.filename == '':
+            flash("Nenhum arquivo selecionado!", "warning")
+            return redirect(url_for("central_importacoes"))
+
+        # Registro de Log no Banco de Dados
+        usuarios.registrar_log_db(
+            usuario=current_user.id,
+            acao="IMPORT_IFOOD",
+            modulo="VENDAS",
+            detalhe=f"Importação iniciada: {arquivo.filename}"
+        )
+
+        # Aqui entraria a lógica de leitura do Pandas (pd.read_excel/csv)
+        # Por enquanto, mantemos o fluxo de redirecionamento
+        
+        flash(f"Arquivo '{arquivo.filename}' recebido com sucesso! O processamento foi registrado.", "success")
+        
+    except Exception as e:
+        print(f"Erro na importação: {e}")
+        flash(f"Erro crítico na importação: {e}", "danger")
+        
+    return redirect(url_for("central_importacoes"))
 
 
 @app.route("/ficha-tecnica/<int:id_produto>")
 @login_required
 def ficha_tecnica(id_produto):
-    cursor = conn.cursor()
-    
-    # 1. Busca os dados básicos do produto
-    cursor.execute("SELECT id, nome, preco FROM produtos WHERE id = %s", (id_produto,))
-    produto = cursor.fetchone()
-    
-    if not produto:
-        return "Produto não encontrado", 404
+    con = None
+    try:
+        con = conectar() # Usa a sua função oficial de conexão
+        cursor = con.cursor()
+        
+        # 1. Busca os dados básicos do produto (Ajustado para suas colunas: id, nome, preco_venda)
+        cursor.execute("SELECT id, nome, preco_venda FROM produtos WHERE id = %s", (id_produto,))
+        produto = cursor.fetchone()
+        
+        if not produto:
+            flash("Produto não encontrado!", "danger")
+            return redirect(url_for('dashboard'))
 
-    # 2. Busca os ingredientes (itens da ficha técnica)
-    # Aqui fazemos um JOIN para pegar o nome e o preço unitário da matéria-prima
-    query_itens = """
-        SELECT 
-            mp.nome as item, 
-            r.quantidade as qtd, 
-            (r.quantidade * mp.preco) as custo_subtotal
-        FROM receitas r
-        JOIN materia_prima mp ON r.id_materia_prima = mp.id
-        WHERE r.id_produto = %s
-    """
-    cursor.execute(query_itens, (id_produto,))
-    # Transformamos em dicionário para facilitar o acesso no HTML i.item, i.qtd...
-    colunas = [desc[0] for desc in cursor.description]
-    itens = [dict(zip(colunas, row)) for row in cursor.fetchall()]
-    
-    # 3. Cálculos Financeiros
-    total_custo = sum(item['custo_subtotal'] for item in itens)
-    preco_venda = float(produto[2])
-    lucro = preco_venda - total_custo
-    
-    # Margem de lucro (evita divisão por zero)
-    margem = (lucro / preco_venda * 100) if preco_venda > 0 else 0
-    
-    return render_template(
-        "ficha_tecnica.html", 
-        produto=produto, 
-        itens=itens, 
-        total=total_custo, 
-        lucro=lucro, 
-        margem=margem
-    )
-
-
-
-
+        # 2. Busca os ingredientes (Ajustado para: id_materia_prima, quantidade_utilizada, preco_unitario)
+        query_itens = """
+            SELECT 
+                mp.nome as item, 
+                r.quantidade_utilizada as qtd, 
+                mp.unidade_medida as unidade,
+                (r.quantidade_utilizada * mp.preco_unitario) as custo_subtotal
+            FROM receitas r
+            JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
+            WHERE r.id_produto = %s
+        """
+        cursor.execute(query_itens, (id_produto,))
+        
+        colunas = [desc[0] for desc in cursor.description]
+        itens = [dict(zip(colunas, row)) for row in cursor.fetchall()]
+        
+        # 3. Cálculos Financeiros
+        total_custo = sum(float(item['custo_subtotal'] or 0) for item in itens)
+        preco_venda = float(produto[2] or 0) # produto[2] é o preco_venda
+        lucro = preco_venda - total_custo
+        
+        # Margem de lucro
+        margem = (lucro / preco_venda * 100) if preco_venda > 0 else 0
+        
+        return render_template(
+            "ficha_tecnica.html", 
+            produto=produto, 
+            itens=itens, 
+            total=round(total_custo, 2), 
+            lucro=round(lucro, 2), 
+            margem=round(margem, 2)
+        )
+    except Exception as e:
+        print(f"Erro na ficha técnica: {e}")
+        flash(f"Erro ao carregar ficha técnica: {e}", "danger")
+        return redirect(url_for('dashboard'))
+    finally:
+        if con:
+            con.close()
 # =========================================================
 # PREVISÃO DE DEMANDA IA
 # =========================================================

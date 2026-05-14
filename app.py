@@ -832,6 +832,7 @@ def editar_usuario(id_usuario):
 # =========================================================
 # PAINEL ADMIN
 # =========================================================
+@app.route("/admin/config")
 @login_required
 def area_admin():
     # Usando o current_user que é mais confiável com Flask-Login

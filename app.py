@@ -1414,7 +1414,14 @@ def pagina_financeiro():
     dados = financeiro_operacional()
 
     return render_template("financeiro.html", **dados)
-    
+
+@app.route("/relatorio-financeiro")
+@login_required
+@acesso_requerido("financeiro")
+def relatorio_financeiro():
+    dados = relatorio_fiscal()
+
+    return render_template("relatorio_financeiro.html", **dados)
 # =========================================================
 # ROTA: FLUXO DE CAIXA
 # =========================================================
@@ -1434,53 +1441,6 @@ def fluxo_caixa():
 # Gambiarras
 # =========================================================
     
-@app.route("/relatorio-financeiro")
-@login_required
-@acesso_requerido("financeiro")
-def relatorio_financeiro():
-    from modules.financeiro import calcular_financeiro_com_imposto
-
-    dados = calcular_financeiro_com_imposto()
-
-    regime_atual = dados.get("regime", "MEI")
-    faturamento = dados.get("faturamento", 0)
-    lucro_atual = dados.get("lucro_final", 0)
-    lucro_base = dados.get("lucro_base", 0)
-    imposto = dados.get("imposto", 0)
-
-    regimes = ["MEI", "ME", "SN"]
-
-    simulacoes = []
-
-    for r in regimes:
-
-        if r == "MEI":
-            aliquota = 0.04
-        elif r == "ME":
-            aliquota = 0.08
-        else:
-            aliquota = 0.12
-
-        imposto_simulado = faturamento * aliquota
-        lucro_simulado = lucro_base - imposto_simulado
-
-        simulacoes.append({
-            "regime": r,
-            "imposto": imposto_simulado,
-            "lucro": lucro_simulado,
-            "diferenca": lucro_simulado - lucro_atual,
-            "aliquota": aliquota  # <- evita erro futuro no HTML
-        })
-
-    return render_template(
-        "relatorio_financeiro.html",
-        regime_atual=regime_atual,
-        faturamento=faturamento,
-        lucro_atual=lucro_atual,
-        lucro_base=lucro_base,
-        imposto=imposto,
-        simulacoes=simulacoes
-    )
 
 # =========================
 # INICIALIZAÇÃO

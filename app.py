@@ -1459,7 +1459,25 @@ def fluxo_caixa():
 # Gambiarras
 # =========================================================
     
+@app.route("/despesas", methods=["POST"])
+@login_required
+def despesas():
+    descricao = request.form["descricao"]
+    valor = float(request.form["valor"])
 
+    con = conectar()
+    cur = con.cursor()
+
+    cur.execute("""
+        INSERT INTO despesas (descricao, valor, data_despesa)
+        VALUES (%s, %s, CURRENT_DATE)
+    """, (descricao, valor))
+
+    con.commit()
+    con.close()
+
+    flash("Despesa cadastrada com sucesso!", "success")
+    return redirect("/financeiro")
 # =========================
 # INICIALIZAÇÃO
 # =========================

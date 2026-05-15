@@ -1,16 +1,46 @@
+NCEIRO.HTML COMPLETO (ROBUSTO + BOTÕES MANTIDOS)
 {% extends "base.html" %}
 
 {% block content %}
 <div class="container-fluid py-4 px-md-5 animate-in">
 
-    <!-- HEADER PADRÃO SISTEMA -->
+    <!-- HEADER -->
     <div class="mb-4">
         <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.2rem;">
             💰 Painel <span class="text-warning">Financeiro</span>
         </h1>
         <p class="text-white-50">
-            Análise operacional de faturamento, custos e lucro base.
+            Visão operacional completa do negócio
         </p>
+    </div>
+
+    <!-- 🔥 AÇÕES (BOTÕES RESTAURADOS) -->
+    <div class="d-flex flex-wrap gap-2 mb-4">
+
+        <!-- ADICIONAR CUSTOS FIXOS -->
+        <a href="/despesas" class="btn btn-warning fw-bold">
+            <i class="bi bi-plus-circle me-1"></i>
+            Custos Fixos
+        </a>
+
+        <!-- FLUXO DE CAIXA -->
+        <a href="/fluxo-caixa" class="btn btn-outline-light">
+            <i class="bi bi-cash-coin me-1"></i>
+            Fluxo de Caixa
+        </a>
+
+        <!-- ATUALIZAR -->
+        <a href="/financeiro" class="btn btn-outline-light">
+            <i class="bi bi-arrow-clockwise me-1"></i>
+            Atualizar
+        </a>
+
+        <!-- RELATÓRIO -->
+        <a href="/relatorio-financeiro" class="btn btn-info text-white">
+            <i class="bi bi-bar-chart-line me-1"></i>
+            Relatório Fiscal
+        </a>
+
     </div>
 
     <!-- CARDS PRINCIPAIS -->
@@ -19,11 +49,8 @@
         <!-- FATURAMENTO -->
         <div class="col-md-4">
             <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <small class="text-white-50 fw-bold">FATURAMENTO</small>
-                    <i class="bi bi-cash-stack text-success"></i>
-                </div>
-                <h2 class="text-success fw-extrabold mb-0">
+                <small class="text-white-50 fw-bold">FATURAMENTO</small>
+                <h2 class="text-success fw-extrabold mt-2">
                     R$ {{ "%.2f"|format(faturamento) }}
                 </h2>
             </div>
@@ -32,11 +59,8 @@
         <!-- CUSTO INSUMOS -->
         <div class="col-md-4">
             <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <small class="text-white-50 fw-bold">CUSTO INSUMOS</small>
-                    <i class="bi bi-box-seam text-danger"></i>
-                </div>
-                <h2 class="text-danger fw-extrabold mb-0">
+                <small class="text-white-50 fw-bold">CUSTO INSUMOS</small>
+                <h2 class="text-danger fw-extrabold mt-2">
                     R$ {{ "%.2f"|format(custo_insumos) }}
                 </h2>
             </div>
@@ -45,11 +69,8 @@
         <!-- DESPESAS FIXAS -->
         <div class="col-md-4">
             <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <small class="text-white-50 fw-bold">DESPESAS FIXAS</small>
-                    <i class="bi bi-receipt text-warning"></i>
-                </div>
-                <h2 class="text-warning fw-extrabold mb-0">
+                <small class="text-white-50 fw-bold">DESPESAS FIXAS</small>
+                <h2 class="text-warning fw-extrabold mt-2">
                     R$ {{ "%.2f"|format(total_fixas) }}
                 </h2>
             </div>
@@ -57,10 +78,12 @@
 
     </div>
 
-    <!-- LUCRO FINAL (CARD DE DESTAQUE) -->
-    <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-5 mb-4 text-center">
+    <!-- LUCRO BASE -->
+    <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-5 text-center">
 
-        <small class="text-white-50 fw-bold text-uppercase">Lucro Base (Operacional)</small>
+        <small class="text-white-50 fw-bold text-uppercase">
+            Lucro Base Operacional
+        </small>
 
         <h1 class="display-5 fw-extrabold mt-2
             {% if lucro_base >= 0 %}
@@ -72,7 +95,7 @@
             R$ {{ "%.2f"|format(lucro_base) }}
         </h1>
 
-        <p class="text-white-50 mt-2 mb-0">
+        <p class="text-white-50 mb-0">
             Resultado antes de impostos e simulações fiscais
         </p>
 

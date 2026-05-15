@@ -1447,17 +1447,22 @@ def fluxo_caixa():
 @login_required
 @acesso_requerido("financeiro")
 def relatorio_financeiro():
+    from modules.financeiro import calcular_financeiro_com_imposto
+
     dados = calcular_financeiro_com_imposto()
 
-    regime_atual = dados["regime"]
-    faturamento = dados["faturamento"]
-    lucro_atual = dados["lucro_final"]
+    regime_atual = dados.get("regime", "MEI")
+    faturamento = dados.get("faturamento", 0)
+    lucro_atual = dados.get("lucro_final", 0)
+    lucro_base = dados.get("lucro_base", 0)
+    imposto = dados.get("imposto", 0)
 
     regimes = ["MEI", "ME", "SN"]
 
     simulacoes = []
 
     for r in regimes:
+
         if r == "MEI":
             aliquota = 0.04
         elif r == "ME":
@@ -1465,14 +1470,15 @@ def relatorio_financeiro():
         else:
             aliquota = 0.12
 
-        imposto = faturamento * aliquota
-        lucro = dados["lucro_base"] - imposto
+        imposto_simulado = faturamento * aliquota
+        lucro_simulado = lucro_base - imposto_simulado
 
         simulacoes.append({
             "regime": r,
-            "imposto": imposto,
-            "lucro": lucro,
-            "diferenca": lucro - lucro_atual
+            "imposto": imposto_simulado,
+            "lucro": lucro_simulado,
+            "diferenca": lucro_simulado - lucro_atual,
+            "aliquota": aliquota  # <- evita erro futuro no HTML
         })
 
     return render_template(
@@ -1480,9 +1486,10 @@ def relatorio_financeiro():
         regime_atual=regime_atual,
         faturamento=faturamento,
         lucro_atual=lucro_atual,
+        lucro_base=lucro_base,
+        imposto=imposto,
         simulacoes=simulacoes
     )
-
 
 # =========================
 # INICIALIZAÇÃO

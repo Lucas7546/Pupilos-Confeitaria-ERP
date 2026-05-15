@@ -4,95 +4,51 @@
 <div class="container-fluid py-4 px-md-5 animate-in">
 
     <!-- HEADER -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="text-white fw-bold mb-1">
-                📊 Relatório Financeiro Inteligente
-            </h2>
-            <small class="text-white-50">
-                Análise de lucro, custos e impacto tributário
-            </small>
-        </div>
+    <div class="mb-4">
+        <h1 class="fw-bold text-white">
+            📊 Relatório Fiscal Inteligente
+        </h1>
+
+        <p class="text-white-50">
+            Simulação de impacto tributário entre regimes (MEI, ME e Simples Nacional)
+        </p>
     </div>
 
-    <!-- REGIME ATUAL + FORM -->
-    <div class="card bg-dark border-0 shadow-lg p-4 mb-4">
+    <!-- RESUMO ATUAL -->
+    <div class="row g-4 mb-4">
 
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div class="col-md-3">
+            <div class="card bg-dark-card p-3">
+                <small class="text-white-50">Regime Atual</small>
+                <h4 class="text-warning">{{ regime_atual }}</h4>
+            </div>
+        </div>
 
-            <div>
-                <h6 class="text-white-50 mb-1">Regime Fiscal Atual</h6>
-                <h4 class="text-warning fw-bold mb-0">
-                    {{ regime_atual }}
+        <div class="col-md-3">
+            <div class="card bg-dark-card p-3">
+                <small class="text-white-50">Faturamento</small>
+                <h4 class="text-success">
+                    R$ {{ "%.2f"|format(faturamento) }}
                 </h4>
             </div>
-
-            <form method="POST" class="d-flex gap-2">
-                <select name="regime_fiscal" class="form-select bg-dark text-white border-secondary">
-                    <option value="MEI">MEI (4%)</option>
-                    <option value="ME">ME (8%)</option>
-                    <option value="SIMPLES">Simples (12%)</option>
-                </select>
-
-                <button class="btn btn-warning fw-bold">
-                    Atualizar
-                </button>
-            </form>
-
-        </div>
-    </div>
-
-    <!-- CARDS PRINCIPAIS -->
-    <div class="row g-4">
-
-        <!-- FATURAMENTO -->
-        <div class="col-md-3">
-            <div class="card bg-dark p-3 border-0 shadow-lg">
-                <small class="text-white-50">Faturamento</small>
-                <h3 class="text-success">
-                    R$ {{ "%.2f"|format(faturamento) }}
-                </h3>
-            </div>
         </div>
 
-        <!-- LUCRO ATUAL -->
         <div class="col-md-3">
-            <div class="card bg-dark p-3 border-0 shadow-lg">
+            <div class="card bg-dark-card p-3">
                 <small class="text-white-50">Lucro Atual</small>
-                <h3 class="{% if lucro_atual > 0 %}text-success{% else %}text-danger{% endif %}">
+                <h4 class="text-info">
                     R$ {{ "%.2f"|format(lucro_atual) }}
-                </h3>
-            </div>
-        </div>
-
-        <!-- IMPACTO FISCAL -->
-        <div class="col-md-3">
-            <div class="card bg-dark p-3 border-0 shadow-lg">
-                <small class="text-white-50">Imposto Estimado</small>
-                <h3 class="text-warning">
-                    R$ {{ "%.2f"|format(lucro_atual - lucro_atual) if false else "ver simulação" }}
-                </h3>
-                <small class="text-muted">ver tabela abaixo</small>
-            </div>
-        </div>
-
-        <!-- STATUS -->
-        <div class="col-md-3">
-            <div class="card bg-dark p-3 border-0 shadow-lg">
-                <small class="text-white-50">Status Financeiro</small>
-                <h3 class="{% if lucro_atual > 0 %}text-success{% else %}text-danger{% endif %}">
-                    {% if lucro_atual > 0 %}POSITIVO{% else %}NEGATIVO{% endif %}
-                </h3>
+                </h4>
             </div>
         </div>
 
     </div>
 
-    <!-- SIMULAÇÃO DE REGIMES -->
-    <div class="card bg-dark mt-4 border-0 shadow-lg p-4">
+    <!-- TABELA SIMULAÇÕES -->
+    <div class="card bg-dark-card p-4 shadow-lg">
 
         <h5 class="text-white mb-3">
-            📊 Comparação de Regimes Fiscais
+            📈 Comparação de Regimes Tributários
         </h5>
 
         <div class="table-responsive">
@@ -101,39 +57,42 @@
                 <thead>
                     <tr class="text-white-50">
                         <th>Regime</th>
-                        <th>Alíquota</th>
-                        <th>Imposto</th>
+                        <th>Imposto Estimado</th>
                         <th>Lucro Final</th>
-                        <th>Diferença</th>
+                        <th>Diferença vs Atual</th>
                     </tr>
                 </thead>
 
                 <tbody>
-                    {% for s in simulacoes %}
+
+                {% for s in simulacoes %}
+
                     <tr>
 
-                        <td class="fw-bold text-white">
+                        <!-- REGIME -->
+                        <td class="fw-bold text-warning">
                             {{ s.regime }}
                         </td>
 
-                        <td class="text-warning">
-                            {{ "%.0f"|format(s.aliquota * 100) }}%
-                        </td>
-
+                        <!-- IMPOSTO -->
                         <td class="text-danger">
                             R$ {{ "%.2f"|format(s.imposto) }}
                         </td>
 
-                        <td class="{% if s.lucro > 0 %}text-success{% else %}text-danger{% endif %}">
+                        <!-- LUCRO -->
+                        <td class="text-success">
                             R$ {{ "%.2f"|format(s.lucro) }}
                         </td>
 
-                        <td class="{% if s.diferenca >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        <!-- DIFERENÇA -->
+                        <td class="{{ 'text-success' if s.diferenca >= 0 else 'text-danger' }}">
                             R$ {{ "%.2f"|format(s.diferenca) }}
                         </td>
 
                     </tr>
-                    {% endfor %}
+
+                {% endfor %}
+
                 </tbody>
 
             </table>
@@ -141,44 +100,47 @@
 
     </div>
 
-    <!-- ALERTA ESTRATÉGICO -->
-    <div class="card bg-dark mt-4 border-0 shadow-lg p-4">
+    <!-- ALERTA INTELIGENTE -->
+    <div class="mt-4">
 
-        <h5 class="text-white mb-3">
-            🧠 Análise Estratégica
-        </h5>
+        {% set melhor = simulacoes | sort(attribute='lucro', reverse=True) | first %}
 
-        {% if lucro_atual > 0 %}
-        <div class="alert alert-success">
-            ✔ Operação lucrativa. O negócio está saudável no regime atual.
+        <div class="alert alert-dark border border-warning text-white">
+
+            <strong>💡 Melhor cenário simulado:</strong>
+            {{ melhor.regime }} gera maior lucro estimado de
+            <span class="text-success">
+                R$ {{ "%.2f"|format(melhor.lucro) }}
+            </span>
+
         </div>
-        {% else %}
-        <div class="alert alert-danger">
-            ⚠ Operação negativa. Revisar custos ou regime fiscal imediatamente.
-        </div>
-        {% endif %}
 
     </div>
 
 </div>
 
 <style>
-    .animate-in {
-        animation: fadeIn 0.4s ease-in-out;
-    }
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+.bg-dark-card {
+    background: #1e293b;
+    border-radius: 14px;
+}
 
-    .card {
-        border-radius: 12px;
-    }
+.animate-in {
+    animation: fadeUp 0.4s ease;
+}
 
-    .table-dark {
-        --bs-table-bg: transparent;
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
     }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 </style>
 
 {% endblock %}

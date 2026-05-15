@@ -252,6 +252,42 @@ def registrar_compra():
     return redirect("/estoque")
 
 
+@app.route("/editar-produto/<int:id_produto>", methods=["POST"])
+@login_required
+def atualizar_produto(id_produto):
+    # Pega os dados vindos do formulário
+    nome = request.form.get("nome")
+    preco = request.form.get("preco")
+    
+    # Chama a função no usuarios.py (que vamos conferir abaixo)
+    sucesso = usuarios.update_produto(id_produto, nome, preco)
+    
+    if sucesso:
+        flash("Produto atualizado com sucesso!", "success")
+    else:
+        flash("Erro ao atualizar produto.", "danger")
+        
+    return redirect(url_for('listar_estoque'))
+
+@app.route("/editar-materia-prima/<int:id_mp>", methods=["POST"])
+@login_required
+def processar_edicao_mp(id_mp):
+    # Coleta os dados que vieram do formulário HTML
+    nome = request.form.get("nome")
+    preco = request.form.get("preco_custo")
+    unidade = request.form.get("unidade")
+    quantidade = request.form.get("quantidade")
+
+    # Chama a função do usuarios.py
+    sucesso = usuarios.atualizar_materia_prima(id_mp, nome, preco, unidade, quantidade)
+
+    if sucesso:
+        flash("Matéria-prima atualizada com sucesso!", "success")
+    else:
+        flash("Erro ao tentar atualizar.", "danger")
+
+    return redirect(url_for('listar_estoque'))
+
 # =========================
 # CADASTRO PRODUTOS/MATERIA-PRIMA
 # =========================
@@ -366,6 +402,23 @@ def deletar_mp(id_mp):
         
     return redirect(url_for('listar_estoque'))
 
+# --- ROTA: EXCLUIR VENDA ---
+@app.route("/excluir-venda/<int:id_venda>")
+@login_required
+def deletar_venda(id_venda):
+    if session.get("nivel") not in ["admin", "gerente"]:
+        flash("Acesso negado! Apenas Gerentes podem excluir vendas.", "danger")
+        return redirect(url_for('listar_vendas'))
+
+    try:
+        # Aqui você chama a função que deleta no seu arquivo de banco de dados
+        usuarios.excluir_venda(id_venda) 
+        registrar_log(session.get('user'), "EXCLUIR", "VENDAS", f"Removeu venda ID {id_venda}")
+        flash("Venda excluída com sucesso!", "success")
+    except Exception as e:
+        flash(f"Erro ao excluir venda: {e}", "danger")
+    
+    return redirect(url_for('listar_vendas'))
 
 
 # --- ROTA: PRECIFICAÇÃO ---
@@ -549,6 +602,20 @@ def pagina_financeiro():
         flash("Erro ao carregar dados financeiros", "warning")
         return redirect("/")
     
+# =========================================================
+# ROTA: FLUXO DE CAIXA
+# =========================================================
+@app.route("/fluxo-caixa")
+@login_required
+def fluxo_caixa():
+    try:
+        # Por enquanto, vamos apenas abrir a página. 
+        # Depois podemos buscar os dados reais de vendas e compras no banco.
+        return render_template("fluxo_caixa.html")
+    except Exception as e:
+        print(f"Erro ao abrir fluxo de caixa: {e}")
+        flash("Página de fluxo de caixa em desenvolvimento ou arquivo não encontrado.", "info")
+        return redirect(url_for('dashboard'))
 
 # =========================================================
 # ROTA: TELA DE AUDITORIA (Visualizar Logs no Navegador)

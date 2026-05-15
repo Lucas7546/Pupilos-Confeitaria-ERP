@@ -3,7 +3,6 @@
 {% block content %}
 <div class="container-fluid py-4 px-md-5 animate-in">
 
-    <!-- HEADER ESTATÍSTICO -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
         <div>
             <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.2rem; letter-spacing: -1px;">
@@ -22,7 +21,6 @@
         </div>
     </div>
 
-    <!-- TABELA DE CONTROLE -->
     <div class="card bg-dark-card border-0 shadow-lg rounded-4 overflow-hidden">
         <div class="table-responsive">
             <table class="table table-hover table-dark align-middle mb-0" style="--bs-table-bg: transparent;">
@@ -78,49 +76,43 @@
                         </td>
                         <td class="text-end pe-4">
                             <div class="d-flex justify-content-end gap-2">
-                                <!-- BOTÃO AJUSTAR (Sempre visível) -->
                                 <button class="btn btn-outline-warning btn-sm px-3 rounded-3 fw-bold"
                                         data-bs-toggle="modal"
                                         data-bs-target="#modalEditar{{ item[0] }}">
                                     <i class="bi bi-pencil-square"></i> AJUSTAR
                                 </button>
 
-                                <!-- BOTÃO EXCLUIR (Apenas Admin/Gerente) -->
                                 {% if session.get('nivel') in ['admin', 'gerente'] %}
-                                <a href="/excluir-mp/{{ item[0] }}" 
+                                <a href="{{ url_for('deletar_mp', id_mp=item[0]) }}" 
                                    class="btn btn-outline-danger btn-sm px-2 rounded-3"
                                    onclick="return confirm('ATENÇÃO: Deseja realmente excluir {{ item[1] }} do estoque?')">
-                                    <i class="bi bi-trash3"></i>
+                                     <i class="bi bi-trash3"></i>
                                 </a>
                                 {% endif %}
                             </div>
                         </td>
                     </tr>
 
-                    <!-- MODAL DE EDIÇÃO RÁPIDA -->
                     <div class="modal fade" id="modalEditar{{ item[0] }}" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
                             <div class="modal-content bg-dark-card border border-secondary border-opacity-25 rounded-4 shadow-2xl">
                                 <div class="modal-header border-0 pt-4 px-4">
-                                    <h5 class="modal-title fw-bold text-white">Ajustar Saldo</h5>
+                                    <h5 class="modal-title fw-bold text-white">Ajustar Insumo</h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
-                                <form action="/editar-estoque/{{ item[0] }}" method="POST">
+                                <form action="{{ url_for('processar_edicao_mp', id_mp=item[0]) }}" method="POST">
                                     <div class="modal-body px-4">
-                                        <p class="text-white-50 small mb-4">Você está editando o saldo de: <br><strong class="text-warning fs-5">{{ item[1] }}</strong></p>
+                                        <p class="text-white-50 small mb-4">Editando: <br><strong class="text-warning fs-5">{{ item[1] }}</strong></p>
                                         
                                         <div class="form-group mb-3">
-                                            <label class="form-label text-white-50 small fw-bold">NOVA QUANTIDADE EM ESTOQUE</label>
+                                            <label class="form-label text-white-50 small fw-bold">NOME DO INSUMO</label>
+                                            <input type="text" name="nome" class="form-control bg-dark text-white border-secondary border-opacity-50 mb-3" value="{{ item[1] }}" required>
+                                            
+                                            <label class="form-label text-white-50 small fw-bold">QUANTIDADE EM ESTOQUE</label>
                                             <div class="input-group input-group-lg">
-                                                <input type="number" step="0.001" name="estoque" class="form-control bg-dark text-white border-secondary border-opacity-50 shadow-none" value="{{ item[4] }}" required autofocus>
+                                                <input type="number" step="0.001" name="quantidade" class="form-control bg-dark text-white border-secondary border-opacity-50 shadow-none" value="{{ item[4] }}" required>
                                                 <span class="input-group-text bg-secondary bg-opacity-20 text-white-50 border-secondary border-opacity-50 fw-bold">{{ item[2] }}</span>
                                             </div>
-                                        </div>
-                                        
-                                        <div class="p-3 rounded-3 bg-warning bg-opacity-10 border border-warning border-opacity-10">
-                                            <p class="small text-warning mb-0">
-                                                <i class="bi bi-info-circle me-1"></i> Esta alteração será refletida imediatamente nos cálculos de produção e dashboards.
-                                            </p>
                                         </div>
                                     </div>
                                     <div class="modal-footer border-0 p-4">
@@ -142,26 +134,10 @@
     .bg-dark-card { background: #1e293b !important; }
     .transition-all { transition: all 0.2s ease-in-out; }
     tr:hover { background-color: rgba(255, 255, 255, 0.02) !important; }
-    
-    .btn-outline-danger:hover {
-        background-color: #dc3545 !important;
-        color: white !important;
-        box-shadow: 0 0 15px rgba(220, 53, 69, 0.4);
-    }
-
+    .btn-outline-danger:hover { background-color: #dc3545 !important; color: white !important; box-shadow: 0 0 15px rgba(220, 53, 69, 0.4); }
     .font-monospace { font-family: 'JetBrains Mono', 'Courier New', monospace !important; }
-    
-    .animate-in { 
-        animation: slideUp 0.6s ease-out; 
-    }
-
-    @keyframes slideUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .shadow-2xl {
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    }
+    .animate-in { animation: slideUp 0.6s ease-out; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
 </style>
 {% endblock %}

@@ -51,6 +51,15 @@ def saida_estoque(materia_prima_id, quantidade, observacao='Movimentação manua
             con.close()
 
 
+def excluir_materia_prima(id_mp):
+    with obter_conexao() as conn:
+        with conn.cursor() as cursor:
+            # CUIDADO: Se a MP estiver em uma ficha técnica, o banco travará.
+            # Isso é bom para não quebrar seus cálculos de brigadeiro!
+            cursor.execute("DELETE FROM materias_primas WHERE id = %s", (id_mp,))
+            conn.commit()
+
+
 # =========================================================
 # CALCULAR ESTOQUE ATUAL
 # =========================================================

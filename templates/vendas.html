@@ -2,10 +2,8 @@
 
 {% block content %}
 <div class="container py-5 animate-in">
-    <div class="row justify-content-center">
-        <div class="col-lg-5 col-md-8">
-            
-            <!-- HEADER DE VENDAS -->
+    <div class="row g-4 justify-content-center">
+        <div class="col-lg-5">
             <div class="text-center mb-4">
                 <div class="display-6 text-warning mb-2">
                     <i class="bi bi-cart-check-fill"></i>
@@ -15,15 +13,12 @@
             </div>
 
             <div class="card bg-dark-card border-0 shadow-2xl rounded-4 overflow-hidden">
-                <!-- INDICADOR DE PROGRESSO SIMBÓLICO -->
                 <div class="progress rounded-0" style="height: 4px; background: transparent;">
                     <div class="progress-bar bg-warning" role="progressbar" style="width: 100%"></div>
                 </div>
 
                 <div class="card-body p-4 p-md-5">
                     <form action="/vender" method="POST" id="vendaForm">
-                        
-                        <!-- SELEÇÃO DO PRODUTO -->
                         <div class="mb-4">
                             <label class="form-label text-white-50 small fw-bold tracking-wider">PRODUTO</label>
                             <div class="input-group">
@@ -41,7 +36,6 @@
                             </div>
                         </div>
 
-                        <!-- QUANTIDADE -->
                         <div class="mb-4">
                             <label class="form-label text-white-50 small fw-bold tracking-wider">QUANTIDADE</label>
                             <div class="input-group input-group-lg">
@@ -51,31 +45,54 @@
                             </div>
                         </div>
 
-                        <!-- RESUMO DO TOTAL -->
                         <div class="p-4 rounded-4 bg-black bg-opacity-30 border border-secondary border-opacity-10 mb-4 text-center">
                             <span class="text-white-50 small d-block mb-1">TOTAL A RECEBER</span>
                             <div class="display-6 fw-extrabold text-success" id="totalDisplay">R$ 0,00</div>
                         </div>
 
-                        <!-- BOTÕES DE AÇÃO -->
                         <div class="d-grid gap-3">
                             <button type="submit" class="btn btn-warning btn-lg fw-extrabold py-3 rounded-3 shadow-sm transition-all hover-grow">
                                 <i class="bi bi-check-circle-fill me-2"></i>FINALIZAR VENDA
                             </button>
-                            <a href="/" class="btn btn-link text-white-50 text-decoration-none small fw-bold">
-                                <i class="bi bi-x-lg me-1"></i> CANCELAR
-                            </a>
                         </div>
                     </form>
                 </div>
             </div>
+        </div>
 
-            <!-- DICA DE SEGURANÇA -->
-            <div class="mt-4 p-3 rounded-3 bg-info bg-opacity-10 border border-info border-opacity-10 text-center">
-                <p class="small text-info mb-0">
-                    <i class="bi bi-info-circle-fill me-1"></i> 
-                    Certifique-se de que o pagamento foi confirmado antes de finalizar.
-                </p>
+        <div class="col-lg-7">
+            <h4 class="text-white fw-bold mb-4"><i class="bi bi-clock-history me-2 text-warning"></i>Últimas Vendas</h4>
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead class="bg-black bg-opacity-50">
+                            <tr class="small text-white-50">
+                                <th class="ps-4">Data</th>
+                                <th>Produto</th>
+                                <th class="text-center">Qtd</th>
+                                <th>Total</th>
+                                <th class="text-end pe-4">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for v in historico_vendas %}
+                            <tr>
+                                <td class="ps-4 small text-white-50">{{ v.data }}</td>
+                                <td class="fw-bold">{{ v.nome_produto }}</td>
+                                <td class="text-center">{{ v.quantidade }}</td>
+                                <td class="text-success fw-bold">R$ {{ "%.2f"|format(v.valor_total) }}</td>
+                                <td class="text-end pe-4">
+                                    <a href="{{ url_for('deletar_venda', id_venda=v.id_venda) }}" 
+                                       class="btn btn-sm btn-outline-danger"
+                                       onclick="return confirm('Excluir este registro de venda?')">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -84,18 +101,10 @@
 <style>
     .bg-dark-card { background: #1e293b !important; }
     .fw-extrabold { font-weight: 800; }
-    .tracking-wider { letter-spacing: 0.05em; }
     .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-    
-    /* Chrome, Safari, Edge, Opera: remover setas padrão do input number */
     input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    
     .animate-in { animation: slideUp 0.5s ease-out; }
-    @keyframes slideUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     .hover-grow:hover { transform: scale(1.02); }
 </style>
 

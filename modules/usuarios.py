@@ -276,7 +276,7 @@ def excluir_produto(id_produto):
 
     except Exception as e:
 
-        print(f"Erro excluir produto: {e}")
+        print(f"ERRO REAL AQUI: {e}") # Isso vai te dizer se é 'coluna não existe' ou 'violacao de chave estrangeira'
 
         return False
 
@@ -315,5 +315,67 @@ def excluir_materia_prima(id_mp):
 
     finally:
 
+        if conn:
+            conn.close()
+
+# =========================
+# EXCLUIR VENDA
+# =========================
+def excluir_venda(id_venda):
+    conn = None
+    try:
+        conn = conectar()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM vendas WHERE id_venda = %s", (id_venda,))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Erro excluir venda: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+def update_produto(id_produto, nome, preco):
+    conn = None
+    try:
+        conn = conectar()
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE produtos 
+            SET nome_produto = %s, preco_venda = %s 
+            WHERE id_produto = %s
+        """, (nome, preco, id_produto))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Erro no update: {e}")
+        return False
+    finally:
+        if conn: conn.close()
+
+
+# =========================
+# ATUALIZAR MATÉRIA PRIMA
+# =========================
+def atualizar_materia_prima(id_mp, nome, preco, unidade, quantidade):
+    conn = None
+    try:
+        conn = conectar()
+        cursor = conn.cursor()
+        
+        # O SQL que altera os dados no banco
+        cursor.execute("""
+            UPDATE materia_prima 
+            SET nome = %s, preco_custo = %s, unidade = %s, quantidade = %s 
+            WHERE id_materia_prima = %s
+        """, (nome, preco, unidade, quantidade, id_mp))
+        
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Erro ao atualizar MP no banco: {e}")
+        return False
+    finally:
         if conn:
             conn.close()

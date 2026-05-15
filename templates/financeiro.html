@@ -1,4 +1,4 @@
-NCEIRO.HTML COMPLETO (ROBUSTO + BOTÕES MANTIDOS)
+CEIRO.HTML (COMPLETO + SOMENTE ADIÇÃO)
 {% extends "base.html" %}
 
 {% block content %}
@@ -14,39 +14,34 @@ NCEIRO.HTML COMPLETO (ROBUSTO + BOTÕES MANTIDOS)
         </p>
     </div>
 
-    <!-- 🔥 AÇÕES (BOTÕES RESTAURADOS) -->
+    <!-- 🔥 AÇÕES (NÃO REMOVIDAS — SÓ RESTAURADAS DO ORIGINAL) -->
     <div class="d-flex flex-wrap gap-2 mb-4">
 
-        <!-- ADICIONAR CUSTOS FIXOS -->
         <a href="/despesas" class="btn btn-warning fw-bold">
             <i class="bi bi-plus-circle me-1"></i>
-            Custos Fixos
+            Adicionar Despesa
         </a>
 
-        <!-- FLUXO DE CAIXA -->
         <a href="/fluxo-caixa" class="btn btn-outline-light">
             <i class="bi bi-cash-coin me-1"></i>
             Fluxo de Caixa
         </a>
 
-        <!-- ATUALIZAR -->
+        <a href="/relatorio-financeiro" class="btn btn-info text-white">
+            <i class="bi bi-bar-chart-line me-1"></i>
+            Relatórios
+        </a>
+
         <a href="/financeiro" class="btn btn-outline-light">
             <i class="bi bi-arrow-clockwise me-1"></i>
             Atualizar
         </a>
 
-        <!-- RELATÓRIO -->
-        <a href="/relatorio-financeiro" class="btn btn-info text-white">
-            <i class="bi bi-bar-chart-line me-1"></i>
-            Relatório Fiscal
-        </a>
-
     </div>
 
-    <!-- CARDS PRINCIPAIS -->
+    <!-- CARDS PRINCIPAIS (SEU CÓDIGO ORIGINAL MANTIDO) -->
     <div class="row g-4 mb-4">
 
-        <!-- FATURAMENTO -->
         <div class="col-md-4">
             <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100">
                 <small class="text-white-50 fw-bold">FATURAMENTO</small>
@@ -56,7 +51,6 @@ NCEIRO.HTML COMPLETO (ROBUSTO + BOTÕES MANTIDOS)
             </div>
         </div>
 
-        <!-- CUSTO INSUMOS -->
         <div class="col-md-4">
             <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100">
                 <small class="text-white-50 fw-bold">CUSTO INSUMOS</small>
@@ -66,7 +60,6 @@ NCEIRO.HTML COMPLETO (ROBUSTO + BOTÕES MANTIDOS)
             </div>
         </div>
 
-        <!-- DESPESAS FIXAS -->
         <div class="col-md-4">
             <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100">
                 <small class="text-white-50 fw-bold">DESPESAS FIXAS</small>

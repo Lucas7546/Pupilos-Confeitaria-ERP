@@ -254,39 +254,92 @@ def registrar_compra():
 
 @app.route("/editar-produto/<int:id_produto>", methods=["POST"])
 @login_required
-def atualizar_produto(id_produto):
-    # Pega os dados vindos do formulário
-    nome = request.form.get("nome")
-    preco = request.form.get("preco")
-    
-    # Chama a função no usuarios.py (que vamos conferir abaixo)
-    sucesso = usuarios.update_produto(id_produto, nome, preco)
-    
-    if sucesso:
-        flash("Produto atualizado com sucesso!", "success")
-    else:
-        flash("Erro ao atualizar produto.", "danger")
-        
-    return redirect(url_for('listar_estoque'))
+def atualizar_produto():
+
+    try:
+
+        nome = request.form.get("nome", "").strip()
+
+        preco = request.form.get("preco", 0)
+
+        sucesso = usuarios.update_produto(
+            id_produto,
+            nome,
+            preco
+        )
+
+        if sucesso:
+
+            flash(
+                "Produto atualizado com sucesso!",
+                "success"
+            )
+
+        else:
+
+            flash(
+                "Erro ao atualizar produto.",
+                "danger"
+            )
+
+    except Exception as e:
+
+        print(f"Erro rota atualizar produto: {e}")
+
+        flash(
+            f"Erro: {e}",
+            "danger"
+        )
+
+    return redirect(url_for("listar_estoque"))
+
 
 @app.route("/editar-materia-prima/<int:id_mp>", methods=["POST"])
 @login_required
 def processar_edicao_mp(id_mp):
-    # Coleta os dados que vieram do formulário HTML
-    nome = request.form.get("nome")
-    preco = request.form.get("preco_custo")
-    unidade = request.form.get("unidade")
-    quantidade = request.form.get("quantidade")
 
-    # Chama a função do usuarios.py
-    sucesso = usuarios.atualizar_materia_prima(id_mp, nome, preco, unidade, quantidade)
+    try:
 
-    if sucesso:
-        flash("Matéria-prima atualizada com sucesso!", "success")
-    else:
-        flash("Erro ao tentar atualizar.", "danger")
+        nome = request.form.get("nome", "").strip()
 
-    return redirect(url_for('listar_estoque'))
+        preco = request.form.get("preco_custo", 0)
+
+        unidade = request.form.get("unidade", "").strip()
+
+        quantidade = request.form.get("quantidade", 0)
+
+        sucesso = usuarios.atualizar_materia_prima(
+            id_mp,
+            nome,
+            preco,
+            unidade,
+            quantidade
+        )
+
+        if sucesso:
+
+            flash(
+                "Matéria-prima atualizada com sucesso!",
+                "success"
+            )
+
+        else:
+
+            flash(
+                "Erro ao tentar atualizar.",
+                "danger"
+            )
+
+    except Exception as e:
+
+        print(f"Erro rota editar MP: {e}")
+
+        flash(
+            f"Erro: {e}",
+            "danger"
+        )
+
+    return redirect(url_for("listar_estoque"))
 
 # =========================
 # CADASTRO PRODUTOS/MATERIA-PRIMA
@@ -371,55 +424,145 @@ def vincular_receita():
 @app.route("/excluir-produto/<int:id_produto>")
 @login_required
 def deletar_produto(id_produto):
+
     if session.get("nivel") not in ["admin", "gerente"]:
-        flash("Acesso negado! Apenas Gerentes podem excluir produtos.", "danger")
-        return redirect(url_for('listar_estoque')) # Ajuste para sua rota de estoque
+
+        flash(
+            "Acesso negado! Apenas Gerentes podem excluir produtos.",
+            "danger"
+        )
+
+        return redirect(url_for('listar_estoque'))
 
     try:
-        usuarios.excluir_produto(id_produto)
-        # Registrar na auditoria que você já tem pronta
-        registrar_log(session.get('user'), "EXCLUIR", "ESTOQUE", f"Removeu produto ID {id_produto}")
-        flash("Produto removido com sucesso!", "success")
+
+        sucesso = usuarios.excluir_produto(id_produto)
+
+        if sucesso:
+
+            registrar_log(
+                session.get('user'),
+                "EXCLUIR",
+                "ESTOQUE",
+                f"Removeu produto ID {id_produto}"
+            )
+
+            flash(
+                "Produto removido com sucesso!",
+                "success"
+            )
+
+        else:
+
+            flash(
+                "Erro ao excluir produto.",
+                "danger"
+            )
+
     except Exception as e:
-        flash(f"Erro ao excluir: {e}", "danger")
-    
+
+        flash(
+            f"Erro ao excluir: {e}",
+            "danger"
+        )
+
     return redirect(url_for('listar_estoque'))
 
 # --- ROTA: EXCLUIR MATÉRIA-PRIMA ---
 @app.route("/excluir-mp/<int:id_mp>")
 @login_required
 def deletar_mp(id_mp):
+
     if session.get("nivel") not in ["admin", "gerente"]:
-        flash("Permissão insuficiente.", "danger")
+
+        flash(
+            "Permissão insuficiente.",
+            "danger"
+        )
+
         return redirect(url_for('listar_estoque'))
 
     try:
-        usuarios.excluir_materia_prima(id_mp)
-        registrar_log(session.get('user'), "EXCLUIR", "MATERIA_PRIMA", f"Removeu insumo ID {id_mp}")
-        flash("Matéria-prima removida!", "info")
+
+        sucesso = usuarios.excluir_materia_prima(id_mp)
+
+        if sucesso:
+
+            registrar_log(
+                session.get('user'),
+                "EXCLUIR",
+                "MATERIA_PRIMA",
+                f"Removeu insumo ID {id_mp}"
+            )
+
+            flash(
+                "Matéria-prima removida!",
+                "success"
+            )
+
+        else:
+
+            flash(
+                "Erro ao excluir matéria-prima.",
+                "danger"
+            )
+
     except Exception as e:
-        flash(f"Erro ao excluir: {e}", "danger")
-        
+
+        flash(
+            f"Erro ao excluir: {e}",
+            "danger"
+        )
+
     return redirect(url_for('listar_estoque'))
 
 # --- ROTA: EXCLUIR VENDA ---
 @app.route("/excluir-venda/<int:id_venda>")
 @login_required
 def deletar_venda(id_venda):
+
     if session.get("nivel") not in ["admin", "gerente"]:
-        flash("Acesso negado! Apenas Gerentes podem excluir vendas.", "danger")
+
+        flash(
+            "Acesso negado! Apenas Gerentes podem excluir vendas.",
+            "danger"
+        )
+
         return redirect(url_for('listar_vendas'))
 
     try:
-        # Aqui você chama a função que deleta no seu arquivo de banco de dados
-        usuarios.excluir_venda(id_venda) 
-        registrar_log(session.get('user'), "EXCLUIR", "VENDAS", f"Removeu venda ID {id_venda}")
-        flash("Venda excluída com sucesso!", "success")
-    except Exception as e:
-        flash(f"Erro ao excluir venda: {e}", "danger")
-    
-    return redirect(url_for('listar_vendas'))
 
+        sucesso = usuarios.excluir_venda(id_venda)
+
+        if sucesso:
+
+            registrar_log(
+                session.get('user'),
+                "EXCLUIR",
+                "VENDAS",
+                f"Removeu venda ID {id_venda}"
+            )
+
+            flash(
+                "Venda excluída com sucesso!",
+                "success"
+            )
+
+        else:
+
+            flash(
+                "Erro ao excluir venda.",
+                "danger"
+            )
+
+    except Exception as e:
+
+        flash(
+            f"Erro ao excluir venda: {e}",
+            "danger"
+        )
+
+    return redirect(url_for('listar_vendas'))
 
 # --- ROTA: PRECIFICAÇÃO ---
 from psycopg2.extras import RealDictCursor

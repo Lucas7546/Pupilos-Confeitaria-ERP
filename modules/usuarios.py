@@ -265,6 +265,19 @@ def excluir_produto(id_produto):
         conn = conectar()
         cursor = conn.cursor()
 
+        # Remove receitas ligadas ao produto
+        cursor.execute("""
+            DELETE FROM receitas
+            WHERE id_produto = %s
+        """, (id_produto,))
+
+        # Remove itens de venda ligados ao produto
+        cursor.execute("""
+            DELETE FROM itens_venda
+            WHERE id_produto = %s
+        """, (id_produto,))
+
+        # Remove produto
         cursor.execute("""
             DELETE FROM produtos
             WHERE id_produto = %s
@@ -276,7 +289,10 @@ def excluir_produto(id_produto):
 
     except Exception as e:
 
-        print(f"ERRO REAL AQUI: {e}") # Isso vai te dizer se é 'coluna não existe' ou 'violacao de chave estrangeira'
+        if conn:
+            conn.rollback()
+
+        print(f"ERRO EXCLUIR PRODUTO: {e}")
 
         return False
 
@@ -298,6 +314,19 @@ def excluir_materia_prima(id_mp):
         conn = conectar()
         cursor = conn.cursor()
 
+        # Remove receitas vinculadas
+        cursor.execute("""
+            DELETE FROM receitas
+            WHERE id_materia_prima = %s
+        """, (id_mp,))
+
+        # Remove movimentações
+        cursor.execute("""
+            DELETE FROM movimentacao_estoque
+            WHERE id_materia_prima = %s
+        """, (id_mp,))
+
+        # Remove matéria-prima
         cursor.execute("""
             DELETE FROM materia_prima
             WHERE id_materia_prima = %s
@@ -309,6 +338,9 @@ def excluir_materia_prima(id_mp):
 
     except Exception as e:
 
+        if conn:
+            conn.rollback()
+
         print(f"Erro excluir matéria-prima: {e}")
 
         return False
@@ -318,64 +350,152 @@ def excluir_materia_prima(id_mp):
         if conn:
             conn.close()
 
+
 # =========================
 # EXCLUIR VENDA
 # =========================
 def excluir_venda(id_venda):
+
     conn = None
+
     try:
+
         conn = conectar()
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM vendas WHERE id_venda = %s", (id_venda,))
+
+        # Remove itens da venda
+        cursor.execute("""
+            DELETE FROM itens_venda
+            WHERE id_venda = %s
+        """, (id_venda,))
+
+        # Remove venda
+        cursor.execute("""
+            DELETE FROM vendas
+            WHERE id_venda = %s
+        """, (id_venda,))
+
         conn.commit()
+
         return True
+
     except Exception as e:
+
+        if conn:
+            conn.rollback()
+
         print(f"Erro excluir venda: {e}")
+
         return False
+
     finally:
+
         if conn:
             conn.close()
 
+# =========================
+# ATUALIZAR PRODUTO
+# =========================
 def update_produto(id_produto, nome, preco):
+
     conn = None
+
     try:
+
         conn = conectar()
         cursor = conn.cursor()
+
         cursor.execute("""
-            UPDATE produtos 
-            SET nome_produto = %s, preco_venda = %s 
+            UPDATE produtos
+            SET
+                nome = %s,
+                preco_venda = %s
             WHERE id_produto = %s
-        """, (nome, preco, id_produto))
+        """, (
+            nome,
+            preco,
+            id_produto
+        ))
+
         conn.commit()
+
         return True
+
     except Exception as e:
-        print(f"Erro no update: {e}")
+
+        print(f"Erro update produto: {e}")
+
         return False
+
     finally:
-        if conn: conn.close()
+
+        if conn:
+            conn.close()
 
 
 # =========================
 # ATUALIZAR MATÉRIA PRIMA
 # =========================
-def atualizar_materia_prima(id_mp, nome, preco, unidade, quantidade):
+def atualizar_materia_prima(
+    id_mp,
+    nome,
+    preco,
+    unidade,
+    quantidade
+):
+
     conn = None
+
     try:
+
         conn = conectar()
         cursor = conn.cursor()
-        
-        # O SQL que altera os dados no banco
+
         cursor.execute("""
-            UPDATE materia_prima 
-            SET nome = %s, preco_custo = %s, unidade = %s, quantidade = %s 
+            UPDATE materia_prima
+            SET
+                nome = %s,
+                preco_unitario = %s,
+                unidade_medida = %s
             WHERE id_materia_prima = %s
-        """, (nome, preco, unidade, quantidade, id_mp))
-        
+        """, (
+            nome,
+            preco,
+            unidade,
+            id_mp
+        ))
+
+        # =====================================================
+        # AJUSTE DE ESTOQUE
+        # =====================================================
+
+        if quantidade and float(quantidade) > 0:
+
+            cursor.execute("""
+                INSERT INTO movimentacao_estoque (
+                    id_materia_prima,
+                    tipo_movimento,
+                    quantidade,
+                    observacao
+                )
+                VALUES (%s, 'entrada', %s, %s)
+            """, (
+                id_mp,
+                quantidade,
+                'Ajuste manual de estoque'
+            ))
+
         conn.commit()
+
         return True
+
     except Exception as e:
-        print(f"Erro ao atualizar MP no banco: {e}")
+
+        print(f"Erro atualizar MP: {e}")
+
         return False
+
     finally:
+
         if conn:
             conn.close()

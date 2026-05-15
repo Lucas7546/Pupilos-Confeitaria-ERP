@@ -2,11 +2,11 @@ import os
 import io
 import json
 import pandas as pd
-from modules.financeiro import calcular_financeiro_com_imposto
+
 from flask import Response
 from datetime import datetime
 from functools import wraps
-from modules.financeiro import lucro_final
+
 from modules.financeiro import calcular_financeiro_com_imposto, calcular_imposto, get_config_empresa
 from flask import (
     Flask,

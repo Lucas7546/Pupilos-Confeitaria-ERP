@@ -6,171 +6,128 @@
     <!-- HEADER -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
         <div>
-            <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.2rem; letter-spacing: -1px;">
-                📊 Saúde <span class="text-warning">Financeira</span>
+            <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.2rem;">
+                📊 Relatório <span class="text-warning">Financeiro Estratégico</span>
             </h1>
-            <p class="text-white-50 mb-0 italic">
-                Visão consolidada dos últimos 30 dias de operação.
+            <p class="text-white-50 mb-0">
+                Comparativo com e sem impostos por regime fiscal
             </p>
         </div>
 
-        <div class="d-flex align-items-center gap-2 bg-dark bg-opacity-50 p-2 rounded-3 border border-secondary border-opacity-25">
-            <i class="bi bi-calendar3 text-warning ms-2"></i>
-            <span class="text-white fw-bold me-2">Últimos 30 dias</span>
+        <div class="badge bg-warning text-dark p-2 px-3 fw-bold">
+            Regime Atual: {{ regime_atual }}
         </div>
     </div>
 
-    <!-- KPIs -->
+    <!-- RESUMO PRINCIPAL -->
     <div class="row g-4 mb-5">
 
-        <!-- Faturamento -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card h-100 bg-dark-card border-0 shadow-lg p-4">
-                <small class="text-white-50 text-uppercase fw-bold">Entradas Totais</small>
-                <h2 class="text-success fw-extrabold mt-2 mb-0">
+        <!-- FATURAMENTO -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card bg-dark-card border-0 shadow-lg p-4">
+                <small class="text-white-50 fw-bold">Faturamento</small>
+                <h2 class="text-success mt-2">
                     R$ {{ "%.2f"|format(faturamento) }}
                 </h2>
             </div>
         </div>
 
-        <!-- Custo -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card h-100 bg-dark-card border-0 shadow-lg p-4">
-                <small class="text-white-50 text-uppercase fw-bold">Custo de Insumos</small>
-                <h2 class="text-info fw-extrabold mt-2 mb-0">
-                    - R$ {{ "%.2f"|format(custo_insumos) }}
+        <!-- LUCRO ATUAL -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card bg-dark-card border-0 shadow-lg p-4">
+                <small class="text-white-50 fw-bold">Lucro Atual (com imposto)</small>
+                <h2 class="text-info mt-2">
+                    R$ {{ "%.2f"|format(lucro_atual) }}
                 </h2>
             </div>
         </div>
 
-        <!-- Fixos -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card h-100 bg-dark-card border-0 shadow-lg p-4">
-                <small class="text-white-50 text-uppercase fw-bold">Custos Fixos</small>
-                <h2 class="text-danger fw-extrabold mt-2 mb-0">
-                    - R$ {{ "%.2f"|format(total_fixas) }}
-                </h2>
-            </div>
-        </div>
-
-        <!-- LUCRO BASE -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card h-100 bg-dark-card border-0 shadow-lg p-4">
-                <small class="text-white-50 text-uppercase fw-bold">Lucro Operacional</small>
-                <h2 class="text-success fw-extrabold mt-2 mb-0">
-                    R$ {{ "%.2f"|format(lucro_base) }}
-                </h2>
-            </div>
-        </div>
-
-        <!-- IMPOSTO NOVO -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card h-100 bg-dark-card border-0 shadow-lg p-4 border-start border-warning border-4">
-                <small class="text-white-50 text-uppercase fw-bold">
-                    Imposto ({{ regime }})
-                </small>
-                <h2 class="text-warning fw-extrabold mt-2 mb-0">
-                    - R$ {{ "%.2f"|format(imposto) }}
-                </h2>
-            </div>
-        </div>
-
-        <!-- LUCRO FINAL -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card h-100 {{ 'bg-success' if lucro_final > 0 else 'bg-danger' }} bg-opacity-10 border-0 shadow-lg p-4">
-                <small class="text-white-50 text-uppercase fw-bold">
-                    Lucro Líquido Final
-                </small>
-                <h2 class="fw-extrabold mt-2 mb-0 {{ 'text-success' if lucro_final > 0 else 'text-danger' }}">
-                    R$ {{ "%.2f"|format(lucro_final) }}
+        <!-- DIFERENÇA -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card bg-dark-card border-0 shadow-lg p-4">
+                <small class="text-white-50 fw-bold">Impacto Tributário</small>
+                <h2 class="text-warning mt-2">
+                    R$ {{ "%.2f"|format(faturamento - lucro_atual) }}
                 </h2>
             </div>
         </div>
 
     </div>
 
-    <div class="row g-4">
+    <!-- SIMULAÇÕES -->
+    <div class="card bg-dark-card border-0 shadow-lg p-4 mb-4">
 
-        <!-- FORM DESPESA -->
-        <div class="col-lg-4">
-            <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4">
+        <h5 class="text-white fw-bold mb-3">
+            📊 Simulação de Regimes Tributários
+        </h5>
 
-                <h5 class="fw-bold text-white mb-4">
-                    ➕ Registrar Despesa
-                </h5>
+        <div class="table-responsive">
 
-                <form action="/lancar-despesa" method="POST">
+            <table class="table table-dark table-hover align-middle">
 
-                    <input type="text" name="descricao" class="form-control mb-3 bg-dark text-white"
-                           placeholder="Descrição" required>
+                <thead>
+                    <tr class="text-white-50">
+                        <th>Regime</th>
+                        <th>Imposto</th>
+                        <th>Lucro Final</th>
+                        <th>Diferença vs Atual</th>
+                    </tr>
+                </thead>
 
-                    <input type="number" step="0.01" name="valor" class="form-control mb-3 bg-dark text-white"
-                           placeholder="Valor" required>
+                <tbody>
 
-                    <select name="categoria" class="form-select mb-3 bg-dark text-white">
-                        <option value="Fixo">Fixo</option>
-                        <option value="Operacional">Operacional</option>
-                        <option value="Marketing">Marketing</option>
-                        <option value="Outros">Outros</option>
-                    </select>
+                {% for s in simulacoes %}
+                    <tr>
 
-                    <button class="btn btn-warning w-100 fw-bold">
-                        Registrar
-                    </button>
+                        <!-- REGIME -->
+                        <td class="fw-bold text-warning">
+                            {{ s.regime }}
+                        </td>
 
-                </form>
-            </div>
+                        <!-- IMPOSTO -->
+                        <td class="text-danger">
+                            - R$ {{ "%.2f"|format(s.imposto) }}
+                        </td>
+
+                        <!-- LUCRO -->
+                        <td class="text-success">
+                            R$ {{ "%.2f"|format(s.lucro) }}
+                        </td>
+
+                        <!-- DIFERENÇA -->
+                        <td class="{{ 'text-success' if s.diferenca > 0 else 'text-danger' }}">
+                            R$ {{ "%.2f"|format(s.diferenca) }}
+                        </td>
+
+                    </tr>
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
         </div>
+    </div>
 
-        <!-- TABELA -->
-        <div class="col-lg-8">
-            <div class="card bg-dark-card border-0 shadow-lg rounded-4 h-100">
-
-                <div class="card-header bg-transparent border-0 text-white fw-bold">
-                    📄 Extrato de Despesas
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-dark table-hover mb-0">
-
-                        <thead>
-                            <tr class="text-white-50">
-                                <th>Descrição</th>
-                                <th>Categoria</th>
-                                <th class="text-end">Valor</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                        {% for d in despesas %}
-                            <tr>
-                                <td>{{ d[1] }}</td>
-                                <td>
-                                    <span class="badge bg-secondary">
-                                        {{ d[3] }}
-                                    </span>
-                                </td>
-                                <td class="text-end text-danger">
-                                    - R$ {{ "%.2f"|format(d[2]) }}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-
-                    </table>
-                </div>
-
-            </div>
-        </div>
-
+    <!-- ALERTA INTELIGENTE -->
+    <div class="alert alert-dark border border-warning text-white">
+        💡 Dica: O regime que gera maior lucro líquido aparece na simulação acima.
     </div>
 
 </div>
 
 <style>
-.bg-dark-card { background: #1e293b; }
-.fw-extrabold { font-weight: 800; }
-.animate-in { animation: fadeUp 0.5s ease; }
+.bg-dark-card {
+    background: #1e293b;
+}
+
+.fw-extrabold {
+    font-weight: 800;
+}
+
+.animate-in {
+    animation: fadeUp 0.4s ease;
+}
 
 @keyframes fadeUp {
     from { opacity: 0; transform: translateY(10px); }

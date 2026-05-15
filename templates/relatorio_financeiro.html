@@ -4,114 +4,167 @@
 <div class="container-fluid py-4 px-md-5 animate-in">
 
     <!-- HEADER -->
-    <div class="mb-4">
-        <h1 class="fw-bold text-white">
-            📊 Relatório Fiscal Inteligente
+    <div class="mb-5">
+        <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.2rem; letter-spacing: -1.5px;">
+            🗓️ Painel <span class="text-warning">Operacional</span>
         </h1>
-
         <p class="text-white-50">
-            Simulação de impacto tributário entre regimes (MEI, ME e Simples Nacional)
+            Inteligência de estoque, produção e performance de vendas (sem impostos).
         </p>
     </div>
 
-    <!-- RESUMO ATUAL -->
-    <div class="row g-4 mb-4">
+    <div class="row g-4">
 
-        <div class="col-md-3">
-            <div class="card bg-dark-card p-3">
-                <small class="text-white-50">Regime Atual</small>
-                <h4 class="text-warning">{{ regime_atual }}</h4>
+        <!-- COLUNA ESQUERDA -->
+        <div class="col-lg-7">
+
+            <!-- REPOSIÇÃO -->
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 mb-4 overflow-hidden">
+
+                <div class="card-header bg-danger bg-opacity-10 border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 text-danger fw-bold">
+                        <i class="bi bi-cart-x-fill me-2"></i>REPOSIÇÃO NECESSÁRIA
+                    </h6>
+                    <span class="badge bg-danger rounded-pill">
+                        {{ compras|length if compras else 0 }} itens
+                    </span>
+                </div>
+
+                <div class="card-body p-4">
+                    {% if compras %}
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover align-middle mb-0">
+
+                                <thead>
+                                    <tr class="text-white-50 small">
+                                        <th>INSUMO</th>
+                                        <th class="text-end">ESTOQUE</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                {% for item in compras %}
+                                    <tr>
+                                        <td class="fw-bold text-white">
+                                            {{ item[1] }}
+                                        </td>
+                                        <td class="text-end text-danger fw-bold">
+                                            {{ item[4] }} {{ item[2] }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-success fw-bold mb-0">
+                                ✔ Estoque em dia
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+
             </div>
-        </div>
 
-        <div class="col-md-3">
-            <div class="card bg-dark-card p-3">
-                <small class="text-white-50">Faturamento</small>
-                <h4 class="text-success">
-                    R$ {{ "%.2f"|format(faturamento) }}
-                </h4>
+            <!-- PRODUÇÃO -->
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4">
+
+                <div class="card-header bg-info bg-opacity-10 border-0 py-3">
+                    <h6 class="mb-0 text-info fw-bold">
+                        <i class="bi bi-egg-fill me-2"></i>PRODUÇÃO
+                    </h6>
+                </div>
+
+                <div class="card-body p-4">
+
+                    <div class="row g-3">
+
+                        {% for p in producao %}
+                        <div class="col-md-6">
+
+                            <div class="p-3 rounded-3 bg-black bg-opacity-25">
+
+                                <small class="text-white-50 text-uppercase fw-bold">
+                                    {{ p.nome }}
+                                </small>
+
+                                <h3 class="text-info fw-bold mb-0">
+                                    {{ p.quantidade }}
+                                </h3>
+
+                            </div>
+
+                        </div>
+                        {% endfor %}
+
+                    </div>
+
+                </div>
+
             </div>
+
         </div>
 
-        <div class="col-md-3">
-            <div class="card bg-dark-card p-3">
-                <small class="text-white-50">Lucro Atual</small>
-                <h4 class="text-info">
-                    R$ {{ "%.2f"|format(lucro_atual) }}
-                </h4>
+        <!-- COLUNA DIREITA -->
+        <div class="col-lg-5">
+
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 h-100">
+
+                <div class="card-header bg-success bg-opacity-10 border-0 py-3">
+                    <h6 class="mb-0 text-success fw-bold">
+                        📊 PERFORMANCE 7 DIAS
+                    </h6>
+                </div>
+
+                <div class="card-body p-4 d-flex flex-column">
+
+                    <!-- FATURAMENTO -->
+                    <div class="text-center mb-4">
+                        <small class="text-white-50 text-uppercase fw-bold">
+                            Faturamento
+                        </small>
+
+                        <h2 class="text-white fw-bold">
+                            R$ {{ "%.2f"|format(vendas.faturamento) }}
+                        </h2>
+                    </div>
+
+                    <!-- RANKING -->
+                    <h6 class="text-white-50 fw-bold mb-3">
+                        Ranking de Vendas
+                    </h6>
+
+                    <div class="flex-grow-1">
+
+                        {% for nome, qtd, total in vendas.ranking %}
+
+                        <div class="d-flex justify-content-between p-2 mb-2 bg-white bg-opacity-5 rounded">
+
+                            <div>
+                                <span class="text-white fw-bold d-block">{{ nome }}</span>
+                                <small class="text-white-50">{{ qtd }} unidades</small>
+                            </div>
+
+                            <div class="text-success fw-bold">
+                                R$ {{ "%.2f"|format(total) }}
+                            </div>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                    <!-- BOTÃO -->
+                    <button class="btn btn-outline-light mt-4" onclick="window.print()">
+                        🖨️ Exportar
+                    </button>
+
+                </div>
+
             </div>
-        </div>
-
-    </div>
-
-    <!-- TABELA SIMULAÇÕES -->
-    <div class="card bg-dark-card p-4 shadow-lg">
-
-        <h5 class="text-white mb-3">
-            📈 Comparação de Regimes Tributários
-        </h5>
-
-        <div class="table-responsive">
-            <table class="table table-dark table-hover align-middle">
-
-                <thead>
-                    <tr class="text-white-50">
-                        <th>Regime</th>
-                        <th>Imposto Estimado</th>
-                        <th>Lucro Final</th>
-                        <th>Diferença vs Atual</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                {% for s in simulacoes %}
-
-                    <tr>
-
-                        <!-- REGIME -->
-                        <td class="fw-bold text-warning">
-                            {{ s.regime }}
-                        </td>
-
-                        <!-- IMPOSTO -->
-                        <td class="text-danger">
-                            R$ {{ "%.2f"|format(s.imposto) }}
-                        </td>
-
-                        <!-- LUCRO -->
-                        <td class="text-success">
-                            R$ {{ "%.2f"|format(s.lucro) }}
-                        </td>
-
-                        <!-- DIFERENÇA -->
-                        <td class="{{ 'text-success' if s.diferenca >= 0 else 'text-danger' }}">
-                            R$ {{ "%.2f"|format(s.diferenca) }}
-                        </td>
-
-                    </tr>
-
-                {% endfor %}
-
-                </tbody>
-
-            </table>
-        </div>
-
-    </div>
-
-    <!-- ALERTA INTELIGENTE -->
-    <div class="mt-4">
-
-        {% set melhor = simulacoes | sort(attribute='lucro', reverse=True) | first %}
-
-        <div class="alert alert-dark border border-warning text-white">
-
-            <strong>💡 Melhor cenário simulado:</strong>
-            {{ melhor.regime }} gera maior lucro estimado de
-            <span class="text-success">
-                R$ {{ "%.2f"|format(melhor.lucro) }}
-            </span>
 
         </div>
 
@@ -120,27 +173,14 @@
 </div>
 
 <style>
+.bg-dark-card { background: #1e293b; }
+.fw-extrabold { font-weight: 800; }
+.animate-in { animation: slideUp 0.5s ease; }
 
-.bg-dark-card {
-    background: #1e293b;
-    border-radius: 14px;
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-
-.animate-in {
-    animation: fadeUp 0.4s ease;
-}
-
-@keyframes fadeUp {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
 </style>
 
 {% endblock %}

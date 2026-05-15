@@ -1411,18 +1411,9 @@ def previsao_estoque():
 @app.route("/financeiro")
 @login_required
 def pagina_financeiro():
-    dados = calcular_financeiro_com_imposto()
+    dados = financeiro_operacional()
 
-    return render_template(
-        "financeiro.html",
-        faturamento=dados["faturamento"],
-        custo_insumos=dados["custo_insumos"],
-        total_fixas=dados["total_fixas"],
-        lucro_base=dados["lucro_base"],
-        imposto=dados["imposto"],
-        regime=dados["regime"],
-        lucro_final=dados["lucro_final"]
-    )
+    return render_template("financeiro.html", **dados)
     
 # =========================================================
 # ROTA: FLUXO DE CAIXA

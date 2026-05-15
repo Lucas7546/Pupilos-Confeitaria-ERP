@@ -5,18 +5,21 @@
 
     <!-- HEADER -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
+
         <div>
             <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.2rem;">
-                📊 Relatório <span class="text-warning">Financeiro Estratégico</span>
+                📊 Relatório <span class="text-warning">Fiscal Estratégico</span>
             </h1>
+
             <p class="text-white-50 mb-0">
-                Comparativo com e sem impostos por regime fiscal
+                Simulação de impostos e comparação entre regimes tributários
             </p>
         </div>
 
         <div class="badge bg-warning text-dark p-2 px-3 fw-bold">
             Regime Atual: {{ regime_atual }}
         </div>
+
     </div>
 
     <!-- RESUMO PRINCIPAL -->
@@ -25,36 +28,58 @@
         <!-- FATURAMENTO -->
         <div class="col-xl-4 col-md-6">
             <div class="card bg-dark-card border-0 shadow-lg p-4">
+
                 <small class="text-white-50 fw-bold">Faturamento</small>
+
                 <h2 class="text-success mt-2">
                     R$ {{ "%.2f"|format(faturamento) }}
                 </h2>
+
             </div>
         </div>
 
-        <!-- LUCRO ATUAL -->
+        <!-- LUCRO BASE -->
         <div class="col-xl-4 col-md-6">
             <div class="card bg-dark-card border-0 shadow-lg p-4">
-                <small class="text-white-50 fw-bold">Lucro Atual (com imposto)</small>
+
+                <small class="text-white-50 fw-bold">Lucro Operacional</small>
+
                 <h2 class="text-info mt-2">
+                    R$ {{ "%.2f"|format(lucro_base) }}
+                </h2>
+
+            </div>
+        </div>
+
+        <!-- LUCRO FINAL -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card bg-dark-card border-0 shadow-lg p-4">
+
+                <small class="text-white-50 fw-bold">Lucro Líquido (Atual)</small>
+
+                <h2 class="text-warning mt-2">
                     R$ {{ "%.2f"|format(lucro_atual) }}
                 </h2>
+
             </div>
         </div>
 
-        <!-- DIFERENÇA -->
+        <!-- IMPOSTO -->
         <div class="col-xl-4 col-md-6">
-            <div class="card bg-dark-card border-0 shadow-lg p-4">
-                <small class="text-white-50 fw-bold">Impacto Tributário</small>
-                <h2 class="text-warning mt-2">
-                    R$ {{ "%.2f"|format(faturamento - lucro_atual) }}
+            <div class="card bg-dark-card border-0 shadow-lg p-4 border-start border-warning border-4">
+
+                <small class="text-white-50 fw-bold">Imposto Atual</small>
+
+                <h2 class="text-danger mt-2">
+                    - R$ {{ "%.2f"|format(imposto) }}
                 </h2>
+
             </div>
         </div>
 
     </div>
 
-    <!-- SIMULAÇÕES -->
+    <!-- TABELA SIMULAÇÕES -->
     <div class="card bg-dark-card border-0 shadow-lg p-4 mb-4">
 
         <h5 class="text-white fw-bold mb-3">
@@ -68,38 +93,41 @@
                 <thead>
                     <tr class="text-white-50">
                         <th>Regime</th>
+                        <th>Alíquota</th>
                         <th>Imposto</th>
                         <th>Lucro Final</th>
-                        <th>Diferença vs Atual</th>
+                        <th>Diferença</th>
                     </tr>
                 </thead>
 
                 <tbody>
 
                 {% for s in simulacoes %}
+
                     <tr>
 
-                        <!-- REGIME -->
                         <td class="fw-bold text-warning">
                             {{ s.regime }}
                         </td>
 
-                        <!-- IMPOSTO -->
+                        <td class="text-white-50">
+                            {{ "%.0f"|format(s.aliquota * 100) }}%
+                        </td>
+
                         <td class="text-danger">
                             - R$ {{ "%.2f"|format(s.imposto) }}
                         </td>
 
-                        <!-- LUCRO -->
                         <td class="text-success">
                             R$ {{ "%.2f"|format(s.lucro) }}
                         </td>
 
-                        <!-- DIFERENÇA -->
                         <td class="{{ 'text-success' if s.diferenca > 0 else 'text-danger' }}">
                             R$ {{ "%.2f"|format(s.diferenca) }}
                         </td>
 
                     </tr>
+
                 {% endfor %}
 
                 </tbody>
@@ -107,16 +135,18 @@
             </table>
 
         </div>
+
     </div>
 
     <!-- ALERTA INTELIGENTE -->
     <div class="alert alert-dark border border-warning text-white">
-        💡 Dica: O regime que gera maior lucro líquido aparece na simulação acima.
+        💡 Dica: o melhor regime é sempre o que gera maior lucro líquido no cenário simulado.
     </div>
 
 </div>
 
 <style>
+
 .bg-dark-card {
     background: #1e293b;
 }
@@ -133,6 +163,7 @@
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
 </style>
 
 {% endblock %}

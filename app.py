@@ -6,8 +6,13 @@ import pandas as pd
 from flask import Response
 from datetime import datetime
 from functools import wraps
-
-from modules.financeiro import calcular_financeiro_com_imposto, calcular_imposto, get_config_empresa
+from modules.financeiro import (
+    financeiro_operacional,
+    calcular_financeiro_com_imposto,
+    get_config_empresa,
+    calcular_imposto,
+    relatorio_fiscal
+)
 from flask import (
     Flask,
     render_template,
@@ -1413,7 +1418,13 @@ def previsao_estoque():
 def pagina_financeiro():
     dados = financeiro_operacional()
 
-    return render_template("financeiro.html", **dados)
+    return render_template(
+        "financeiro.html",
+        faturamento=dados["faturamento"],
+        custo_insumos=dados["custo_insumos"],
+        total_fixas=dados["total_fixas"],
+        lucro_base=dados["lucro_base"]
+    )
 
 @app.route("/relatorio-financeiro")
 @login_required
@@ -1421,7 +1432,14 @@ def pagina_financeiro():
 def relatorio_financeiro():
     dados = relatorio_fiscal()
 
-    return render_template("relatorio_financeiro.html", **dados)
+    return render_template(
+        "relatorio_financeiro.html",
+        regime_atual=dados["regime_atual"],
+        faturamento=dados["faturamento"],
+        lucro_atual=dados["lucro_atual"],
+        imposto=dados["imposto_atual"],
+        simulacoes=dados["simulacoes"]
+    )
 # =========================================================
 # ROTA: FLUXO DE CAIXA
 # =========================================================

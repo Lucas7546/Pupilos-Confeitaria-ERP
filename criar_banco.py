@@ -1,16 +1,20 @@
 import os
 import psycopg2
 from werkzeug.security import generate_password_hash
+from dotenv import load_dotenv
 
 print("INICIANDO CRIAÇÃO DO BANCO POSTGRES (VERSÃO ROBUSTA)...")
 
-# =========================================================
-# CONEXÃO POSTGRES
-# =========================================================
+# carrega .env (só localmente)
+load_dotenv()
 
-conn = psycopg2.connect(os.environ["DATABASE_URL"])
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise Exception("DATABASE_URL não encontrada!")
+
+conn = psycopg2.connect(DATABASE_URL)
 cursor = conn.cursor()
-
 # =========================================================
 # 1. USUÁRIOS (Sem alteração de colunas)
 # =========================================================
@@ -136,6 +140,16 @@ VALUES (%s, %s, %s)
 ON CONFLICT (username) DO NOTHING
 """, ("admin", senha_admin, "admin"))
 
+# =========================================================
+# sistema
+# =========================================================
+
+cursor.execute("""
+        CREATE TABLE IF NOT EXISTS empresa_config (
+            id SERIAL PRIMARY KEY,
+            regime_fiscal VARCHAR(50) DEFAULT 'MEI'
+        )
+    """)
 # =========================================================
 # FINALIZAÇÃO
 # =========================================================

@@ -2,10 +2,12 @@ import os
 import io
 import json
 import pandas as pd
+from modules.financeiro import calcular_financeiro_com_imposto
 from flask import Response
 from datetime import datetime
 from functools import wraps
-
+from modules.financeiro import lucro_final
+from modules.financeiro import calcular_financeiro_com_imposto, calcular_imposto, get_config_empresa
 from flask import (
     Flask,
     render_template,
@@ -773,45 +775,8 @@ def vender():
     return redirect("/vendas")
 
 # =========================
-# FINANCEIRO E AUDITORIA
+#  AUDITORIA
 # =========================
-@app.route("/financeiro")
-@login_required
-@acesso_requerido("financeiro")
-def pagina_financeiro():
-    try:
-        faturamento = vendas.obter_resumo_periodo(30)["faturamento"]
-        custo_insumos = vendas.obter_custo_total_vendas(30)
-        despesas = vendas.listar_despesas(30)
-        total_fixas = sum([d[2] for d in despesas])
-        
-        return render_template(
-            "financeiro.html",
-            faturamento=faturamento,
-            custo_insumos=custo_insumos,
-            despesas=despesas,
-            total_fixas=total_fixas,
-            lucro_real=(faturamento - custo_insumos - total_fixas)
-        )
-    except Exception as e:
-        flash("Erro ao carregar dados financeiros", "warning")
-        return redirect("/")
-    
-# =========================================================
-# ROTA: FLUXO DE CAIXA
-# =========================================================
-@app.route("/fluxo-caixa")
-@login_required
-def fluxo_caixa():
-    try:
-        # Por enquanto, vamos apenas abrir a página. 
-        # Depois podemos buscar os dados reais de vendas e compras no banco.
-        return render_template("fluxo_caixa.html")
-    except Exception as e:
-        print(f"Erro ao abrir fluxo de caixa: {e}")
-        flash("Página de fluxo de caixa em desenvolvimento ou arquivo não encontrado.", "info")
-        return redirect(url_for('dashboard'))
-
 # =========================================================
 # ROTA: TELA DE AUDITORIA (Visualizar Logs no Navegador)
 # =========================================================
@@ -1436,9 +1401,96 @@ def previsao_estoque():
 
         if con:
             con.close()
+
+
+
+# =========================================================
+# Sistema Fiscal
+# =========================================================
+
+@app.route("/financeiro")
+@login_required
+def pagina_financeiro():
+    dados = calcular_financeiro_com_imposto()
+
+    return render_template(
+        "financeiro.html",
+        faturamento=dados["faturamento"],
+        custo_insumos=dados["custo_insumos"],
+        total_fixas=dados["total_fixas"],
+        lucro_base=dados["lucro_base"],
+        imposto=dados["imposto"],
+        regime=dados["regime"],
+        lucro_final=dados["lucro_final"]
+    )
+    
+# =========================================================
+# ROTA: FLUXO DE CAIXA
+# =========================================================
+@app.route("/fluxo-caixa")
+@login_required
+def fluxo_caixa():
+    try:
+        # Por enquanto, vamos apenas abrir a página. 
+        # Depois podemos buscar os dados reais de vendas e compras no banco.
+        return render_template("fluxo_caixa.html")
+    except Exception as e:
+        print(f"Erro ao abrir fluxo de caixa: {e}")
+        flash("Página de fluxo de caixa em desenvolvimento ou arquivo não encontrado.", "info")
+        return redirect(url_for('dashboard'))
+    
+# =========================================================
+# Gambiarras
+# =========================================================
+    
+@app.route("/relatorio-financeiro")
+@login_required
+@acesso_requerido("financeiro")
+def relatorio_financeiro():
+
+    dados = calcular_financeiro_com_imposto()
+
+    regime_atual = dados["regime"]
+    faturamento = dados["faturamento"]
+    lucro_atual = dados["lucro_final"]
+
+    regimes = ["MEI", "ME", "SIMPLES"]
+
+    simulacoes = []
+
+    for r in regimes:
+
+        if r == "MEI":
+            aliquota = 0.04
+        elif r == "ME":
+            aliquota = 0.08
+        else:
+            aliquota = 0.12
+
+        imposto = faturamento * aliquota
+        lucro = dados["lucro_base"] - imposto
+
+        simulacoes.append({
+            "regime": r,
+            "aliquota": aliquota * 100,
+            "imposto": imposto,
+            "lucro": lucro,
+            "diferenca": lucro - lucro_atual
+        })
+
+    return render_template(
+        "relatorio_financeiro.html",
+        regime_atual=regime_atual,
+        faturamento=faturamento,
+        lucro_atual=lucro_atual,
+        simulacoes=simulacoes
+    )
+
+
 # =========================
 # INICIALIZAÇÃO
 # =========================
 if __name__ == "__main__":
+    criar_tabelas_sistema()
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)

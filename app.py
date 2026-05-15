@@ -339,7 +339,7 @@ def processar_edicao_mp(id_mp):
             "danger"
         )
 
-    return redirect(url_for("listar_estoque"))
+    return redirect(url_for('estoque_page'))
 
 # =========================
 # CADASTRO PRODUTOS/MATERIA-PRIMA
@@ -432,7 +432,7 @@ def deletar_produto(id_produto):
             "danger"
         )
 
-        return redirect(url_for('listar_estoque'))
+        return redirect(url_for('estoque_page'))
 
     try:
 
@@ -466,7 +466,7 @@ def deletar_produto(id_produto):
             "danger"
         )
 
-    return redirect(url_for('listar_estoque'))
+    return redirect(url_for('estoque_page'))
 
 # --- ROTA: EXCLUIR MATÉRIA-PRIMA ---
 @app.route("/excluir-mp/<int:id_mp>")
@@ -480,7 +480,7 @@ def deletar_mp(id_mp):
             "danger"
         )
 
-        return redirect(url_for('listar_estoque'))
+        return redirect(url_for('estoque_page'))
 
     try:
 
@@ -514,7 +514,7 @@ def deletar_mp(id_mp):
             "danger"
         )
 
-    return redirect(url_for('listar_estoque'))
+    return redirect(url_for('estoque_page'))
 
 # --- ROTA: EXCLUIR VENDA ---
 @app.route("/excluir-venda/<int:id_venda>")

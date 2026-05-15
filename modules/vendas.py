@@ -2,34 +2,92 @@ from datetime import datetime, timedelta
 from modules.db import conectar
 
 # ===================================================
-# RESUMO PARA O DASHBOARD (A que estava faltando!)
+# RESUMO PARA O DASHBOARD
 # ===================================================
 def obter_resumo_periodo(dias=7):
+
     con = None
+
     try:
+
         con = conectar()
         cursor = con.cursor()
-        
-        # Define a data de início (hoje menos X dias)
+
+        # ============================================
+        # DATA INICIAL
+        # ============================================
+
         data_inicio = datetime.now() - timedelta(days=dias)
+
+        # ============================================
+        # RESUMO GERAL
+        # ============================================
 
         cursor.execute("""
             SELECT 
                 COALESCE(SUM(valor_total), 0) as faturamento,
-                COUNT(id_venda) as total_vendas
+                COUNT(id_venda) as total_vendas,
+                COALESCE(SUM(lucro), 0) as lucro
             FROM vendas
             WHERE data_venda >= %s
         """, (data_inicio,))
 
         resultado = cursor.fetchone()
+
+        faturamento = float(resultado[0] or 0)
+        total_vendas = int(resultado[1] or 0)
+        lucro = float(resultado[2] or 0)
+
+        # ============================================
+        # DADOS DO GRÁFICO
+        # ============================================
+
+        cursor.execute("""
+            SELECT 
+                TO_CHAR(DATE(data_venda), 'DD/MM') as dia,
+                COALESCE(SUM(valor_total), 0) as total
+            FROM vendas
+            WHERE data_venda >= %s
+            GROUP BY DATE(data_venda)
+            ORDER BY DATE(data_venda)
+        """, (data_inicio,))
+
+        grafico = cursor.fetchall()
+
+        dias_grafico = []
+        valores_grafico = []
+
+        for linha in grafico:
+
+            dias_grafico.append(linha[0])
+            valores_grafico.append(float(linha[1]))
+
+        # ============================================
+        # RETORNO FINAL
+        # ============================================
+
         return {
-            "faturamento": float(resultado[0]),
-            "vendas": int(resultado[1])
+            "faturamento": faturamento,
+            "total_vendas": total_vendas,
+            "lucro": lucro,
+            "dias_grafico": dias_grafico,
+            "valores_grafico": valores_grafico
         }
+
     except Exception as e:
+
         print(f"Erro ao obter resumo: {e}")
-        return {"faturamento": 0.0, "vendas": 0}
+
+        return {
+            "faturamento": 0.0,
+            "total_vendas": 0,
+            "lucro": 0.0,
+            "dias_grafico": [],
+            "valores_grafico": []
+        }
+
     finally:
+
         if con:
             con.close()
 

@@ -191,31 +191,77 @@ def deletar_user(id):
 @app.route("/")
 @login_required
 def dashboard():
+
     try:
-        # Busca dados reais do banco
+
+        # ============================================
+        # RESUMOS
+        # ============================================
+
+        resumo_diario = vendas.obter_resumo_periodo(1)
+
         resumo_semanal = vendas.obter_resumo_periodo(7)
+
         resumo_mensal = vendas.obter_resumo_periodo(30)
+
+        # ============================================
+        # ESTOQUE
+        # ============================================
+
         capacidade = produtos.calcular_capacidade_geral()
+
         insumos = estoque.listar_materia_prima()
 
-        # Filtra itens críticos (estoque <= mínimo)
-        criticos = [i for i in insumos if float(i[4]) <= float(i[3])]
+        criticos = [
+            i for i in insumos
+            if float(i[4]) <= float(i[3])
+        ]
+
+        # ============================================
+        # RENDER
+        # ============================================
 
         return render_template(
             "dashboard.html",
+
+            diario=resumo_diario,
+
             semana=resumo_semanal,
+
             mes=resumo_mensal,
+
             capacidade=capacidade,
+
             criticos=criticos
         )
+
     except Exception as e:
+
         print(f"Erro no Dashboard: {e}")
-        # Retorno de segurança para não quebrar a página
+
         return render_template(
             "dashboard.html",
-            semana={"faturamento": 0, "vendas": 0},
-            mes={"faturamento": 0, "vendas": 0},
+
+            diario={
+                "faturamento": 0,
+                "total_vendas": 0,
+                "lucro": 0
+            },
+
+            semana={
+                "faturamento": 0,
+                "total_vendas": 0,
+                "lucro": 0
+            },
+
+            mes={
+                "faturamento": 0,
+                "total_vendas": 0,
+                "lucro": 0
+            },
+
             capacidade=[],
+
             criticos=[]
         )
 
@@ -528,7 +574,7 @@ def deletar_venda(id_venda):
             "danger"
         )
 
-        return redirect(url_for('listar_vendas'))
+        return redirect(url_for('vendas_page'))
 
     try:
 
@@ -562,7 +608,7 @@ def deletar_venda(id_venda):
             "danger"
         )
 
-    return redirect(url_for('listar_vendas'))
+    return redirect(url_for('vendas_page'))
 
 # --- ROTA: PRECIFICAÇÃO ---
 from psycopg2.extras import RealDictCursor

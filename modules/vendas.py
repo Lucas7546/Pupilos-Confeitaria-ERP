@@ -159,6 +159,9 @@ def registrar_venda(id_produto, quantidade, valor_total, usuario="Sistema"):
 # ===================================================
 # LISTAR VENDAS RECENTES
 # ===================================================
+# ===================================================
+# LISTAR VENDAS RECENTES
+# ===================================================
 def listar_vendas_recentes(limite=10):
 
     con = None
@@ -191,29 +194,29 @@ def listar_vendas_recentes(limite=10):
 
         vendas = cursor.fetchall()
 
-        resultado = []
+        historico = []
 
-        for venda in vendas:
+        for v in vendas:
 
-            resultado.append({
+            historico.append({
 
-                "id_venda": venda[0],
+                "id_venda": v[0],
 
-                "nome_produto": venda[1],
+                "nome_produto": v[1],
 
-                "quantidade": venda[2],
+                "quantidade": v[2],
 
-                "valor_total": float(venda[3]),
+                "valor_total": float(v[3]),
 
-                "data": venda[4].strftime("%d/%m/%Y %H:%M")
+                "data": v[4].strftime("%d/%m/%Y %H:%M")
 
             })
 
-        return resultado
+        return historico
 
     except Exception as e:
 
-        print(f"Erro listar vendas recentes: {e}")
+        print(f"Erro listar vendas: {e}")
 
         return []
 

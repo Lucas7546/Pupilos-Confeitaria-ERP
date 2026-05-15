@@ -619,10 +619,16 @@ def precificacao():
 @login_required
 @acesso_requerido("vendas")
 def vendas_page():
-    return render_template("vendas.html", produtos=produtos.buscar_produto_por_nome(""))
 
+    lista_produtos = produtos.buscar_produto_por_nome("")
 
+    historico_vendas = vendas.listar_vendas_recentes()
 
+    return render_template(
+        "vendas.html",
+        produtos=lista_produtos,
+        historico_vendas=historico_vendas
+    )
 
 @app.route("/vender", methods=["POST"])
 @login_required

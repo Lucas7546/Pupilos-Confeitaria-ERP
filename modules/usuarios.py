@@ -352,7 +352,7 @@ def excluir_materia_prima(id_mp):
 
 
 # =========================
-# EXCLUIR VENDA
+# EXCLUIR VENDA + ROLLBACK
 # =========================
 def excluir_venda(id_venda):
 
@@ -361,15 +361,78 @@ def excluir_venda(id_venda):
     try:
 
         conn = conectar()
+
         cursor = conn.cursor()
 
-        # Remove itens da venda
+        # =========================================
+        # BUSCA ITENS DA VENDA
+        # =========================================
+
+        cursor.execute("""
+            SELECT
+                iv.id_produto,
+                iv.quantidade
+            FROM itens_venda iv
+            WHERE iv.id_venda = %s
+        """, (id_venda,))
+
+        itens = cursor.fetchall()
+
+        # =========================================
+        # DEVOLVE ESTOQUE
+        # =========================================
+
+        for id_produto, quantidade_vendida in itens:
+
+            cursor.execute("""
+                SELECT
+                    id_materia_prima,
+                    quantidade_utilizada
+                FROM receitas
+                WHERE id_produto = %s
+            """, (id_produto,))
+
+            ingredientes = cursor.fetchall()
+
+            for id_mp, qtd_receita in ingredientes:
+
+                qtd_retorno = (
+                    float(qtd_receita) *
+                    float(quantidade_vendida)
+                )
+
+                cursor.execute("""
+                    INSERT INTO movimentacao_estoque (
+                        id_materia_prima,
+                        tipo_movimento,
+                        quantidade,
+                        observacao
+                    )
+                    VALUES (
+                        %s,
+                        'entrada',
+                        %s,
+                        %s
+                    )
+                """, (
+                    id_mp,
+                    qtd_retorno,
+                    f'ROLLBACK VENDA ID {id_venda}'
+                ))
+
+        # =========================================
+        # REMOVE ITENS VENDA
+        # =========================================
+
         cursor.execute("""
             DELETE FROM itens_venda
             WHERE id_venda = %s
         """, (id_venda,))
 
-        # Remove venda
+        # =========================================
+        # REMOVE VENDA
+        # =========================================
+
         cursor.execute("""
             DELETE FROM vendas
             WHERE id_venda = %s

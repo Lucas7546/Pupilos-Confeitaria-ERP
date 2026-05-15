@@ -1,100 +1,66 @@
-{% extends "base.html" %}
-
 {% block content %}
 <div class="container-fluid py-4 px-md-5 animate-in">
 
     <!-- HEADER -->
     <div class="mb-5">
-        <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.2rem;">
+        <h1 class="fw-extrabold text-white mb-1">
             💰 Painel <span class="text-warning">Financeiro</span>
         </h1>
         <p class="text-white-50">
-            Visão operacional de faturamento, custos e lucro real.
+            Visão operacional: faturamento, custos e lucro base.
         </p>
     </div>
 
-    <!-- KPIs -->
-    <div class="row g-4 mb-4">
+    <div class="row g-4">
 
-        <div class="col-md-3">
-            <div class="card bg-dark-card p-4 border-0">
+        <!-- FATURAMENTO -->
+        <div class="col-md-4">
+            <div class="card bg-dark-card p-4">
                 <small class="text-white-50">Faturamento</small>
-                <h3 class="text-success mt-2">
+                <h2 class="text-success">
                     R$ {{ "%.2f"|format(faturamento) }}
-                </h3>
+                </h2>
             </div>
         </div>
 
-        <div class="col-md-3">
-            <div class="card bg-dark-card p-4 border-0">
-                <small class="text-white-50">Custos Insumos</small>
-                <h3 class="text-info mt-2">
+        <!-- CUSTO -->
+        <div class="col-md-4">
+            <div class="card bg-dark-card p-4">
+                <small class="text-white-50">Custo Insumos</small>
+                <h2 class="text-danger">
                     R$ {{ "%.2f"|format(custo_insumos) }}
-                </h3>
+                </h2>
             </div>
         </div>
 
-        <div class="col-md-3">
-            <div class="card bg-dark-card p-4 border-0">
-                <small class="text-white-50">Custos Fixos</small>
-                <h3 class="text-danger mt-2">
+        <!-- DESPESAS -->
+        <div class="col-md-4">
+            <div class="card bg-dark-card p-4">
+                <small class="text-white-50">Despesas Fixas</small>
+                <h2 class="text-warning">
                     R$ {{ "%.2f"|format(total_fixas) }}
-                </h3>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card bg-dark-card p-4 border-0">
-                <small class="text-white-50">Lucro Base</small>
-                <h3 class="text-warning mt-2">
-                    R$ {{ "%.2f"|format(lucro_base) }}
-                </h3>
+                </h2>
             </div>
         </div>
 
     </div>
 
-    <!-- IMPOSTO + LUCRO FINAL -->
-    <div class="row g-4">
-
-        <div class="col-md-6">
-            <div class="card bg-dark-card p-4 border-0">
-                <small class="text-white-50">Regime Fiscal</small>
-                <h4 class="text-warning mt-2">{{ regime }}</h4>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card bg-dark-card p-4 border-0">
-                <small class="text-white-50">Imposto</small>
-                <h4 class="text-danger mt-2">
-                    - R$ {{ "%.2f"|format(imposto) }}
-                </h4>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card bg-dark-card p-4 border-0">
-                <small class="text-white-50">Lucro Final</small>
-                <h4 class="{{ 'text-success' if lucro_final > 0 else 'text-danger' }}">
-                    R$ {{ "%.2f"|format(lucro_final) }}
-                </h4>
-            </div>
-        </div>
-
+    <!-- LUCRO -->
+    <div class="card bg-dark-card p-4 mt-4">
+        <small class="text-white-50">Lucro Base</small>
+        <h1 class="text-info">
+            R$ {{ "%.2f"|format(lucro_base) }}
+        </h1>
     </div>
 
 </div>
 
 <style>
 .bg-dark-card { background:#1e293b; }
-.fw-extrabold { font-weight:800; }
-.animate-in { animation: fadeUp .4s ease; }
-
+.animate-in { animation: fadeUp .3s ease; }
 @keyframes fadeUp {
-    from {opacity:0; transform:translateY(10px);}
-    to {opacity:1; transform:translateY(0);}
+    from { opacity:0; transform:translateY(10px); }
+    to { opacity:1; transform:translateY(0); }
 }
 </style>
-
 {% endblock %}

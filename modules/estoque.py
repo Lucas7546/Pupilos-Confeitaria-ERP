@@ -50,14 +50,7 @@ def saida_estoque(materia_prima_id, quantidade, observacao='Movimentação manua
         if con:
             con.close()
 
-
-def excluir_materia_prima(id_mp):
-    with obter_conexao() as conn:
-        with conn.cursor() as cursor:
-            # CUIDADO: Se a MP estiver em uma ficha técnica, o banco travará.
-            # Isso é bom para não quebrar seus cálculos de brigadeiro!
-            cursor.execute("DELETE FROM materias_primas WHERE id = %s", (id_mp,))
-            conn.commit()
+            
 
 
 # =========================================================
@@ -93,24 +86,92 @@ def calcular_estoque(materia_prima_id):
 # LISTAR MATÉRIA PRIMA
 # =========================================================
 def listar_materia_prima():
+
     con = None
+
     try:
+
         con = conectar()
+
         cur = con.cursor()
+
         cur.execute("""
+
             SELECT 
-                m.id_materia_prima, m.nome, m.unidade_medida, m.estoque_minimo, m.preco_unitario,
-                COALESCE(SUM(CASE WHEN mov.tipo_movimento IN ('entrada', 'ajuste') THEN mov.quantidade ELSE 0 END), 0) -
-                COALESCE(SUM(CASE WHEN mov.tipo_movimento = 'saida' THEN mov.quantidade ELSE 0 END), 0) as saldo
+                m.id_materia_prima,
+                m.nome,
+                m.unidade_medida,
+                m.estoque_minimo,
+                m.preco_unitario,
+
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN mov.tipo_movimento IN ('entrada', 'ajuste')
+                            THEN mov.quantidade
+                            ELSE 0
+                        END
+                    ),
+                    0
+                )
+
+                -
+
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN mov.tipo_movimento = 'saida'
+                            THEN mov.quantidade
+                            ELSE 0
+                        END
+                    ),
+                    0
+                ) as saldo
+
             FROM materia_prima m
-            LEFT JOIN movimentacao_estoque mov ON m.id_materia_prima = mov.id_materia_prima
-            GROUP BY m.id_materia_prima, m.nome, m.unidade_medida, m.estoque_minimo, m.preco_unitario
+
+            LEFT JOIN movimentacao_estoque mov
+                ON m.id_materia_prima = mov.id_materia_prima
+
+            GROUP BY
+                m.id_materia_prima,
+                m.nome,
+                m.unidade_medida,
+                m.estoque_minimo,
+                m.preco_unitario
+
             ORDER BY m.nome ASC
+
         """)
+
         materias = cur.fetchall()
-        return [(m[0], m[1], m[2], m[3], float(m[5]), "BAIXO" if float(m[5]) <= float(m[3]) else "OK") for m in materias]
+
+        lista_final = []
+
+        for m in materias:
+
+            saldo = float(m[5])
+
+            status = "BAIXO" if saldo <= float(m[3]) else "OK"
+
+            lista_final.append(
+                (
+                    m[0],                 # id
+                    m[1],                 # nome
+                    m[2],                 # unidade
+                    m[3],                 # estoque minimo
+                    saldo,                # saldo atual
+                    status,               # status
+                    float(m[4])           # preco_unitario
+                )
+            )
+
+        return lista_final
+
     finally:
-        if con: con.close()
+
+        if con:
+            con.close()
 
 # =========================================================
 # CADASTRAR MATÉRIA PRIMA

@@ -4,140 +4,466 @@
 <div class="container-fluid py-4 px-md-5 animate-in">
 
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
+
         <div>
-            <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.2rem; letter-spacing: -1px;">
+
+            <h1
+                class="fw-extrabold text-white mb-1"
+                style="font-size: 2.2rem; letter-spacing: -1px;"
+            >
                 📦 Painel de <span class="text-warning">Insumos</span>
             </h1>
-            <p class="text-white-50 mb-0">Controle de estoque crítico e matérias-primas.</p>
+
+            <p class="text-white-50 mb-0">
+                Controle de estoque crítico e matérias-primas.
+            </p>
+
         </div>
+
         <div class="d-flex gap-2">
+
             <div class="bg-dark-card border border-secondary border-opacity-25 rounded-3 px-4 py-2 shadow-sm text-center">
-                <small class="text-white-50 d-block fw-bold text-uppercase" style="font-size: 0.6rem;">Itens Cadastrados</small>
-                <span class="text-white fs-5 fw-bold">{{ materias|length }}</span>
+
+                <small
+                    class="text-white-50 d-block fw-bold text-uppercase"
+                    style="font-size: 0.6rem;"
+                >
+                    Itens Cadastrados
+                </small>
+
+                <span class="text-white fs-5 fw-bold">
+                    {{ materias|length }}
+                </span>
+
             </div>
-            <a href="/compras" class="btn btn-warning d-flex align-items-center fw-bold px-4 rounded-3 shadow">
-                <i class="bi bi-plus-lg me-2"></i>NOVA ENTRADA
+
+            <a
+                href="/compras"
+                class="btn btn-warning d-flex align-items-center fw-bold px-4 rounded-3 shadow"
+            >
+                <i class="bi bi-plus-lg me-2"></i>
+                NOVA ENTRADA
             </a>
+
         </div>
+
     </div>
 
     <div class="card bg-dark-card border-0 shadow-lg rounded-4 overflow-hidden">
+
         <div class="table-responsive">
-            <table class="table table-hover table-dark align-middle mb-0" style="--bs-table-bg: transparent;">
+
+            <table
+                class="table table-hover table-dark align-middle mb-0"
+                style="--bs-table-bg: transparent;"
+            >
+
                 <thead class="bg-black bg-opacity-50">
+
                     <tr class="text-white-50 small text-uppercase">
-                        <th class="ps-4 py-3" style="width: 80px;">ID</th>
-                        <th class="py-3">Ingrediente</th>
-                        <th class="py-3">Categoria</th>
-                        <th class="py-3 text-center">Mínimo</th>
-                        <th class="py-3 text-center">Saldo Atual</th>
-                        <th class="py-3">Status</th>
-                        <th class="py-3 text-end pe-4">Ações</th>
+
+                        <th class="ps-4 py-3" style="width: 80px;">
+                            ID
+                        </th>
+
+                        <th class="py-3">
+                            Ingrediente
+                        </th>
+
+                        <th class="py-3">
+                            Categoria
+                        </th>
+
+                        <th class="py-3 text-center">
+                            Mínimo
+                        </th>
+
+                        <th class="py-3 text-center">
+                            Saldo Atual
+                        </th>
+
+                        <th class="py-3">
+                            Status
+                        </th>
+
+                        <th class="py-3 text-end pe-4">
+                            Ações
+                        </th>
+
                     </tr>
+
                 </thead>
+
                 <tbody>
+
                     {% for item in materias %}
+
                     <tr class="border-bottom border-secondary border-opacity-10 transition-all">
-                        <td class="ps-4 text-white-50 font-monospace small">#{{ item[0] }}</td>
-                        <td>
-                            <div class="fw-bold text-white fs-6">{{ item[1] }}</div>
+
+                        <td class="ps-4 text-white-50 font-monospace small">
+                            #{{ item[0] }}
                         </td>
+
                         <td>
+
+                            <div class="fw-bold text-white fs-6">
+                                {{ item[1] }}
+                            </div>
+
+                        </td>
+
+                        <td>
+
                             {% if item[2]|lower in ['kg', 'g'] %}
+
                                 <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3">
-                                    <i class="bi bi-scale me-1"></i> Peso ({{ item[2] }})
+
+                                    <i class="bi bi-scale me-1"></i>
+                                    Peso ({{ item[2] }})
+
                                 </span>
+
                             {% elif item[2]|lower in ['l', 'ml'] %}
+
                                 <span class="badge rounded-pill bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3">
-                                    <i class="bi bi-droplet me-1"></i> Volume ({{ item[2] }})
+
+                                    <i class="bi bi-droplet me-1"></i>
+                                    Volume ({{ item[2] }})
+
                                 </span>
+
                             {% else %}
+
                                 <span class="badge rounded-pill bg-secondary bg-opacity-10 text-white-50 border border-secondary border-opacity-25 px-3">
-                                    <i class="bi bi-box me-1"></i> {{ item[2] }}
+
+                                    <i class="bi bi-box me-1"></i>
+                                    {{ item[2] }}
+
                                 </span>
+
                             {% endif %}
+
                         </td>
-                        <td class="text-center text-white-50">{{ item[3] }}</td>
+
+                        <td class="text-center text-white-50">
+                            {{ item[3] }}
+                        </td>
+
                         <td class="text-center">
+
                             <span class="fs-5 fw-extrabold {% if item[5] == 'BAIXO' %}text-danger{% else %}text-white{% endif %}">
+
                                 {{ item[4] }}
+
                             </span>
+
                         </td>
+
                         <td>
+
                             {% if item[5] == "BAIXO" %}
+
                                 <span class="badge bg-danger p-2 d-flex align-items-center justify-content-center" style="width: fit-content;">
-                                    <i class="bi bi-exclamation-triangle-fill me-1"></i> CRÍTICO
+
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                    CRÍTICO
+
                                 </span>
+
                             {% else %}
-                                <span class="badge bg-success bg-opacity-10 text-success p-2 d-flex align-items-center justify-content-center" style="width: fit-content; border: 1px solid rgba(25, 135, 84, 0.2);">
-                                    <i class="bi bi-check-circle-fill me-1"></i> ESTÁVEL
+
+                                <span class="badge bg-success bg-opacity-10 text-success p-2 d-flex align-items-center justify-content-center"
+                                      style="width: fit-content; border: 1px solid rgba(25, 135, 84, 0.2);">
+
+                                    <i class="bi bi-check-circle-fill me-1"></i>
+                                    ESTÁVEL
+
                                 </span>
+
                             {% endif %}
+
                         </td>
+
                         <td class="text-end pe-4">
+
                             <div class="d-flex justify-content-end gap-2">
-                                <button class="btn btn-outline-warning btn-sm px-3 rounded-3 fw-bold"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#modalEditar{{ item[0] }}">
-                                    <i class="bi bi-pencil-square"></i> AJUSTAR
+
+                                <button
+                                    class="btn btn-outline-warning btn-sm px-3 rounded-3 fw-bold"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalEditar{{ item[0] }}"
+                                >
+
+                                    <i class="bi bi-pencil-square"></i>
+                                    AJUSTAR
+
                                 </button>
 
                                 {% if session.get('nivel') in ['admin', 'gerente'] %}
-                                <a href="{{ url_for('deletar_mp', id_mp=item[0]) }}" 
-                                   class="btn btn-outline-danger btn-sm px-2 rounded-3"
-                                   onclick="return confirm('ATENÇÃO: Deseja realmente excluir {{ item[1] }} do estoque?')">
-                                     <i class="bi bi-trash3"></i>
+
+                                <a
+                                    href="{{ url_for('deletar_mp', id_mp=item[0]) }}"
+                                    class="btn btn-outline-danger btn-sm px-2 rounded-3"
+                                    onclick="return confirm('ATENÇÃO: Deseja realmente excluir {{ item[1] }} do estoque?')"
+                                >
+
+                                    <i class="bi bi-trash3"></i>
+
                                 </a>
+
                                 {% endif %}
+
                             </div>
+
                         </td>
+
                     </tr>
 
-                    <div class="modal fade" id="modalEditar{{ item[0] }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+                    <!-- MODAL -->
+
+                    <div
+                        class="modal fade"
+                        id="modalEditar{{ item[0] }}"
+                        tabindex="-1"
+                        aria-hidden="true"
+                    >
+
+                        <div
+                            class="modal-dialog modal-dialog-centered"
+                            style="max-width: 450px;"
+                        >
+
                             <div class="modal-content bg-dark-card border border-secondary border-opacity-25 rounded-4 shadow-2xl">
+
                                 <div class="modal-header border-0 pt-4 px-4">
-                                    <h5 class="modal-title fw-bold text-white">Ajustar Insumo</h5>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+
+                                    <h5 class="modal-title fw-bold text-white">
+                                        Ajustar Insumo
+                                    </h5>
+
+                                    <button
+                                        type="button"
+                                        class="btn-close btn-close-white"
+                                        data-bs-dismiss="modal"
+                                    ></button>
+
                                 </div>
-                                <form action="{{ url_for('processar_edicao_mp', id_mp=item[0]) }}" method="POST">
+
+                                <form
+                                    action="{{ url_for('processar_edicao_mp', id_mp=item[0]) }}"
+                                    method="POST"
+                                >
+
                                     <div class="modal-body px-4">
-                                        <p class="text-white-50 small mb-4">Editando: <br><strong class="text-warning fs-5">{{ item[1] }}</strong></p>
-                                        
-                                        <div class="form-group mb-3">
-                                            <label class="form-label text-white-50 small fw-bold">NOME DO INSUMO</label>
-                                            <input type="text" name="nome" class="form-control bg-dark text-white border-secondary border-opacity-50 mb-3" value="{{ item[1] }}" required>
-                                            
-                                            <label class="form-label text-white-50 small fw-bold">QUANTIDADE EM ESTOQUE</label>
-                                            <div class="input-group input-group-lg">
-                                                <input type="number" step="0.001" name="quantidade" class="form-control bg-dark text-white border-secondary border-opacity-50 shadow-none" value="{{ item[4] }}" required>
-                                                <span class="input-group-text bg-secondary bg-opacity-20 text-white-50 border-secondary border-opacity-50 fw-bold">{{ item[2] }}</span>
-                                            </div>
+
+                                        <p class="text-white-50 small mb-4">
+
+                                            Editando:
+                                            <br>
+
+                                            <strong class="text-warning fs-5">
+                                                {{ item[1] }}
+                                            </strong>
+
+                                        </p>
+
+                                        <!-- NOME -->
+
+                                        <div class="mb-3">
+
+                                            <label class="form-label text-white-50 small fw-bold">
+                                                NOME DO INSUMO
+                                            </label>
+
+                                            <input
+                                                type="text"
+                                                name="nome"
+                                                class="form-control bg-dark text-white border-secondary border-opacity-50"
+                                                value="{{ item[1] }}"
+                                                required
+                                            >
+
                                         </div>
+
+                                        <!-- QUANTIDADE -->
+
+                                        <div class="mb-3">
+
+                                            <label class="form-label text-white-50 small fw-bold">
+                                                QUANTIDADE EM ESTOQUE
+                                            </label>
+
+                                            <div class="input-group">
+
+                                                <input
+                                                    type="number"
+                                                    step="0.001"
+                                                    name="quantidade"
+                                                    class="form-control bg-dark text-white border-secondary border-opacity-50"
+                                                    value="{{ item[4] }}"
+                                                    required
+                                                >
+
+                                                <span class="input-group-text bg-secondary bg-opacity-20 text-white-50 border-secondary border-opacity-50">
+                                                    {{ item[2] }}
+                                                </span>
+
+                                            </div>
+
+                                        </div>
+
+                                        <!-- PREÇO -->
+
+                                        <div class="mb-3">
+
+                                            <label class="form-label text-white-50 small fw-bold">
+                                                PREÇO DE CUSTO
+                                            </label>
+
+                                            <div class="input-group">
+
+                                                <span class="input-group-text bg-dark border-secondary border-opacity-50 text-success">
+                                                    R$
+                                                </span>
+
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    name="preco_custo"
+                                                    class="form-control bg-dark text-white border-secondary border-opacity-50"
+                                                    value="{{ item[6] }}"
+                                                    required
+                                                >
+
+                                            </div>
+
+                                        </div>
+
+                                        <!-- UNIDADE -->
+
+                                        <div class="mb-3">
+
+                                            <label class="form-label text-white-50 small fw-bold">
+                                                UNIDADE
+                                            </label>
+
+                                            <select
+                                                name="unidade"
+                                                class="form-select bg-dark text-white border-secondary border-opacity-50"
+                                                required
+                                            >
+
+                                                <option value="kg" {% if item[2] == "kg" %}selected{% endif %}>
+                                                    Quilograma (kg)
+                                                </option>
+
+                                                <option value="g" {% if item[2] == "g" %}selected{% endif %}>
+                                                    Grama (g)
+                                                </option>
+
+                                                <option value="l" {% if item[2] == "l" %}selected{% endif %}>
+                                                    Litro (L)
+                                                </option>
+
+                                                <option value="ml" {% if item[2] == "ml" %}selected{% endif %}>
+                                                    Mililitro (ml)
+                                                </option>
+
+                                                <option value="un" {% if item[2] == "un" %}selected{% endif %}>
+                                                    Unidade (un)
+                                                </option>
+
+                                            </select>
+
+                                        </div>
+
                                     </div>
+
                                     <div class="modal-footer border-0 p-4">
-                                        <button type="button" class="btn btn-link text-white-50 text-decoration-none fw-bold" data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="submit" class="btn btn-warning px-4 fw-bold rounded-3 shadow">SALVAR ALTERAÇÃO</button>
+
+                                        <button
+                                            type="button"
+                                            class="btn btn-link text-white-50 text-decoration-none fw-bold"
+                                            data-bs-dismiss="modal"
+                                        >
+                                            Cancelar
+                                        </button>
+
+                                        <button
+                                            type="submit"
+                                            class="btn btn-warning px-4 fw-bold rounded-3 shadow"
+                                        >
+                                            SALVAR ALTERAÇÃO
+                                        </button>
+
                                     </div>
+
                                 </form>
+
                             </div>
+
                         </div>
+
                     </div>
+
                     {% endfor %}
+
                 </tbody>
+
             </table>
+
         </div>
+
     </div>
+
 </div>
 
 <style>
-    .bg-dark-card { background: #1e293b !important; }
-    .transition-all { transition: all 0.2s ease-in-out; }
-    tr:hover { background-color: rgba(255, 255, 255, 0.02) !important; }
-    .btn-outline-danger:hover { background-color: #dc3545 !important; color: white !important; box-shadow: 0 0 15px rgba(220, 53, 69, 0.4); }
-    .font-monospace { font-family: 'JetBrains Mono', 'Courier New', monospace !important; }
-    .animate-in { animation: slideUp 0.6s ease-out; }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+
+    .bg-dark-card {
+        background: #1e293b !important;
+    }
+
+    .transition-all {
+        transition: all 0.2s ease-in-out;
+    }
+
+    tr:hover {
+        background-color: rgba(255, 255, 255, 0.02) !important;
+    }
+
+    .btn-outline-danger:hover {
+        background-color: #dc3545 !important;
+        color: white !important;
+        box-shadow: 0 0 15px rgba(220, 53, 69, 0.4);
+    }
+
+    .font-monospace {
+        font-family: 'JetBrains Mono', 'Courier New', monospace !important;
+    }
+
+    .animate-in {
+        animation: slideUp 0.6s ease-out;
+    }
+
+    @keyframes slideUp {
+
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    }
+
+    .shadow-2xl {
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
 </style>
+
 {% endblock %}

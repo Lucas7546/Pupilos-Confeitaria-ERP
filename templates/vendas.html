@@ -2,128 +2,326 @@
 
 {% block content %}
 <div class="container py-5 animate-in">
+
     <div class="row g-4 justify-content-center">
+
+        <!-- CARD REGISTRAR VENDA -->
         <div class="col-lg-5">
+
             <div class="text-center mb-4">
                 <div class="display-6 text-warning mb-2">
                     <i class="bi bi-cart-check-fill"></i>
                 </div>
-                <h2 class="fw-extrabold text-white mb-1" style="letter-spacing: -1px;">Registrar <span class="text-warning">Venda</span></h2>
-                <p class="text-white-50 small">O estoque de insumos será baixado automaticamente.</p>
+
+                <h2 class="fw-extrabold text-white mb-1" style="letter-spacing: -1px;">
+                    Registrar <span class="text-warning">Venda</span>
+                </h2>
+
+                <p class="text-white-50 small">
+                    O estoque de insumos será baixado automaticamente.
+                </p>
             </div>
 
             <div class="card bg-dark-card border-0 shadow-2xl rounded-4 overflow-hidden">
+
                 <div class="progress rounded-0" style="height: 4px; background: transparent;">
                     <div class="progress-bar bg-warning" role="progressbar" style="width: 100%"></div>
                 </div>
 
                 <div class="card-body p-4 p-md-5">
+
                     <form action="/vender" method="POST" id="vendaForm">
+
+                        <!-- PRODUTO -->
                         <div class="mb-4">
-                            <label class="form-label text-white-50 small fw-bold tracking-wider">PRODUTO</label>
+
+                            <label class="form-label text-white-50 small fw-bold tracking-wider">
+                                PRODUTO
+                            </label>
+
                             <div class="input-group">
+
                                 <span class="input-group-text bg-dark border-secondary border-opacity-50 text-warning">
                                     <i class="bi bi-box-seam"></i>
                                 </span>
-                                <select name="id_produto" id="id_produto" class="form-select bg-dark text-white border-secondary border-opacity-50 py-3" required>
-                                    <option value="" disabled selected>Escolha o item vendido...</option>
+
+                                <select
+                                    name="id_produto"
+                                    id="id_produto"
+                                    class="form-select bg-dark text-white border-secondary border-opacity-50 py-3"
+                                    required
+                                >
+
+                                    <option value="" disabled selected>
+                                        Escolha o item vendido...
+                                    </option>
+
                                     {% for p in produtos %}
-                                        <option value="{{ p[0] }}" data-preco="{{ p[2] }}">
-                                            {{ p[1] }} — (R$ {{ "%.2f"|format(p[2]) }})
-                                        </option>
+
+                                    <option
+                                        value="{{ p[0] }}"
+                                        data-preco="{{ p[2] }}"
+                                    >
+                                        {{ p[1] }} — (R$ {{ "%.2f"|format(p[2]) }})
+                                    </option>
+
                                     {% endfor %}
+
                                 </select>
+
                             </div>
+
                         </div>
 
+                        <!-- QUANTIDADE -->
                         <div class="mb-4">
-                            <label class="form-label text-white-50 small fw-bold tracking-wider">QUANTIDADE</label>
+
+                            <label class="form-label text-white-50 small fw-bold tracking-wider">
+                                QUANTIDADE
+                            </label>
+
                             <div class="input-group input-group-lg">
-                                <button type="button" class="btn btn-outline-secondary border-opacity-25 text-white px-3" onclick="decrement()">-</button>
-                                <input type="number" name="quantidade" id="quantidade" class="form-control bg-dark border-secondary border-opacity-50 text-white text-center fw-bold" min="1" value="1" required>
-                                <button type="button" class="btn btn-outline-secondary border-opacity-25 text-white px-3" onclick="increment()">+</button>
+
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary border-opacity-25 text-white px-3"
+                                    onclick="decrement()"
+                                >
+                                    -
+                                </button>
+
+                                <input
+                                    type="number"
+                                    name="quantidade"
+                                    id="quantidade"
+                                    class="form-control bg-dark border-secondary border-opacity-50 text-white text-center fw-bold"
+                                    min="1"
+                                    value="1"
+                                    required
+                                >
+
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary border-opacity-25 text-white px-3"
+                                    onclick="increment()"
+                                >
+                                    +
+                                </button>
+
                             </div>
+
                         </div>
 
+                        <!-- TOTAL -->
                         <div class="p-4 rounded-4 bg-black bg-opacity-30 border border-secondary border-opacity-10 mb-4 text-center">
-                            <span class="text-white-50 small d-block mb-1">TOTAL A RECEBER</span>
-                            <div class="display-6 fw-extrabold text-success" id="totalDisplay">R$ 0,00</div>
+
+                            <span class="text-white-50 small d-block mb-1">
+                                TOTAL A RECEBER
+                            </span>
+
+                            <div class="display-6 fw-extrabold text-success" id="totalDisplay">
+                                R$ 0,00
+                            </div>
+
                         </div>
 
+                        <!-- BOTÃO -->
                         <div class="d-grid gap-3">
-                            <button type="submit" class="btn btn-warning btn-lg fw-extrabold py-3 rounded-3 shadow-sm transition-all hover-grow">
-                                <i class="bi bi-check-circle-fill me-2"></i>FINALIZAR VENDA
+
+                            <button
+                                type="submit"
+                                class="btn btn-warning btn-lg fw-extrabold py-3 rounded-3 shadow-sm transition-all hover-grow"
+                            >
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                FINALIZAR VENDA
                             </button>
+
                         </div>
+
                     </form>
+
                 </div>
+
             </div>
+
         </div>
 
+        <!-- HISTÓRICO DE VENDAS -->
         <div class="col-lg-7">
-            <h4 class="text-white fw-bold mb-4"><i class="bi bi-clock-history me-2 text-warning"></i>Últimas Vendas</h4>
+
+            <h4 class="text-white fw-bold mb-4">
+                <i class="bi bi-clock-history me-2 text-warning"></i>
+                Últimas Vendas
+            </h4>
+
             <div class="card bg-dark-card border-0 shadow-lg rounded-4 overflow-hidden">
+
                 <div class="table-responsive">
+
                     <table class="table table-dark table-hover align-middle mb-0">
+
                         <thead class="bg-black bg-opacity-50">
+
                             <tr class="small text-white-50">
+
                                 <th class="ps-4">Data</th>
                                 <th>Produto</th>
                                 <th class="text-center">Qtd</th>
                                 <th>Total</th>
+
+                                {% if session.get("nivel") in ["admin", "gerente"] %}
                                 <th class="text-end pe-4">Ação</th>
+                                {% endif %}
+
                             </tr>
+
                         </thead>
+
                         <tbody>
+
                             {% for v in historico_vendas %}
+
                             <tr>
-                                <td class="ps-4 small text-white-50">{{ v.data }}</td>
-                                <td class="fw-bold">{{ v.nome_produto }}</td>
-                                <td class="text-center">{{ v.quantidade }}</td>
-                                <td class="text-success fw-bold">R$ {{ "%.2f"|format(v.valor_total) }}</td>
+
+                                <td class="ps-4 small text-white-50">
+                                    {{ v.data }}
+                                </td>
+
+                                <td class="fw-bold">
+                                    {{ v.nome_produto }}
+                                </td>
+
+                                <td class="text-center">
+                                    {{ v.quantidade }}
+                                </td>
+
+                                <td class="text-success fw-bold">
+                                    R$ {{ "%.2f"|format(v.valor_total) }}
+                                </td>
+
+                                {% if session.get("nivel") in ["admin", "gerente"] %}
+
                                 <td class="text-end pe-4">
-                                    <a href="{{ url_for('deletar_venda', id_venda=v.id_venda) }}" 
-                                       class="btn btn-sm btn-outline-danger"
-                                       onclick="return confirm('Excluir este registro de venda?')">
+
+                                    <a
+                                        href="{{ url_for('deletar_venda', id_venda=v.id_venda) }}"
+                                        class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Excluir este registro de venda?')"
+                                    >
                                         <i class="bi bi-trash"></i>
                                     </a>
+
                                 </td>
+
+                                {% endif %}
+
                             </tr>
+
                             {% endfor %}
+
                         </tbody>
+
                     </table>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
+
 </div>
 
 <style>
-    .bg-dark-card { background: #1e293b !important; }
-    .fw-extrabold { font-weight: 800; }
-    .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    .animate-in { animation: slideUp 0.5s ease-out; }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    .hover-grow:hover { transform: scale(1.02); }
+
+    .bg-dark-card {
+        background: #1e293b !important;
+    }
+
+    .fw-extrabold {
+        font-weight: 800;
+    }
+
+    .shadow-2xl {
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .animate-in {
+        animation: slideUp 0.5s ease-out;
+    }
+
+    @keyframes slideUp {
+
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    }
+
+    .hover-grow:hover {
+        transform: scale(1.02);
+    }
+
 </style>
 
 <script>
+
     const selectProduto = document.getElementById('id_produto');
     const inputQtd = document.getElementById('quantidade');
     const displayTotal = document.getElementById('totalDisplay');
 
     function calcularTotal() {
+
         const option = selectProduto.options[selectProduto.selectedIndex];
+
         const preco = option.getAttribute('data-preco') || 0;
+
         const total = preco * inputQtd.value;
-        displayTotal.innerText = `R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+
+        displayTotal.innerText =
+            `R$ ${Number(total).toLocaleString('pt-BR', {
+                minimumFractionDigits: 2
+            })}`;
+
     }
 
-    function increment() { inputQtd.value = parseInt(inputQtd.value) + 1; calcularTotal(); }
-    function decrement() { if(inputQtd.value > 1) { inputQtd.value = parseInt(inputQtd.value) - 1; calcularTotal(); } }
+    function increment() {
+
+        inputQtd.value = parseInt(inputQtd.value) + 1;
+
+        calcularTotal();
+
+    }
+
+    function decrement() {
+
+        if (inputQtd.value > 1) {
+
+            inputQtd.value = parseInt(inputQtd.value) - 1;
+
+            calcularTotal();
+
+        }
+
+    }
 
     selectProduto.addEventListener('change', calcularTotal);
+
     inputQtd.addEventListener('input', calcularTotal);
+
 </script>
+
 {% endblock %}

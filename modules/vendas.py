@@ -164,7 +164,9 @@ def listar_vendas_recentes(limite=10):
     con = None
 
     try:
+
         con = conectar()
+
         cursor = con.cursor()
 
         cursor.execute("""
@@ -187,7 +189,33 @@ def listar_vendas_recentes(limite=10):
             LIMIT %s
         """, (limite,))
 
-        return cursor.fetchall()
+        vendas = cursor.fetchall()
+
+        resultado = []
+
+        for venda in vendas:
+
+            resultado.append({
+
+                "id_venda": venda[0],
+
+                "nome_produto": venda[1],
+
+                "quantidade": venda[2],
+
+                "valor_total": float(venda[3]),
+
+                "data": venda[4].strftime("%d/%m/%Y %H:%M")
+
+            })
+
+        return resultado
+
+    except Exception as e:
+
+        print(f"Erro listar vendas recentes: {e}")
+
+        return []
 
     finally:
 

@@ -1,43 +1,55 @@
+{% extends "base.html" %}
+
 {% block content %}
 <div class="container-fluid py-4 px-md-5 animate-in">
 
-    <!-- HEADER -->
-    <div class="mb-5">
-        <h1 class="fw-extrabold text-white mb-1">
+    <!-- HEADER PADRÃO SISTEMA -->
+    <div class="mb-4">
+        <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.2rem;">
             💰 Painel <span class="text-warning">Financeiro</span>
         </h1>
         <p class="text-white-50">
-            Visão operacional: faturamento, custos e lucro base.
+            Análise operacional de faturamento, custos e lucro base.
         </p>
     </div>
 
-    <div class="row g-4">
+    <!-- CARDS PRINCIPAIS -->
+    <div class="row g-4 mb-4">
 
         <!-- FATURAMENTO -->
         <div class="col-md-4">
-            <div class="card bg-dark-card p-4">
-                <small class="text-white-50">Faturamento</small>
-                <h2 class="text-success">
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="text-white-50 fw-bold">FATURAMENTO</small>
+                    <i class="bi bi-cash-stack text-success"></i>
+                </div>
+                <h2 class="text-success fw-extrabold mb-0">
                     R$ {{ "%.2f"|format(faturamento) }}
                 </h2>
             </div>
         </div>
 
-        <!-- CUSTO -->
+        <!-- CUSTO INSUMOS -->
         <div class="col-md-4">
-            <div class="card bg-dark-card p-4">
-                <small class="text-white-50">Custo Insumos</small>
-                <h2 class="text-danger">
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="text-white-50 fw-bold">CUSTO INSUMOS</small>
+                    <i class="bi bi-box-seam text-danger"></i>
+                </div>
+                <h2 class="text-danger fw-extrabold mb-0">
                     R$ {{ "%.2f"|format(custo_insumos) }}
                 </h2>
             </div>
         </div>
 
-        <!-- DESPESAS -->
+        <!-- DESPESAS FIXAS -->
         <div class="col-md-4">
-            <div class="card bg-dark-card p-4">
-                <small class="text-white-50">Despesas Fixas</small>
-                <h2 class="text-warning">
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="text-white-50 fw-bold">DESPESAS FIXAS</small>
+                    <i class="bi bi-receipt text-warning"></i>
+                </div>
+                <h2 class="text-warning fw-extrabold mb-0">
                     R$ {{ "%.2f"|format(total_fixas) }}
                 </h2>
             </div>
@@ -45,22 +57,48 @@
 
     </div>
 
-    <!-- LUCRO -->
-    <div class="card bg-dark-card p-4 mt-4">
-        <small class="text-white-50">Lucro Base</small>
-        <h1 class="text-info">
+    <!-- LUCRO FINAL (CARD DE DESTAQUE) -->
+    <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-5 mb-4 text-center">
+
+        <small class="text-white-50 fw-bold text-uppercase">Lucro Base (Operacional)</small>
+
+        <h1 class="display-5 fw-extrabold mt-2
+            {% if lucro_base >= 0 %}
+                text-success
+            {% else %}
+                text-danger
+            {% endif %}
+        ">
             R$ {{ "%.2f"|format(lucro_base) }}
         </h1>
+
+        <p class="text-white-50 mt-2 mb-0">
+            Resultado antes de impostos e simulações fiscais
+        </p>
+
     </div>
 
 </div>
 
 <style>
-.bg-dark-card { background:#1e293b; }
-.animate-in { animation: fadeUp .3s ease; }
+.bg-dark-card {
+    background: #1e293b;
+    border: 1px solid rgba(255,255,255,0.05);
+    backdrop-filter: blur(10px);
+}
+
+.fw-extrabold {
+    font-weight: 800;
+}
+
+.animate-in {
+    animation: fadeUp 0.4s ease;
+}
+
 @keyframes fadeUp {
-    from { opacity:0; transform:translateY(10px); }
-    to { opacity:1; transform:translateY(0); }
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 </style>
+
 {% endblock %}

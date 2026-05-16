@@ -62,13 +62,13 @@
                         <select name="nivel" class="form-select bg-dark border-secondary text-white py-2">
 
                             <option value="colaborador" selected>
-                                🍰 Funcionário
+                                🍰 colaborador
                             </option>
 
                             {% if current_user.nivel == "admin" %}
 
                             <option value="socios">
-                                💼 Gerente
+                                💼 socios
                             </option>
 
                             <option value="admin">
@@ -143,18 +143,18 @@
                                 ADMIN
                             </span>
 
-                            {% elif u[2] == "gerente" %}
+                            {% elif u[2] == "socios" %}
 
                             <span
                                 class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2">
-                                GERENTE
+                                SÓCIO
                             </span>
 
                             {% else %}
 
                             <span
                                 class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2">
-                                FUNCIONÁRIO
+                                COLABORADOR
                             </span>
 
                             {% endif %}
@@ -194,111 +194,24 @@
 
                                 </button>
 
+                                {% if u[1] == current_user.id %}
+                                <button class="btn btn-outline-secondary btn-sm px-3 border-opacity-10" disabled title="Você não pode bloquear sua própria conta">
+                                    <i class="bi bi-lock"></i>
+                                </button>
+                                {% else %}
                                 <a href="/toggle-usuario/{{ u[0] }}"
                                     class="btn {% if u[3] == 1 %}btn-outline-danger{% else %}btn-success{% endif %} btn-sm px-3 border-opacity-10">
 
                                     <i class="bi {% if u[3] == 1 %}bi-lock{% else %}bi-unlock{% endif %}"></i>
 
                                 </a>
+                                {% endif %}
 
                             </div>
 
                         </td>
 
                     </tr>
-
-                    <div class="modal fade" id="editModal{{ u[0] }}" tabindex="-1" aria-hidden="true">
-
-                        <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
-
-                            <div
-                                class="modal-content bg-dark-card border border-secondary border-opacity-25 rounded-4 shadow-2xl">
-
-                                <div class="modal-header border-0 pt-4 px-4">
-
-                                    <h5 class="modal-title fw-bold text-white">
-                                        Editar: {{ u[1] }}
-                                    </h5>
-
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal">
-                                    </button>
-
-                                </div>
-
-                                <form action="/usuarios/editar/{{ u[0] }}" method="POST">
-
-                                    <div class="modal-body px-4">
-
-                                        <div class="mb-4">
-
-                                            <label class="form-label text-white-50 small fw-bold">
-                                                NÍVEL DE PERMISSÃO
-                                            </label>
-
-                                            <select name="nivel"
-                                                class="form-select bg-dark border-secondary text-white py-2">
-
-                                                <option value="funcionario" {% if u[2]=='funcionario' %}selected{% endif
-                                                    %}>
-                                                    🍰 Funcionário
-                                                </option>
-
-                                                {% if current_user.nivel == "admin" %}
-
-                                                <option value="gerente" {% if u[2]=='gerente' %}selected{% endif %}>
-                                                    💼 Gerente
-                                                </option>
-
-                                                <option value="admin" {% if u[2]=='admin' %}selected{% endif %}>
-                                                    👑 Administrador
-                                                </option>
-
-                                                {% endif %}
-
-                                            </select>
-
-                                        </div>
-
-                                        <div class="mb-2">
-
-                                            <label class="form-label text-white-50 small fw-bold">
-                                                DEFINIR NOVA SENHA
-                                            </label>
-
-                                            <input type="password" name="nova_senha"
-                                                class="form-control bg-dark border-secondary text-white py-2"
-                                                placeholder="Deixe vazio para manter">
-
-                                            <small class="text-white-50 italic mt-1 d-block" style="font-size: 0.7rem;">
-
-                                                Só preencha se o usuário esqueceu a senha.
-
-                                            </small>
-
-                                        </div>
-
-                                    </div>
-
-                                    <div class="modal-footer border-0 p-4">
-
-                                        <button type="button" class="btn btn-link text-white-50 text-decoration-none fw-bold"
-                                            data-bs-dismiss="modal">
-                                            Cancelar
-                                        </button>
-
-                                        <button type="submit" class="btn btn-warning px-4 fw-bold rounded-3 shadow">
-                                            ATUALIZAR DADOS
-                                        </button>
-
-                                    </div>
-
-                                </form>
-
-                            </div>
-
-                        </div>
-
-                    </div>
 
                     {% endfor %}
 
@@ -311,6 +224,99 @@
     </div>
 
 </div>
+
+{% for u in usuarios_lista %}
+<div class="modal fade" id="editModal{{ u[0] }}" tabindex="-1" aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+
+        <div class="modal-content bg-dark-card border border-secondary border-opacity-25 rounded-4 shadow-2xl">
+
+            <div class="modal-header border-0 pt-4 px-4">
+
+                <h5 class="modal-title fw-bold text-white">
+                    Editar: {{ u[1] }}
+                </h5>
+
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <form action="/usuarios/editar/{{ u[0] }}" method="POST">
+
+                <div class="modal-body px-4">
+
+                    <div class="mb-4">
+
+                        <label class="form-label text-white-50 small fw-bold">
+                            NÍVEL DE PERMISSÃO
+                        </label>
+
+                        <select name="nivel"
+                            class="form-select bg-dark border-secondary text-white py-2">
+
+                            <option value="colaborador" {% if u[2]=='colaborador' %}selected{% endif %}>
+                                🍰 colaborador
+                            </option>
+
+                            {% if current_user.nivel == "admin" %}
+
+                            <option value="socios" {% if u[2]=='socios' %}selected{% endif %}>
+                                💼 socios
+                            </option>
+
+                            <option value="admin" {% if u[2]=='admin' %}selected{% endif %}>
+                                👑 Administrador
+                            </option>
+
+                            {% endif %}
+
+                        </select>
+
+                    </div>
+
+                    <div class="mb-2">
+
+                        <label class="form-label text-white-50 small fw-bold">
+                            DEFINIR NOVA SENHA
+                        </label>
+
+                        <input type="password" name="nova_senha"
+                            class="form-control bg-dark border-secondary text-white py-2"
+                            placeholder="Deixe vazio para manter">
+
+                        <small class="text-white-50 italic mt-1 d-block" style="font-size: 0.7rem;">
+
+                            Só preencha se o usuário esqueceu a senha.
+
+                        </small>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer border-0 p-4">
+
+                    <button type="button" class="btn btn-link text-white-50 text-decoration-none fw-bold"
+                        data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="btn btn-warning px-4 fw-bold rounded-3 shadow">
+                        ATUALIZAR DADOS
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+{% endfor %}
 
 <style>
     .bg-dark-card {

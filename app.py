@@ -1461,9 +1461,10 @@ def fluxo_caixa():
     
 @app.route("/despesas", methods=["GET", "POST"]) # <--- Adicionado o GET aqui
 @login_required
+@app.route("/despesas", methods=["GET", "POST"])
+@login_required
 def despesas():
     if request.method == "POST":
-        # Se o usuário preencheu o formulário e clicou em salvar:
         descricao = request.form["descricao"]
         valor = float(request.form["valor"])
 
@@ -1477,17 +1478,20 @@ def despesas():
         con.close()
 
         flash("Despesa cadastrada com sucesso!", "success")
-        return redirect("/financeiro")
-    
-    # Se o usuário só clicou para entrar na página (GET):
-    # Vamos buscar as despesas existentes para mostrar na tela
+        return redirect("/despesas") # Redireciona para a própria página de despesas para ver a lista atualizada
+
+    # Comportamento GET (Quando você clica para entrar na página)
     con = conectar()
     cur = con.cursor()
-    cur.execute("SELECT id_despesa, descricao, valor, data_despesa FROM despesas ORDER BY data_despesa DESC")
+    # Busca as despesas e já formata a data para o padrão brasileiro (DD/MM/AAAA)
+    cur.execute("""
+        SELECT id_despesa, descricao, valor, TO_CHAR(data_despesa, 'DD/MM/YYYY') 
+        FROM despesas 
+        ORDER BY data_despesa DESC
+    """)
     lista_despesas = cur.fetchall()
     con.close()
-    
-    # Aqui você renderiza a página HTML de despesas (crie o arquivo despesas.html se não tiver)
+
     return render_template("despesas.html", despesas=lista_despesas)
 # =========================
 # INICIALIZAÇÃO

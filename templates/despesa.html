@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4 animate-in">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
+        <div>
+            <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.2rem; letter-spacing: -1px;">
+                💸 Despesas <span class="text-warning">Fixas</span>
+            </h1>
+            <p class="text-white-50 mb-0">Gerencie os custos operacionais da sua produção.</p>
+        </div>
+        <div>
+            <a href="/financeiro" class="btn btn-outline-secondary border-opacity-25 text-white fw-bold px-4 rounded-3">
+                <i class="bi bi-arrow-left me-2"></i>VOLTAR AO FINANCEIRO
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4">
+                <h4 class="text-white fw-bold mb-4"><i class="bi bi-plus-circle text-warning me-2"></i>Nova Despesa</h4>
+                
+                <form action="/despesas" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label small text-white-50 fw-bold">DESCRIÇÃO</label>
+                        <input type="text" name="descricao" class="form-control bg-dark text-white border-secondary border-opacity-50 py-2" placeholder="Ex: Aluguel, Internet, MEI..." required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label small text-white-50 fw-bold">VALOR MENSAL (R$)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-secondary bg-opacity-20 text-white-50 border-secondary border-opacity-50">R$</span>
+                            <input type="number" step="0.01" name="valor" class="form-control bg-dark text-white border-secondary border-opacity-50 py-2" placeholder="0,00" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning w-100 fw-extrabold py-3 rounded-3 shadow">
+                        <i class="bi bi-check-circle-fill me-2"></i>SALVAR DESPESA
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-black bg-opacity-30 border-0 py-3 px-4">
+                    <h5 class="mb-0 text-white fw-bold small text-uppercase tracking-wider">Custos Fixos Cadastrados</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-dark align-middle mb-0" style="--bs-table-bg: transparent;">
+                        <thead class="bg-black bg-opacity-50">
+                            <tr class="text-white-50 small text-uppercase">
+                                <th class="ps-4 py-3">Data Cad.</th>
+                                <th class="py-3">Descrição</th>
+                                <th class="py-3 text-end pe-4">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in despesas %}
+                            <tr class="border-bottom border-secondary border-opacity-10">
+                                <td class="ps-4 text-white-50 small font-monospace">{{ d[3] }}</td>
+                                <td>
+                                    <div class="fw-bold text-white">{{ d[1] }}</div>
+                                </td>
+                                <td class="text-end pe-4 fw-extrabold text-danger">
+                                    R$ {{ "%.2f"|format(d[2]) }}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-white-50 small">
+                                    <i class="bi bi-info-circle me-1"></i> Nenhuma despesa fixa cadastrada ainda.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-dark-card { background: #1e293b !important; }
+    .fw-extrabold { font-weight: 800; }
+    .font-monospace { font-family: 'JetBrains Mono', monospace !important; }
+    .animate-in { animation: slideUp 0.5s ease-out; }
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}

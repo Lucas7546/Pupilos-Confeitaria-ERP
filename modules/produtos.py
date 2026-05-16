@@ -103,19 +103,7 @@ def vincular_insumo(id_produto, id_materia, quantidade):
         if con: con.close()
 
 
-def excluir_produto(id_produto):
-    with obter_conexao() as conn:
-        with conn.cursor() as cursor:
-            # Importante: Se o produto estiver em uma venda, 
-            # pode dar erro de FK. Se quiser deletar mesmo assim:
-            cursor.execute("DELETE FROM produtos WHERE id = %s", (id_produto,))
-            conn.commit()
 
-def excluir_venda(id_venda):
-    with obter_conexao() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute("DELETE FROM vendas WHERE id = %s", (id_venda,))
-            conn.commit()
 
 def calcular_capacidade_geral():
 

@@ -32,7 +32,7 @@ def buscar_usuario(username):
 # =========================
 # CRIAR USUÁRIO (FORÇADO PADRÃO LIMPO)
 # =========================
-def criar_usuario(username, senha, nivel="funcionario"):
+def criar_usuario(username, senha, nivel="colaborador"):
     conn = None
     try:
         conn = conectar()
@@ -42,7 +42,7 @@ def criar_usuario(username, senha, nivel="funcionario"):
         nivel = nivel.strip().lower()
 
         # valida nível
-        if nivel not in ["admin", "gerente", "funcionario"]:
+        if nivel not in ["admin", "socios", "colaborador"]:
             raise Exception("Nível inválido")
 
         # checar duplicado

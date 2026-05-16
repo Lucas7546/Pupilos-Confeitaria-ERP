@@ -478,10 +478,10 @@ def vincular_receita():
 @login_required
 def deletar_produto(id_produto):
 
-    if session.get("nivel") not in ["admin", "gerente"]:
+    if session.get("nivel") not in ["admin", "socios"]:
 
         flash(
-            "Acesso negado! Apenas Gerentes podem excluir produtos.",
+            "Acesso negado! Apenas socios podem excluir produtos.",
             "danger"
         )
 
@@ -526,7 +526,7 @@ def deletar_produto(id_produto):
 @login_required
 def deletar_mp(id_mp):
 
-    if session.get("nivel") not in ["admin", "gerente"]:
+    if session.get("nivel") not in ["admin", "socios"]:
 
         flash(
             "Permissão insuficiente.",
@@ -574,10 +574,10 @@ def deletar_mp(id_mp):
 @login_required
 def deletar_venda(id_venda):
 
-    if session.get("nivel") not in ["admin", "gerente"]:
+    if session.get("nivel") not in ["admin", "socios"]:
 
         flash(
-            "Acesso negado! Apenas Gerentes podem excluir vendas.",
+            "Acesso negado! Apenas Socios podem excluir vendas.",
             "danger"
         )
 
@@ -847,7 +847,7 @@ def exportar_logs():
 @login_required
 def gerenciar_equipe():
 
-    if session.get("nivel") not in ["admin", "gerente"]:
+    if session.get("nivel") not in ["admin", "socios"]:
 
         flash(
             "Acesso negado!",
@@ -885,7 +885,7 @@ def gerenciar_equipe():
 @login_required
 def listar_usuarios():
 
-    if session.get("nivel") not in ["admin", "gerente"]:
+    if session.get("nivel") not in ["admin", "socios"]:
 
         flash(
             "Acesso negado!",
@@ -1122,13 +1122,13 @@ def cadastro_central():
 # =========================================================
 @app.route("/importacoes")
 @login_required
-@acesso_requerido("cadastro") # Protege a rota para níveis autorizados
+@acesso_requerido("vendas") # Protege a rota para níveis autorizados
 def central_importacoes():
     return render_template("central_importacoes.html")
 
 @app.route("/importar-ifood", methods=["POST"])
 @login_required
-@acesso_requerido("cadastro")
+@acesso_requerido("vendas")
 def importar_ifood():
     try:
         arquivo = request.files.get("arquivo")

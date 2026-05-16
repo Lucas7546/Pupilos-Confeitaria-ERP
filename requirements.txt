@@ -1,8 +1,8 @@
-gunicorn
+Plaintext
 flask
 flask-login
 psycopg2-binary
 pandas
 openpyxl
+gunicorn
 python-dotenv
-werkzeug

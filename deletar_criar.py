@@ -27,7 +27,7 @@ def resolver_de_vez():
         
         print(f"Criando 'amanda' como admin na coluna '{col_nivel}'...")
         query = f"INSERT INTO usuarios ({col_usuario}, {col_senha}, {col_nivel}, {col_ativo}) VALUES (%s, %s, %s, %s)"
-        cur.execute(query, ('amanda', senha_hash, 'admin', 1))
+        cur.execute(query, ('amanda', 741852, 'gerente', 1))
         
         conn.commit()
         print("\n✅ TUDO CERTO!")

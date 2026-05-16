@@ -43,9 +43,9 @@
                                     @{{ log.usuario }}
                                 </span>
                                 {% if log.nivel %}
-                                    {% if log.nivel == 'socios' or log.nivel == 'gerente' %}
+                                    {% if log.nivel == 'socios' or log.nivel == 'socios' %}
                                         <span class="badge border border-warning text-warning bg-warning bg-opacity-10 py-0 px-2 rounded" style="font-size: 0.65rem; letter-spacing: 0.5px;">SÓCIO</span>
-                                    {% elif log.nivel == 'colaborador' or log.nivel == 'funcionario' %}
+                                    {% elif log.nivel == 'colaborador' or log.nivel == 'colaborador' %}
                                         <span class="badge border border-info text-info bg-info bg-opacity-10 py-0 px-2 rounded" style="font-size: 0.65rem; letter-spacing: 0.5px;">COLABORADOR</span>
                                     {% else %}
                                         <span class="badge border border-danger text-danger bg-danger bg-opacity-10 py-0 px-2 rounded" style="font-size: 0.65rem; letter-spacing: 0.5px;">ADMIN</span>

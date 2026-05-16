@@ -199,7 +199,7 @@
 
                                 </button>
 
-                                {% if session.get('nivel') in ['admin', 'gerente'] %}
+                                {% if session.get('nivel') in ['admin', 'socios'] %}
 
                                 <a
                                     href="{{ url_for('deletar_mp', id_mp=item[0]) }}"

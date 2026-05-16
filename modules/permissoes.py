@@ -2,13 +2,14 @@ from functools import wraps
 from flask import abort
 from flask_login import current_user
 from modules import usuarios
+from flask import redirect, url_for, flash # adicione os imports caso não existam no topo
 
 # Hierarquia de acesso da Pupilos Confeitaria
 # O nome aqui deve bater exatamente com o que está no Banco de Dados
 PERMISSOES = {
     "admin": ["usuarios", "estoque", "vendas", "financeiro", "cadastro", "auditoria", "produtos"],
-    "gerente": ["estoque", "vendas", "financeiro", "cadastro", "auditoria", "produtos"],
-    "funcionario": ["estoque", "vendas"],
+    "socios": ["estoque", "vendas", "financeiro", "cadastro", "auditoria", "produtos"],
+    "colaborador": ["estoque", "vendas"],
     "bloqueado": []
 }
 
@@ -38,15 +39,14 @@ def pode_acessar(modulo):
     return modulo in permissoes
 
 def acesso_requerido(modulo):
-    """Decorator para proteger as rotas do Flask."""
+    """Decorator para proteger as rotas do Flask com redirecionamento amigável."""
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            # Se a verificação de segurança falhar, retorna Erro 403 (Proibido)
             if not pode_acessar(modulo):
-                # Log de tentativa de acesso negado (opcional)
                 print(f"Acesso NEGADO para o módulo: {modulo}")
-                abort(403)
+                flash("Você não tem permissão para acessar este módulo.", "danger")
+                return redirect(url_for("dashboard")) # Redireciona para a página principal
             return f(*args, **kwargs)
         return wrapper
     return decorator

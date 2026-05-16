@@ -9,7 +9,7 @@ os.makedirs("data", exist_ok=True)
 # Se quiser deletar o banco antigo para garantir que as tabelas venham com as colunas novas:
 # if os.path.exists("data/confeitaria.db"): os.remove("data/confeitaria.db")
 
-conexao = sqlite3.connect("data/pupilos_confeitaria.db")
+conexao = sqlite3.connect("data/confeitaria.db")
 cursor = conexao.cursor()
 
 # 1. MATÉRIA PRIMA (Criar antes por causa das Foreign Keys)

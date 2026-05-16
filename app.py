@@ -1459,8 +1459,7 @@ def fluxo_caixa():
 # Gambiarras
 # =========================================================
     
-@app.route("/despesas", methods=["GET", "POST"]) # <--- Adicionado o GET aqui
-@login_required
+
 @app.route("/despesas", methods=["GET", "POST"])
 @login_required
 def despesas():
@@ -1478,21 +1477,21 @@ def despesas():
         con.close()
 
         flash("Despesa cadastrada com sucesso!", "success")
-        return redirect("/despesas") # Redireciona para a própria página de despesas para ver a lista atualizada
+        return redirect("/despesas")
 
-    # Comportamento GET (Quando você clica para entrar na página)
+    # Comportamento GET
     con = conectar()
     cur = con.cursor()
-    # Busca as despesas e já formata a data para o padrão brasileiro (DD/MM/AAAA)
     cur.execute("""
-        SELECT id_despesa, descricao, valor, TO_CHAR(data_despesa, 'DD/MM/YYYY') 
-        FROM despesas 
+        SELECT id_despesa, descricao, valor, TO_CHAR(data_despesa, 'DD/MM/YYYY')
+        FROM despesas
         ORDER BY data_despesa DESC
     """)
     lista_despesas = cur.fetchall()
     con.close()
 
-    return render_template("despesas.html", despesas=lista_despesas)
+    # AJUSTE AQUI: Mudamos para despesa.html (singular) para bater com o nome do seu arquivo!
+    return render_template("despesa.html", despesas=lista_despesas)
 # =========================
 # INICIALIZAÇÃO
 # =========================

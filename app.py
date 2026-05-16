@@ -1424,6 +1424,7 @@ def previsao_estoque():
 
 @app.route("/financeiro")
 @login_required
+@acesso_requerido("financeiro")
 def pagina_financeiro():
     dados = financeiro_operacional()
 
@@ -1454,6 +1455,7 @@ def relatorio_financeiro():
 # =========================================================
 @app.route("/fluxo-caixa")
 @login_required
+@acesso_requerido("financeiro")
 def fluxo_caixa():
     try:
         # Por enquanto, vamos apenas abrir a página. 

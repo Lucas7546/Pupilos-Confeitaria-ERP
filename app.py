@@ -1045,6 +1045,11 @@ def toggle_usuario(id_usuario):
 @app.route("/usuarios/editar/<int:id_usuario>", methods=["POST"])
 @login_required
 def editar_usuario(id_usuario):
+    # Proteção: Garante que só admin (ou sócios, dependendo da sua regra) pode editar
+    if session.get("nivel") not in ["admin", "socios"]:
+        flash("Acesso negado!", "danger")
+        return redirect(url_for("dashboard"))
+
     nivel = request.form.get("nivel")
     nova_senha = request.form.get("nova_senha")
     
@@ -1054,8 +1059,8 @@ def editar_usuario(id_usuario):
         cur = con.cursor()
         
         if nova_senha and len(nova_senha.strip()) > 0:
-            # Atualiza nível e senha
-            senha_hash = generate_password_hash(nova_senha)
+            # Atualiza nível e senha (gerando o hash correto)
+            senha_hash = generate_password_hash(nova_senha.strip())
             cur.execute("""
                 UPDATE usuarios 
                 SET nivel = %s, senha = %s 
@@ -1071,15 +1076,19 @@ def editar_usuario(id_usuario):
             
         con.commit()
         flash("Dados atualizados com sucesso!", "success")
-        registrar_log_db(current_user.username, "EDIÇÃO", "USUARIOS", f"Alterou dados do ID {id_usuario}")
+        
+        # Corrigido para usar a sua função padrão de logs do app.py
+        registrar_log("EDIÇÃO", "USUARIOS", f"Alterou dados do ID {id_usuario}")
         
     except Exception as e:
         if con: con.rollback()
+        print(f"Erro ao editar usuário: {e}") # Ajuda a ver o erro no terminal
         flash(f"Erro ao atualizar: {e}", "danger")
     finally:
         if con: con.close()
         
-    return redirect(url_for('gerenciar_usuarios'))
+    # CORRIGIDO: Redireciona para a sua rota real que lista a equipe/usuários
+    return redirect(url_for('listar_usuarios'))
 
 
 

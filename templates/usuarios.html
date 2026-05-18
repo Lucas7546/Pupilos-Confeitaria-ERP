@@ -65,6 +65,18 @@
                                 🍰 colaborador
                             </option>
 
+                            <option value="financeiro">
+                                💰 financeiro
+                            </option>
+
+                            <option value="ti">
+                                💻 ti
+                            </option>
+
+                            <option value="dono">
+                                👑 dono
+                            </option>
+
                             {% if current_user.nivel == "admin" %}
 
                             <option value="socios">
@@ -72,7 +84,7 @@
                             </option>
 
                             <option value="admin">
-                                👑 Administrador
+                                🛡️ admin
                             </option>
 
                             {% endif %}
@@ -138,23 +150,38 @@
 
                             {% if u[2] == "admin" %}
 
-                            <span
-                                class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2">
-                                ADMIN
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2">
+                                🛡️ ADMIN
                             </span>
 
                             {% elif u[2] == "socios" %}
 
-                            <span
-                                class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2">
-                                SÓCIO
+                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2">
+                                💼 SOCIOS
+                            </span>
+
+                            {% elif u[2] == "financeiro" %}
+
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2">
+                                💰 FINANCEIRO
+                            </span>
+
+                            {% elif u[2] == "ti" %}
+
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2">
+                                💻 TI
+                            </span>
+
+                            {% elif u[2] == "dono" %}
+
+                            <span class="badge bg-light bg-opacity-10 text-light border border-light border-opacity-25 px-3 py-2">
+                                👑 DONO
                             </span>
 
                             {% else %}
 
-                            <span
-                                class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2">
-                                COLABORADOR
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2">
+                                🍰 COLABORADOR
                             </span>
 
                             {% endif %}
@@ -194,17 +221,25 @@
 
                                 </button>
 
-                                {% if u[1] == current_user.id %}
-                                <button class="btn btn-outline-secondary btn-sm px-3 border-opacity-10" disabled title="Você não pode bloquear sua própria conta">
+                                {% if u[1] == current_user.username %}
+
+                                <button class="btn btn-outline-secondary btn-sm px-3 border-opacity-10"
+                                    disabled
+                                    title="Você não pode bloquear sua própria conta">
+
                                     <i class="bi bi-lock"></i>
+
                                 </button>
+
                                 {% else %}
+
                                 <a href="/toggle-usuario/{{ u[0] }}"
                                     class="btn {% if u[3] == 1 %}btn-outline-danger{% else %}btn-success{% endif %} btn-sm px-3 border-opacity-10">
 
                                     <i class="bi {% if u[3] == 1 %}bi-lock{% else %}bi-unlock{% endif %}"></i>
 
                                 </a>
+
                                 {% endif %}
 
                             </div>
@@ -260,6 +295,18 @@
                                 🍰 colaborador
                             </option>
 
+                            <option value="financeiro" {% if u[2]=='financeiro' %}selected{% endif %}>
+                                💰 financeiro
+                            </option>
+
+                            <option value="ti" {% if u[2]=='ti' %}selected{% endif %}>
+                                💻 ti
+                            </option>
+
+                            <option value="dono" {% if u[2]=='dono' %}selected{% endif %}>
+                                👑 dono
+                            </option>
+
                             {% if current_user.nivel == "admin" %}
 
                             <option value="socios" {% if u[2]=='socios' %}selected{% endif %}>
@@ -267,7 +314,7 @@
                             </option>
 
                             <option value="admin" {% if u[2]=='admin' %}selected{% endif %}>
-                                👑 Administrador
+                                🛡️ admin
                             </option>
 
                             {% endif %}

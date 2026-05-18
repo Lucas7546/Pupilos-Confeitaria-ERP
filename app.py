@@ -120,13 +120,32 @@ with app.app_context():
 # LOGS (CORRIGIDO)
 # ========================================================
 def registrar_log(acao, modulo, detalhe="", usuario_manual=None):
-    usuario_log = usuario_manual or (current_user.id if current_user.is_authenticated else "anonimo")
 
     try:
-        usuarios.registrar_log_db(usuario_log, acao, modulo, detalhe)
-    except Exception as e:
-        print(f"ERRO AO SALVAR LOG: {e}")
 
+        if usuario_manual:
+
+            usuario_log = usuario_manual
+
+        elif current_user.is_authenticated:
+
+            # SALVA O USERNAME
+            usuario_log = current_user.username
+
+        else:
+
+            usuario_log = "anonimo"
+
+        usuarios.registrar_log_db(
+            usuario_log,
+            acao,
+            modulo,
+            detalhe
+        )
+
+    except Exception as e:
+
+        print(f"ERRO AO SALVAR LOG: {e}")
 
 # =========================
 # ROTAS DE AUTENTICAÇÃO
@@ -1011,40 +1030,61 @@ def listar_logs_auditoria_filtrado(
 @login_required
 @acesso_requerido("auditoria")
 def exportar_logs():
+
     try:
-        # Busca 1000 registros para o backup
-        logs_brutos = usuarios.listar_logs_auditoria(1000) 
-        
+
+        logs_brutos = usuarios.listar_logs_auditoria(1000)
+
         logs_formatados = []
+
         for log in logs_brutos:
+
             logs_formatados.append({
-                "id": log[0],
-                "usuario": log[1],
-                "acao": log[2],
-                "modulo": log[3],
-                "detalhe": log[4],
-                "data": str(log[5])
+
+                "usuario": log["usuario"],
+                "acao": log["acao"],
+                "modulo": log["modulo"],
+                "detalhe": log["detalhe"],
+                "data": str(log["data"])
+
             })
-        
-        json_output = json.dumps(logs_formatados, indent=4, ensure_ascii=False)
-        
-        # Log de segurança: registra quem baixou o backup
+
+        json_output = json.dumps(
+            logs_formatados,
+            indent=4,
+            ensure_ascii=False
+        )
+
         usuarios.registrar_log_db(
-            usuario=current_user.id,
+
+            usuario=current_user.username,
             acao="EXPORT_LOGS",
             modulo="AUDITORIA",
-            detalhe="Backup de logs exportado via JSON"
+            detalhe="Backup exportado"
+
         )
-        
+
         return Response(
+
             json_output,
             mimetype="application/json",
-            headers={"Content-disposition": "attachment; filename=auditoria_pupilos_erp.json"}
+            headers={
+                "Content-Disposition":
+                "attachment; filename=auditoria_pupilos.json"
+            }
+
         )
 
     except Exception as e:
-        flash(f"Erro ao exportar: {e}", "danger")
-        return redirect(url_for('auditoria'))
+
+        print(f"Erro exportar logs: {e}")
+
+        flash(
+            f"Erro ao exportar logs: {e}",
+            "danger"
+        )
+
+        return redirect(url_for("auditoria"))
 
 # =========================================================
 # GERENCIAR EQUIPE

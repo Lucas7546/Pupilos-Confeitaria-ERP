@@ -5,3 +5,6 @@ pandas
 openpyxl
 gunicorn
 python-dotenv
+reportlab
+xlsxwriter
+python-docx

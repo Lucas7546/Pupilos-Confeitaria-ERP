@@ -365,6 +365,24 @@ def excluir_venda(id_venda):
         cursor = conn.cursor()
 
         # =========================================
+        # VERIFICA SE VENDA EXISTE
+        # =========================================
+
+        cursor.execute("""
+            SELECT id_venda
+            FROM vendas
+            WHERE id_venda = %s
+        """, (id_venda,))
+
+        venda = cursor.fetchone()
+
+        if not venda:
+
+            print(f"Venda {id_venda} não encontrada")
+
+            return False
+
+        # =========================================
         # BUSCA ITENS DA VENDA
         # =========================================
 
@@ -377,6 +395,10 @@ def excluir_venda(id_venda):
         """, (id_venda,))
 
         itens = cursor.fetchall()
+
+        if not itens:
+
+            print(f"Venda {id_venda} sem itens")
 
         # =========================================
         # DEVOLVE ESTOQUE
@@ -401,6 +423,10 @@ def excluir_venda(id_venda):
                     float(quantidade_vendida)
                 )
 
+                # =========================================
+                # REGISTRA RETORNO NO ESTOQUE
+                # =========================================
+
                 cursor.execute("""
                     INSERT INTO movimentacao_estoque (
                         id_materia_prima,
@@ -417,11 +443,11 @@ def excluir_venda(id_venda):
                 """, (
                     id_mp,
                     qtd_retorno,
-                    f'ROLLBACK VENDA ID {id_venda}'
+                    f'ROLLBACK AUTOMÁTICO VENDA ID {id_venda}'
                 ))
 
         # =========================================
-        # REMOVE ITENS VENDA
+        # REMOVE ITENS DA VENDA
         # =========================================
 
         cursor.execute("""
@@ -439,6 +465,8 @@ def excluir_venda(id_venda):
         """, (id_venda,))
 
         conn.commit()
+
+        print(f"Venda {id_venda} excluída com rollback realizado")
 
         return True
 

@@ -1,8 +1,10 @@
 import os
+import csv
 import io
 import json
 import pandas as pd
-
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
 from flask import Response
 from datetime import datetime
 from functools import wraps
@@ -16,6 +18,7 @@ from modules.financeiro import (
 from flask import (
     Flask,
     render_template,
+    make_response,
     request,
     redirect,
     url_for,
@@ -785,18 +788,221 @@ def vender():
 # =========================================================
 # ROTA: TELA DE AUDITORIA (Visualizar Logs no Navegador)
 # =========================================================
+# =========================
+# AUDITORIA
+# =========================
 @app.route("/auditoria")
 @login_required
-@acesso_requerido("auditoria") # Substitui o session.get antigo
+@acesso_requerido("auditoria")
 def auditoria():
+
     try:
-        # Busca os últimos 100 logs do banco PostgreSQL
-        logs_data = usuarios.listar_logs_auditoria(100)
-        return render_template('auditoria.html', logs=logs_data)
+
+        # =========================================
+        # FILTROS (QUERY PARAMS)
+        # =========================================
+
+        usuario_filtro = request.args.get("usuario", "").strip()
+
+        acao_filtro = request.args.get("acao", "").strip()
+
+        modulo_filtro = request.args.get("modulo", "").strip()
+
+        data_inicio = request.args.get("data_inicio", "").strip()
+
+        data_fim = request.args.get("data_fim", "").strip()
+
+        limite = request.args.get("limite", 100)
+
+        # =========================================
+        # HARDENING LIMITE
+        # =========================================
+
+        try:
+
+            limite = int(limite)
+
+            if limite <= 0:
+                limite = 100
+
+            if limite > 1000:
+                limite = 1000
+
+        except:
+
+            limite = 100
+
+        # =========================================
+        # BUSCA LOGS
+        # =========================================
+
+        logs_data = usuarios.listar_logs_auditoria_filtrado(
+            limite=limite,
+            usuario=usuario_filtro,
+            acao=acao_filtro,
+            modulo=modulo_filtro,
+            data_inicio=data_inicio,
+            data_fim=data_fim
+        )
+
+        # =========================================
+        # RENDER
+        # =========================================
+
+        return render_template(
+            "auditoria.html",
+            logs=logs_data,
+
+            # Mantém filtros preenchidos
+            usuario_filtro=usuario_filtro,
+            acao_filtro=acao_filtro,
+            modulo_filtro=modulo_filtro,
+            data_inicio=data_inicio,
+            data_fim=data_fim,
+            limite=limite
+        )
+
     except Exception as e:
+
         print(f"Erro ao carregar logs: {e}")
-        flash(f"Erro ao carregar auditoria: {e}", "danger")
+
+        flash(
+            f"Erro ao carregar auditoria: {e}",
+            "danger"
+        )
+
         return redirect(url_for('dashboard'))
+    
+
+
+# =========================================================
+# LISTAR LOGS AUDITORIA FILTRADO
+# =========================================================
+def listar_logs_auditoria_filtrado(
+    limite=100,
+    usuario=None,
+    acao=None,
+    modulo=None,
+    data_inicio=None,
+    data_fim=None
+):
+
+    conn = None
+
+    try:
+
+        conn = conectar()
+
+        cursor = conn.cursor()
+
+        # =========================================
+        # QUERY BASE
+        # =========================================
+
+        query = """
+            SELECT
+                usuario,
+                acao,
+                modulo,
+                descricao,
+                data_log
+            FROM logs
+            WHERE 1=1
+        """
+
+        params = []
+
+        # =========================================
+        # FILTRO USUÁRIO
+        # =========================================
+
+        if usuario:
+
+            query += """
+                AND LOWER(usuario) LIKE LOWER(%s)
+            """
+
+            params.append(f"%{usuario}%")
+
+        # =========================================
+        # FILTRO AÇÃO
+        # =========================================
+
+        if acao:
+
+            query += """
+                AND acao = %s
+            """
+
+            params.append(acao)
+
+        # =========================================
+        # FILTRO MÓDULO
+        # =========================================
+
+        if modulo:
+
+            query += """
+                AND modulo = %s
+            """
+
+            params.append(modulo)
+
+        # =========================================
+        # FILTRO DATA INÍCIO
+        # =========================================
+
+        if data_inicio:
+
+            query += """
+                AND DATE(data_log) >= %s
+            """
+
+            params.append(data_inicio)
+
+        # =========================================
+        # FILTRO DATA FIM
+        # =========================================
+
+        if data_fim:
+
+            query += """
+                AND DATE(data_log) <= %s
+            """
+
+            params.append(data_fim)
+
+        # =========================================
+        # ORDER + LIMIT
+        # =========================================
+
+        query += """
+            ORDER BY data_log DESC
+            LIMIT %s
+        """
+
+        params.append(limite)
+
+        # =========================================
+        # EXECUTA
+        # =========================================
+
+        cursor.execute(query, params)
+
+        logs = cursor.fetchall()
+
+        return logs
+
+    except Exception as e:
+
+        print(f"Erro listar logs filtrados: {e}")
+
+        return []
+
+    finally:
+
+        if conn:
+            conn.close()
 
 # =========================================================
 # ROTA: EXPORTAR LOGS (Apenas gera o download do arquivo)
@@ -1503,6 +1709,146 @@ def despesas():
 
     # AJUSTE AQUI: Mudamos para despesa.html (singular) para bater com o nome do seu arquivo!
     return render_template("despesa.html", despesas=lista_despesas)
+
+
+# =========================
+# EXPORTAR PREVISÃO CSV
+# =========================
+@app.route("/exportar-previsao/csv")
+@login_required
+def exportar_previsao_csv():
+
+    previsoes = estoque.previsao_demanda()
+
+    output = io.StringIO()
+
+    writer = csv.writer(output)
+
+    writer.writerow([
+        "Matéria Prima",
+        "Unidade",
+        "Estoque Atual",
+        "Consumo Médio Diário",
+        "Consumo 7 Dias",
+        "Consumo 15 Dias",
+        "Dias Restantes",
+        "Risco",
+        "Sugestão Compra"
+    ])
+
+    for item in previsoes:
+
+        writer.writerow([
+            item["materia_prima"],
+            item["unidade"],
+            item["estoque_atual"],
+            item["media_diaria"],
+            item["consumo_previsto"],
+            item["consumo_15d"],
+            item["dias_restantes"],
+            item["risco"],
+            item["sugestao_compra"]
+        ])
+
+    response = make_response(output.getvalue())
+
+    response.headers["Content-Disposition"] = \
+        "attachment; filename=previsao_demanda.csv"
+
+    response.headers["Content-type"] = "text/csv"
+
+    return response
+
+
+# =========================
+# EXPORTAR PREVISÃO EXCEL
+# =========================
+@app.route("/exportar-previsao/excel")
+@login_required
+def exportar_previsao_excel():
+
+    previsoes = estoque.previsao_demanda()
+
+    df = pd.DataFrame(previsoes)
+
+    output = io.BytesIO()
+
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+
+        df.to_excel(
+            writer,
+            index=False,
+            sheet_name='Previsao'
+        )
+
+    output.seek(0)
+
+    return send_file(
+        output,
+        download_name="previsao_demanda.xlsx",
+        as_attachment=True,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+# =========================
+# EXPORTAR PREVISÃO PDF
+# =========================
+@app.route("/exportar-previsao/pdf")
+@login_required
+def exportar_previsao_pdf():
+
+    previsoes = estoque.previsao_demanda()
+
+    buffer = io.BytesIO()
+
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+
+    largura, altura = letter
+
+    y = altura - 40
+
+    pdf.setFont("Helvetica-Bold", 16)
+
+    pdf.drawString(
+        40,
+        y,
+        "Relatório de Previsão de Demanda"
+    )
+
+    y -= 40
+
+    pdf.setFont("Helvetica", 10)
+
+    for item in previsoes:
+
+        linha = (
+            f"{item['materia_prima']} | "
+            f"Estoque: {item['estoque_atual']} | "
+            f"Dias restantes: {item['dias_restantes']} | "
+            f"Risco: {item['risco']}"
+        )
+
+        pdf.drawString(40, y, linha)
+
+        y -= 20
+
+        # NOVA PÁGINA
+        if y < 40:
+
+            pdf.showPage()
+
+            y = altura - 40
+
+    pdf.save()
+
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="previsao_demanda.pdf",
+        mimetype="application/pdf"
+    )
 # =========================
 # INICIALIZAÇÃO
 # =========================

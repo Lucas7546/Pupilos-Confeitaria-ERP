@@ -264,3 +264,163 @@ def ajustar_estoque(id_mp, novo_valor):
     finally:
         if con:
             con.close()
+
+
+def previsao_demanda():
+
+    conn = None
+
+    try:
+
+        conn = conectar()
+        cursor = conn.cursor()
+
+        # ===================================================
+        # BUSCA TODAS AS MATÉRIAS-PRIMAS
+        # ===================================================
+
+        cursor.execute("""
+            SELECT
+                id_materia_prima,
+                nome,
+                unidade_medida,
+                estoque_minimo
+            FROM materia_prima
+            ORDER BY nome ASC
+        """)
+
+        materias = cursor.fetchall()
+
+        previsoes = []
+
+        for mp in materias:
+
+            id_mp = mp[0]
+            nome = mp[1]
+            unidade = mp[2]
+            estoque_minimo = float(mp[3] or 0)
+
+            # ===================================================
+            # ESTOQUE ATUAL
+            # ===================================================
+
+            cursor.execute("""
+                SELECT
+                    COALESCE(SUM(
+                        CASE
+                            WHEN tipo_movimento = 'entrada'
+                            THEN quantidade
+                            ELSE -quantidade
+                        END
+                    ), 0)
+                FROM movimentacao_estoque
+                WHERE id_materia_prima = %s
+            """, (id_mp,))
+
+            estoque_atual = float(cursor.fetchone()[0] or 0)
+
+            # ===================================================
+            # CONSUMO ÚLTIMOS 7 DIAS
+            # ===================================================
+
+            data_inicio = datetime.now() - timedelta(days=7)
+
+            cursor.execute("""
+                SELECT
+                    COALESCE(SUM(quantidade), 0)
+                FROM movimentacao_estoque
+                WHERE id_materia_prima = %s
+                AND tipo_movimento = 'saida'
+                AND data_movimento >= %s
+            """, (
+                id_mp,
+                data_inicio
+            ))
+
+            consumo_7d = float(cursor.fetchone()[0] or 0)
+
+            # ===================================================
+            # MÉDIA DIÁRIA
+            # ===================================================
+
+            media_diaria = consumo_7d / 7 if consumo_7d > 0 else 0
+
+            # ===================================================
+            # PREVISÃO 15 DIAS
+            # ===================================================
+
+            consumo_15d = round(media_diaria * 15, 2)
+
+            # ===================================================
+            # PREVISÃO 7 DIAS
+            # ===================================================
+
+            consumo_previsto = round(media_diaria * 7, 2)
+
+            # ===================================================
+            # DIAS RESTANTES
+            # ===================================================
+
+            if media_diaria > 0:
+                dias_restantes = round(estoque_atual / media_diaria, 1)
+            else:
+                dias_restantes = 999
+
+            # ===================================================
+            # RISCO
+            # ===================================================
+
+            if dias_restantes < 2:
+                risco = "CRÍTICO"
+
+            elif dias_restantes < 5:
+                risco = "ALTO"
+
+            elif dias_restantes < 10:
+                risco = "MODERADO"
+
+            else:
+                risco = "BAIXO"
+
+            # ===================================================
+            # SUGESTÃO DE COMPRA
+            # ===================================================
+
+            sugestao_compra = max(
+                round(consumo_15d - estoque_atual, 2),
+                estoque_minimo
+            )
+
+            previsoes.append({
+
+                "materia_prima": nome,
+                "unidade": unidade,
+
+                "estoque_atual": round(estoque_atual, 2),
+
+                "media_diaria": round(media_diaria, 2),
+
+                "consumo_previsto": consumo_previsto,
+
+                "consumo_15d": consumo_15d,
+
+                "dias_restantes": dias_restantes,
+
+                "risco": risco,
+
+                "sugestao_compra": round(sugestao_compra, 2)
+
+            })
+
+        return previsoes
+
+    except Exception as e:
+
+        print(f"Erro previsão demanda: {e}")
+
+        return []
+
+    finally:
+
+        if conn:
+            conn.close()

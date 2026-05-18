@@ -91,28 +91,175 @@ def registrar_log_db(usuario, acao, modulo, detalhe):
         if conn:
             conn.close()
 
+# =========================================================
+# AUDITORIA - LISTAGEM PADRÃO
+# =========================================================
+
 def listar_logs_auditoria(limite=100):
+
     conn = None
+
     try:
+
         conn = conectar()
-        # Usamos DictCursor para que o HTML possa acessar por log['usuario']
+
         from psycopg2.extras import DictCursor
+
         cursor = conn.cursor(cursor_factory=DictCursor)
-        
+
         cursor.execute("""
-            SELECT usuario, acao, modulo, detalhe, data 
-            FROM logs 
-            ORDER BY data DESC 
+            SELECT
+                usuario,
+                acao,
+                modulo,
+                detalhe,
+                data
+            FROM logs
+            ORDER BY data DESC
             LIMIT %s
         """, (limite,))
-        
+
         logs = cursor.fetchall()
+
         cursor.close()
+
         return logs
+
     except Exception as e:
+
         print(f"Erro ao listar auditoria: {e}")
+
         return []
+
     finally:
+
+        if conn:
+            conn.close()
+
+
+# =========================================================
+# AUDITORIA - FILTRO AVANÇADO
+# =========================================================
+
+def listar_logs_auditoria_filtrado(
+    limite=200,
+    usuario=None,
+    acao=None,
+    modulo=None,
+    data_inicio=None,
+    data_fim=None
+):
+
+    conn = None
+
+    try:
+
+        conn = conectar()
+
+        from psycopg2.extras import DictCursor
+
+        cursor = conn.cursor(cursor_factory=DictCursor)
+
+        query = """
+            SELECT
+                usuario,
+                acao,
+                modulo,
+                detalhe,
+                data
+            FROM logs
+            WHERE 1=1
+        """
+
+        parametros = []
+
+        # =====================================================
+        # FILTRO USUÁRIO
+        # =====================================================
+
+        if usuario:
+
+            query += """
+                AND LOWER(usuario) LIKE LOWER(%s)
+            """
+
+            parametros.append(f"%{usuario}%")
+
+        # =====================================================
+        # FILTRO AÇÃO
+        # =====================================================
+
+        if acao:
+
+            query += """
+                AND LOWER(acao) LIKE LOWER(%s)
+            """
+
+            parametros.append(f"%{acao}%")
+
+        # =====================================================
+        # FILTRO MÓDULO
+        # =====================================================
+
+        if modulo:
+
+            query += """
+                AND LOWER(modulo) LIKE LOWER(%s)
+            """
+
+            parametros.append(f"%{modulo}%")
+
+        # =====================================================
+        # DATA INÍCIO
+        # =====================================================
+
+        if data_inicio:
+
+            query += """
+                AND DATE(data) >= %s
+            """
+
+            parametros.append(data_inicio)
+
+        # =====================================================
+        # DATA FINAL
+        # =====================================================
+
+        if data_fim:
+
+            query += """
+                AND DATE(data) <= %s
+            """
+
+            parametros.append(data_fim)
+
+        # =====================================================
+        # ORDENAÇÃO
+        # =====================================================
+
+        query += """
+            ORDER BY data DESC
+            LIMIT %s
+        """
+
+        parametros.append(limite)
+
+        cursor.execute(query, tuple(parametros))
+
+        logs = cursor.fetchall()
+
+        cursor.close()
+
+        return logs
+
+    except Exception as e:
+
+        print(f"Erro ao listar auditoria filtrada: {e}")
+
+        return []
+
+    finally:
+
         if conn:
             conn.close()
 
@@ -590,3 +737,10 @@ def atualizar_materia_prima(
 
         if conn:
             conn.close()
+
+
+# =========================================================
+# 
+# =========================================================
+
+

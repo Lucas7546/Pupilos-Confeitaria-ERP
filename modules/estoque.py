@@ -424,3 +424,60 @@ def previsao_demanda():
 
         if conn:
             conn.close()
+
+
+# =========================================================
+# EXTRATO DE MOVIMENTAÇÕES UNIFICADO (HISTÓRICO CRONOLÓGICO)
+# =========================================================
+def obter_historico_movimentacoes():
+    con = None
+    try:
+        con = conectar()
+        cur = con.cursor()
+        
+        # A query faz um COALESCE para identificar o nome do item independente do tipo
+        # E identifica a categoria real do item movimentado
+        cur.execute("""
+            SELECT 
+                mov.id_movimentacao,
+                mov.data_movimento,
+                COALESCE(mp.nome, s.nome, p.nome) AS nome_item,
+                CASE 
+                    WHEN mov.id_materia_prima IS NOT NULL THEN 'Matéria-Prima'
+                    WHEN mov.id_subproduto IS NOT NULL THEN 'Subproduto'
+                    WHEN mov.id_produto IS NOT NULL THEN 'Produto Final'
+                    ELSE 'Desconhecido'
+                END AS tipo_item,
+                mov.tipo_movimento,
+                mov.quantidade,
+                COALESCE(mp.unidade_medida, s.unidade_medida, 'un') AS unidade,
+                mov.observacao
+            FROM movimentacao_estoque mov
+            LEFT JOIN materia_prima mp ON mov.id_materia_prima = mp.id_materia_prima
+            LEFT JOIN subprodutos s ON mov.id_subproduto = s.id_subproduto
+            LEFT JOIN produtos p ON mov.id_produto = p.id_produto
+            ORDER BY mov.data_movimento DESC, mov.id_movimentacao DESC
+        """)
+        
+        registros = cur.fetchall()
+        historico = []
+        
+        for reg in registros:
+            historico.append({
+                "id": reg[0],
+                "data": reg[1].strftime("%d/%m/%Y %H:%M") if reg[1] else "-",
+                "item": reg[2],
+                "tipo_item": reg[3],
+                "tipo_movimento": reg[4].upper(), # ENTRADA, SAIDA, AJUSTE
+                "quantidade": float(reg[5]),
+                "unidade": reg[6],
+                "observacao": reg[7]
+            })
+            
+        return historico
+    except Exception as e:
+        print(f"Erro ao obter historico unificado: {e}")
+        return []
+    finally:
+        if con:
+            con.close()

@@ -301,30 +301,69 @@ def dashboard():
 @login_required
 @acesso_requerido("estoque")
 def estoque_page():
-    return render_template("estoque.html", materias=estoque.listar_materia_prima())
+    # Buscando as 3 listas do seu sistema de estoque
+    materias_lista = estoque.listar_materia_prima()
+    subprodutos_lista = estoque.listar_subprodutos()  # Ajuste o nome do método se for diferente no seu sistema
+    produtos_lista = estoque.listar_produtos_finais()  # Ajuste o nome do método se for diferente no seu sistema
+
+    return render_template(
+        "estoque.html", 
+        materias=materias_lista, 
+        subprodutos=subprodutos_lista, 
+        produtos=produtos_lista
+    )
 
 @app.route("/compras")
 @login_required
 def pagina_compras():
     return render_template("compras.html", materias=estoque.listar_materia_prima())
 
-@app.route("/registrar-compra", methods=["POST"])
-@login_required
-def registrar_compra():
-    try:
-        id_mp = int(request.form["id_materia_prima"])
-        qtd = float(request.form["quantidade"].replace(",", "."))
-        preco_total = float(request.form["preco_total"].replace(",", "."))
-        
-        preco_unitario = preco_total / qtd
-        estoque.entrada_estoque(id_mp, qtd)
-        estoque.atualizar_preco_mp(id_mp, preco_unitario)
 
-        registrar_log("COMPRA", "ESTOQUE", f"MP ID {id_mp} | Qtd {qtd}")
-        flash("Compra registrada!", "success")
+@app.route("/registrar-producao", methods=["POST"])
+@login_required
+@acesso_requerido("estoque")
+def registrar_producao():
+    try:
+        tipo_item = request.form.get("tipo_item") # 'subproduto' ou 'produto'
+        id_item = int(request.form.get("id_item"))
+        qtd = float(request.form.get("quantidade").replace(",", "."))
+        
+        # Aqui dispara a sua regra de negócio interna para dar entrada no item produzido
+        # e dar a baixa automática nos ingredientes utilizados da receita.
+        if tipo_item == "subproduto":
+            estoque.entrada_subproduto(id_item, qtd) # Função que implementaremos no estoque
+            registrar_log("PRODUCAO", "SUBPRODUTO", f"ID {id_item} | Qtd {qtd}")
+        elif tipo_item == "produto":
+            estoque.entrada_produto(id_item, qtd)
+            registrar_log("PRODUCAO", "PRODUTO", f"ID {id_item} | Qtd {qtd}")
+            
+        flash("Produção registrada com sucesso e estoque atualizado!", "success")
     except Exception as e:
-        flash(f"Erro: {e}", "danger")
+        flash(f"Erro ao registrar produção: {e}", "danger")
+        
     return redirect("/estoque")
+
+@app.route("/estoque")
+@login_required
+@acesso_requerido("estoque")
+def estoque_page():
+    # 1. Carrega as matérias-primas (mantendo o seu padrão)
+    materias_lista = estoque.listar_materia_prima()
+    
+    # 2. Carrega os subprodutos e produtos finais (para alimentar as novas abas)
+    subprodutos_lista = estoque.listar_subprodutos() if hasattr(estoque, 'listar_subprodutos') else []
+    produtos_lista = produtos.listar_todos() if 'produtos' in globals() else []
+    
+    # 3. Carrega o histórico cronológico unificado (O Kardex temporal)
+    historico_movimentos = estoque.obter_historico_movimentacoes() if hasattr(estoque, 'obter_historico_movimentacoes') else []
+    
+    return render_template(
+        "estoque.html", 
+        materias=materias_lista,
+        subprodutos=subprodutos_lista,
+        produtos=produtos_lista,
+        historico=historico_movimentos
+    )
 
 
 @app.route("/editar-produto/<int:id_produto>", methods=["POST"])
@@ -416,6 +455,69 @@ def processar_edicao_mp(id_mp):
 
     return redirect(url_for('estoque_page'))
 
+
+@app.route("/estoque/balanco-diario")
+@login_required
+@acesso_requerido("estoque")  # Mantendo o padrão de segurança do seu sistema
+def balanco_diario_page():
+    try:
+        # 1. Busca a lista de produtos cadastrados para pegar o Saldo Atual
+        # Esperado que retorne tuplas onde: p[0]=id, p[1]=nome, p[4]=estoque_atual (ou ajuste o índice)
+        lista_produtos = estoque.listar_produtos_finais() 
+        
+        # 2. Busca o histórico de vendas completo
+        historico_vendas = estoque.listar_vendas() # Modifique para a sua função real de listar vendas se o nome for diferente
+        
+        # Pegar a data de hoje no formato do seu sistema (ex: AAAA-MM-DD)
+        hoje_str = datetime.now().strftime("%Y-%m-%d")
+        
+        balanco = []
+        
+        for p in lista_produtos:
+            id_produto = p[0]
+            nome_produto = p[1]
+            
+            # Tratamento de índice: Garanta qual posição está o saldo atual de produtos.
+            # Se for na posição 4 (como na tabela global), usamos p[4]. Se não houver, assume 0.
+            sobrou = p[4] if len(p) > 4 else 0 
+            
+            # Calcular quanto vendeu desse produto especificamente HOJE
+            vendido_hoje = 0
+            for v in historico_vendas:
+                # Se os dados da venda forem dicionário ou objeto:
+                if hasattr(v, 'id_produto') or isinstance(v, dict):
+                    v_id = v.get('id_produto') if isinstance(v, dict) else v.id_produto
+                    v_data = v.get('data') if isinstance(v, dict) else v.data
+                    v_qtd = v.get('quantidade') if isinstance(v, dict) else v.quantidade
+                else:
+                    # Se for tupla pura direto do banco (Ajuste os índices se necessário)
+                    v_id = v[2]    # Ex: ID do produto vendido
+                    v_data = v[1]  # Ex: Data da venda
+                    v_qtd = v[3]   # Ex: Quantidade vendida
+                
+                # Forçar conversão da data para string para comparar com o dia de hoje
+                v_data_str = v_data if isinstance(v, str) else v_data.strftime("%Y-%m-%d") if hasattr(v_data, 'strftime') else str(v_data)
+                
+                if str(v_id) == str(id_produto) and hoje_str in v_data_str:
+                    vendido_hoje += int(v_qtd)
+            
+            # Engenharia reversa: Fabricado = Sobra + Vendas
+            feito_hoje = sobrou + vendido_hoje
+            
+            balanco.append({
+                "id": id_produto,
+                "nome": nome_produto,
+                "feito": feito_hoje,
+                "vendido": vendido_hoje,
+                "sobrou": sobrou
+            })
+            
+        return render_template("balanco_diario.html", data_hoje=datetime.now().strftime("%d/%m/%Y"), balanco=balanco)
+        
+    except Exception as e:
+        flash(f"Erro ao gerar balanço diário: {e}", "danger")
+        return redirect(url_for('estoque_page'))
+
 # =========================
 # CADASTRO PRODUTOS/MATERIA-PRIMA
 # =========================
@@ -425,13 +527,20 @@ def processar_edicao_mp(id_mp):
 def render_cadastro():
     try:
         # Carrega dados para preencher os selects da Ficha Técnica
-        # Certifique-se que seus módulos 'produtos' e 'estoque' retornam listas
         lista_produtos = produtos.listar_todos() 
         lista_materias = estoque.listar_materia_prima()
         
+        # Correção da linha do hasattr e alinhamento do Python
+        if hasattr(estoque, 'listar_subprodutos'):
+            lista_subprodutos = estoque.listar_subprodutos()
+        else:
+            lista_subprodutos = []
+        
+        # IMPORTANTE: Adicionado 'subprodutos=lista_subprodutos' para enviar ao HTML
         return render_template("cadastro.html", 
                                produtos=lista_produtos, 
-                               materias=lista_materias)
+                               materias=lista_materias,
+                               subprodutos=lista_subprodutos)
     except Exception as e:
         print(f"Erro ao carregar cadastro: {e}")
         flash(f"Erro ao carregar dados: {e}", "danger")
@@ -638,6 +747,109 @@ def deletar_venda(id_venda):
         )
 
     return redirect(url_for('vendas_page'))
+
+
+@app.route("/estoque/fechamento")
+@login_required
+@acesso_requerido("estoque")
+def fechamento_diario():
+    # Código sênior que vai buscar:
+    # 1. Quantidade fabricada hoje de cada produto
+    # 2. Quantidade vendida hoje de cada produto
+    # 3. Cálculo matemático (Fabricado - Vendido) para mostrar a sobra
+    dados_fechamento = estoque.obter_balanco_diario() 
+    return render_template("fechamento.html", balanco=dados_fechamento)
+
+# =========================================================
+# NEW AÇÃO: CADASTRAR SUBPRODUTO / MATÉRIA-BASE (Ex: Brownie)
+# =========================================================
+@app.route("/cadastrar-subproduto", methods=["POST"])
+@login_required
+def cadastrar_subproduto():
+    try:
+        nome = request.form.get("nome").strip()
+        unidade = request.form.get("unidade").strip()
+        estoque_min = float(request.form.get("estoque_minimo", "0").replace(",", "."))
+        
+        # O estoque inicial do subproduto começa zerado (ele entra quando for produzido!)
+        if estoque.cadastrar_subproduto_banco(nome, unidade, estoque_min):
+            registrar_log(session.get('user', 'admin'), "CADASTRO", "SUBPRODUTO", f"Novo subproduto: {nome}")
+            flash(f"Subproduto '{nome}' cadastrado com sucesso!", "success")
+        else:
+            flash("Erro ao cadastrar subproduto no banco.", "danger")
+    except Exception as e:
+        flash(f"Erro nos dados do subproduto: {e}", "danger")
+        
+    return redirect(url_for('render_cadastro'))
+
+
+# =========================================================
+# NEW AÇÃO: VINCULAR RECEITA DO SUBPRODUTO (Ficha Técnica do Brownie)
+# =========================================================
+@app.route("/vincular-receita-subproduto", methods=["POST"])
+@login_required
+def vincular_receita_subproduto():
+    try:
+        id_sub = request.form.get("id_subproduto")
+        id_m = request.form.get("id_materia_prima")
+        qtd = float(request.form.get("quantidade").replace(",", "."))
+        
+        if estoque.vincular_insumo_subproduto(id_sub, id_m, qtd):
+            flash("Ingrediente vinculado ao subproduto com sucesso!", "success")
+        else:
+            flash("Erro ao vincular ingrediente ao subproduto.", "danger")
+    except Exception as e:
+        flash(f"Erro ao vincular: {e}", "danger")
+        
+    return redirect(url_for('render_cadastro'))
+
+
+# =========================================================
+# NEW AÇÃO: VINCULAR SUBPRODUTO AO PRODUTO FINAL (Ex: Brownie no Copo da Felicidade)
+# =========================================================
+@app.route("/vincular-subproduto-produto", methods=["POST"])
+@login_required
+def vincular_subproduto_produto():
+    try:
+        id_p = request.form.get("id_produto")
+        id_sub = request.form.get("id_subproduto")
+        qtd = float(request.form.get("quantidade").replace(",", "."))
+        
+        if produtos.vincular_subproduto_ao_produto(id_p, id_sub, qtd):
+            flash("Subproduto/Matéria-base vinculada ao produto com sucesso!", "success")
+        else:
+            flash("Erro ao vincular subproduto ao produto.", "danger")
+    except Exception as e:
+        flash(f"Erro: {e}", "danger")
+        
+    return redirect(url_for('render_cadastro'))
+
+# =========================================================
+# NEW ROTA: EXCLUIR SUBPRODUTO (Segurança máxima)
+# =========================================================
+@app.route("/excluir-subproduto/<int:id_subproduto>")
+@login_required
+def deletar_subproduto(id_subproduto):
+    if session.get("nivel") not in ["admin", "socios"]:
+        flash("Acesso negado! Apenas sócios podem excluir subprodutos.", "danger")
+        return redirect(url_for('estoque_page'))
+
+    try:
+        sucesso = estoque.excluir_subproduto_banco(id_subproduto)
+        if sucesso:
+            registrar_log(
+                session.get('user'),
+                "EXCLUIR",
+                "SUBPRODUTO",
+                f"Removeu subproduto ID {id_subproduto}"
+            )
+            flash("Subproduto removido com sucesso!", "success")
+        else:
+            flash("Erro ao excluir subproduto.", "danger")
+    except Exception as e:
+        flash(f"Erro ao excluir subproduto: {e}", "danger")
+
+    return redirect(url_for('estoque_page'))
 
 # --- ROTA: PRECIFICAÇÃO ---
 from psycopg2.extras import RealDictCursor
@@ -1417,39 +1629,53 @@ def importar_ifood():
 def ficha_tecnica(id_produto):
     con = None
     try:
-        con = conectar() # Usa a sua função oficial de conexão
+        con = conectar()
         cursor = con.cursor()
         
-        # 1. Busca os dados básicos do produto (Ajustado para suas colunas: id, nome, preco_venda)
+        # 1. Busca os dados básicos do produto principal
         cursor.execute("SELECT id, nome, preco_venda FROM produtos WHERE id = %s", (id_produto,))
         produto = cursor.fetchone()
         
         if not produto:
             flash("Produto não encontrado!", "danger")
-            return redirect(url_for('dashboard'))
+            return redirect("/estoque")
 
-        # 2. Busca os ingredientes (Ajustado para: id_materia_prima, quantidade_utilizada, preco_unitario)
+        # 2. Query Avançada: Busca MATÉRIAS-PRIMAS diretas E SUBPRODUTOS vinculados à receita do produto
         query_itens = """
             SELECT 
+                r.id as id_vinculo,
+                'materia_prima' as tipo,
+                mp.id_materia_prima as id_item,
                 mp.nome as item, 
                 r.quantidade_utilizada as qtd, 
                 mp.unidade_medida as unidade,
                 (r.quantidade_utilizada * mp.preco_unitario) as custo_subtotal
             FROM receitas r
             JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
+            WHERE r.id_produto = %s AND r.id_subproduto IS NULL
+            
+            UNION ALL
+            
+            SELECT 
+                r.id as id_vinculo,
+                'subproduto' as tipo,
+                sub.id as id_item,
+                sub.nome as item, 
+                r.quantidade_utilizada as qtd, 
+                sub.unidade_medida as unidade,
+                (r.quantidade_utilizada * IFNULL(sub.custo_producao_unitario, 0)) as custo_subtotal
+            FROM receitas r
+            JOIN subprodutos sub ON r.id_subproduto = sub.id
             WHERE r.id_produto = %s
         """
-        cursor.execute(query_itens, (id_produto,))
-        
+        cursor.execute(query_itens, (id_produto, id_produto))
         colunas = [desc[0] for desc in cursor.description]
         itens = [dict(zip(colunas, row)) for row in cursor.fetchall()]
         
-        # 3. Cálculos Financeiros
+        # 3. Cálculos Financeiros Integrados
         total_custo = sum(float(item['custo_subtotal'] or 0) for item in itens)
-        preco_venda = float(produto[2] or 0) # produto[2] é o preco_venda
+        preco_venda = float(produto[2] or 0)
         lucro = preco_venda - total_custo
-        
-        # Margem de lucro
         margem = (lucro / preco_venda * 100) if preco_venda > 0 else 0
         
         return render_template(
@@ -1463,10 +1689,36 @@ def ficha_tecnica(id_produto):
     except Exception as e:
         print(f"Erro na ficha técnica: {e}")
         flash(f"Erro ao carregar ficha técnica: {e}", "danger")
-        return redirect(url_for('dashboard'))
+        return redirect("/estoque")
     finally:
-        if con:
-            con.close()
+        if con: con.close()
+
+
+@app.route("/ficha-tecnica/editar-item/<int:id_produto>", methods=["POST"])
+@login_required
+def editar_item_ficha(id_produto):
+    con = None
+    try:
+        id_vinculo = int(request.form["id_vinculo"])
+        nova_qtd = float(request.form["quantidade"].replace(",", "."))
+        
+        con = conectar()
+        cursor = con.cursor()
+        
+        # Atualiza a quantidade do ingrediente ou subproduto na tabela relacional receitas
+        cursor.execute("""
+            UPDATE receitas 
+            SET quantidade_utilizada = %s 
+            WHERE id = %s AND id_produto = %s
+        """, (nova_qtd, id_vinculo, id_produto))
+        
+        con.commit()
+        flash("Quantidade da receita ajustada com sucesso!", "success")
+    except Exception as e:
+        flash(f"Erro ao salvar alteração da ficha: {e}", "danger")
+    finally:
+        if con: con.close()
+    return redirect(f"/ficha-tecnica/{id_produto}")
 # =========================================================
 # PREVISÃO DE DEMANDA IA
 # =========================================================
@@ -1889,6 +2141,134 @@ def exportar_previsao_pdf():
         download_name="previsao_demanda.pdf",
         mimetype="application/pdf"
     )
+
+
+
+# =========================================================
+# LISTAR SUBPRODUTOS (Calculando saldo em tempo real)
+# =========================================================
+def listar_subprodutos():
+    con = None
+    try:
+        con = conectar()
+        cur = con.cursor()
+
+        # Calcula o saldo real olhando o histórico de movimentações da tabela modificada
+        cur.execute("""
+            SELECT 
+                s.id_subproduto,
+                s.nome,
+                s.unidade_medida,
+                s.estoque_minimo,
+                s.preco_custo_unidade,
+                COALESCE(SUM(CASE WHEN mov.tipo_movimento IN ('entrada', 'ajuste') THEN mov.quantidade ELSE 0 END), 0) -
+                COALESCE(SUM(CASE WHEN mov.tipo_movimento = 'saida' THEN mov.quantidade ELSE 0 END), 0) as saldo
+            FROM subprodutos s
+            LEFT JOIN movimentacao_estoque mov ON s.id_subproduto = mov.id_subproduto
+            WHERE s.ativo = 1
+            GROUP BY s.id_subproduto, s.nome, s.unidade_medida, s.estoque_minimo, s.preco_custo_unidade
+            ORDER BY s.nome ASC
+        """)
+
+        subprodutos = cur.fetchall()
+        lista_final = []
+
+        for s in subprodutos:
+            saldo = float(s[5])
+            status = "BAIXO" if saldo <= float(s[3]) else "OK"
+            
+            lista_final.append((
+                s[0],               # id_subproduto
+                s[1],               # nome
+                s[2],               # unidade_medida
+                float(s[3]),        # estoque_minimo
+                saldo,              # saldo atual calculado
+                status,             # status ("BAIXO" ou "OK")
+                float(s[4])         # preco_custo_unidade
+            ))
+
+        return lista_final
+    except Exception as e:
+        print(f"Erro ao listar subprodutos: {e}")
+        return []
+    finally:
+        if con:
+            con.close()
+
+
+# =========================================================
+# CADASTRAR SUBPRODUTO / MATÉRIA-BASE
+# =========================================================
+def cadastrar_subproduto_banco(nome, unidade, estoque_minimo):
+    con = None
+    try:
+        con = conectar()
+        cur = con.cursor()
+        
+        # O subproduto nasce sem preço e sem estoque. O estoque e custo entram quando houver produção!
+        cur.execute("""
+            INSERT INTO subprodutos (nome, unidade_medida, estoque_minimo)
+            VALUES (%s, %s, %s)
+        """, (nome, unidade, estoque_minimo))
+        
+        con.commit()
+        return True
+    except Exception as e:
+        print(f"Erro ao cadastrar subproduto no banco: {e}")
+        return False
+    finally:
+        if con:
+            con.close()
+
+
+# =========================================================
+# VINCULAR RECEITA DO SUBPRODUTO (Ficha Técnica do Subproduto)
+# =========================================================
+def vincular_insumo_subproduto(id_subproduto, id_materia_prima, quantidade):
+    con = None
+    try:
+        con = conectar()
+        cur = con.cursor()
+        
+        cur.execute("""
+            INSERT INTO receitas_subprodutos (id_subproduto, id_materia_prima, quantidade_utilizada)
+            VALUES (%s, %s, %s)
+        """, (int(id_subproduto), int(id_materia_prima), float(quantidade)))
+        
+        con.commit()
+        return True
+    except Exception as e:
+        print(f"Erro ao vincular insumo ao subproduto: {e}")
+        return False
+    finally:
+        if con:
+            con.close()
+
+
+# =========================================================
+# EXCLUIR SUBPRODUTO (Desativação Lógica)
+# =========================================================
+def excluir_subproduto_banco(id_subproduto):
+    con = None
+    try:
+        con = conectar()
+        cur = con.cursor()
+        
+        # Em vez de deletar de vez e quebrar históricos, mudamos para inativo (ativo = 0)
+        cur.execute("""
+            UPDATE subprodutos 
+            SET ativo = 0 
+            WHERE id_subproduto = %s
+        """, (id_subproduto,))
+        
+        con.commit()
+        return True
+    except Exception as e:
+        print(f"Erro ao excluir subproduto do banco: {e}")
+        return False
+    finally:
+        if con:
+            con.close()
 # =========================
 # INICIALIZAÇÃO
 # =========================
@@ -1896,3 +2276,4 @@ if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+

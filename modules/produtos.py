@@ -163,3 +163,39 @@ def calcular_capacidade_geral():
             con.close()
 
     return capacidade_total
+
+
+def vincular_subproduto_ao_produto(id_produto, id_subproduto, quantidade):
+    con = None
+    try:
+        con = conectar()
+        cur = con.cursor()
+        
+        # 1. Verifica se esse subproduto já está vinculado a este produto final
+        cur.execute("""
+            SELECT id_receita FROM receitas 
+            WHERE id_produto = %s AND id_subproduto = %s
+        """, (id_produto, id_subproduto))
+        existe = cur.fetchone()
+        
+        if existe:
+            # 2. Se já existe, atualiza a quantidade utilizada
+            cur.execute("""
+                UPDATE receitas SET quantidade_utilizada = %s 
+                WHERE id_receita = %s
+            """, (quantidade, existe[0]))
+        else:
+            # 3. Se não existe, insere um novo vínculo (deixando id_materia_prima como NULL)
+            cur.execute("""
+                INSERT INTO receitas (id_produto, id_subproduto, id_materia_prima, quantity_utilizada) 
+                VALUES (%s, %s, NULL, %s)
+            """, (id_produto, id_subproduto, quantidade))
+            
+        con.commit()
+        return True
+    except Exception as e:
+        print(f"Erro ao vincular subproduto ao produto: {e}")
+        return False
+    finally:
+        if con:
+            con.close()

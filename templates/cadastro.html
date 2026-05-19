@@ -2,7 +2,6 @@
 
 {% block content %}
 <div class="container-fluid py-4 animate-in">
-    <!-- HEADER -->
     <div class="mb-5 px-md-4">
         <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.5rem; letter-spacing: -1.5px;">
             📝 Central de <span class="text-warning">Cadastros</span>
@@ -11,7 +10,6 @@
     </div>
 
     <div class="row g-4 px-md-4">
-        <!-- Card 1: Matéria-Prima -->
         <div class="col-lg-6">
             <div class="card h-100 bg-dark-card border-0 shadow-lg p-2">
                 <div class="card-header border-0 bg-transparent py-4 px-4">
@@ -60,9 +58,8 @@
             </div>
         </div>
 
-        <!-- Card 2: Produto Final -->
-        <div class="col-lg-6">
-            <div class="card h-100 bg-dark-card border-0 shadow-lg p-2">
+        <div class="col-lg-6 d-flex flex-column g-4">
+            <div class="card bg-dark-card border-0 shadow-lg p-2 mb-4 flex-fill">
                 <div class="card-header border-0 bg-transparent py-4 px-4">
                     <h4 class="fw-bold text-info mb-0"><i class="bi bi-cake2 me-2"></i>Produto Final</h4>
                 </div>
@@ -97,18 +94,49 @@
                     </form>
                 </div>
             </div>
+
+            <div class="card bg-dark-card border-0 shadow-lg p-2 flex-fill">
+                <div class="card-header border-0 bg-transparent py-4 px-4">
+                    <h4 class="fw-bold text-violet mb-0"><i class="bi bi-box-seam me-2"></i>Subproduto (Matéria-Base)</h4>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <form action="/cadastrar-subproduto" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label text-white-50 small fw-bold">NOME DA PRODUÇÃO INTERNA</label>
+                            <input name="nome" type="text" class="form-control form-control-lg custom-input" placeholder="Ex: Massa Base Brownie, Brigadeiro Belga" required>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label text-white-50 small fw-bold">UNIDADE DE MEDIDA (RENDIMENTO)</label>
+                                <select name="unidade" class="form-select custom-input" required>
+                                    <option value="kg">Quilograma (kg)</option>
+                                    <option value="g">Grama (g)</option>
+                                    <option value="un">Unidade/Tabuleiro (un)</option>
+                                    <option value="l">Litro (L)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label text-white-50 small fw-bold">ESTOQUE MÍNIMO DE SEGURANÇA</label>
+                                <input type="number" step="0.01" name="estoque_minimo" class="form-control custom-input" placeholder="Ex: 2.0" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-violet w-100 fw-bold py-3 text-white shadow-sm rounded-4 transition-btn">
+                            <i class="bi bi-layers-half me-2"></i>SALVAR SUBPRODUTO NO BANCO
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
 
-        <!-- Card 3: Engenharia de Produto -->
         <div class="col-12 mt-4">
             <div class="card bg-dark-card border-0 shadow-lg">
                 <div class="card-header border-0 bg-success bg-opacity-10 py-4 px-4">
-                    <h4 class="fw-bold text-success mb-0"><i class="bi bi-diagram-3 me-2"></i>Engenharia de Produto (Ficha Técnica)</h4>
+                    <h4 class="fw-bold text-success mb-0"><i class="bi bi-diagram-3 me-2"></i>Engenharia de Produto (Insumo direto no Produto Final)</h4>
                 </div>
                 <div class="card-body px-4 py-4">
                     <form action="/vincular-receita" method="POST" class="row g-3 align-items-end">
                         <div class="col-md-4">
-                            <label class="form-label text-white-50 small fw-bold">PRODUTO BASE</label>
+                            <label class="form-label text-white-50 small fw-bold">PRODUTO FINAL</label>
                             <select name="id_produto" class="form-select custom-input" required>
                                 <option value="" disabled selected>Selecione o produto...</option>
                                 {% for p in produtos %}
@@ -117,7 +145,7 @@
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label text-white-50 small fw-bold">INGREDIENTE UTILIZADO</label>
+                            <label class="form-label text-white-50 small fw-bold">INGREDIENTE UTILIZADO DIRETO</label>
                             <select name="id_materia_prima" class="form-select custom-input" required>
                                 <option value="" disabled selected>Selecione o insumo...</option>
                                 {% for m in materias %}
@@ -131,7 +159,85 @@
                         </div>
                         <div class="col-md-2">
                             <button type="submit" class="btn btn-success w-100 fw-bold py-2 rounded-3 transition-btn">
-                                <i class="bi bi-plus-lg"></i> ADICIONAR
+                                <i class="bi bi-plus-lg"></i> VINCULAR
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 mt-4">
+            <div class="card bg-dark-card border-0 shadow-lg">
+                <div class="card-header border-0 bg-warning bg-opacity-10 py-4 px-4">
+                    <h4 class="fw-bold text-warning mb-0"><i class="bi bi-tools me-2"></i>Composição de Subproduto (Ficha Técnica da Massa/Recheio)</h4>
+                </div>
+                <div class="card-body px-4 py-4">
+                    <form action="/vincular-receita-subproduto" method="POST" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label text-white-50 small fw-bold">SUBPRODUTO ALVO</label>
+                            <select name="id_subproduto" class="form-select custom-input" required>
+                                <option value="" disabled selected>Selecione o subproduto...</option>
+                                {% for s in subprodutos %}
+                                <option value="{{ s[0] }}">{{ s[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-white-50 small fw-bold">INGREDIENTE COMPONENTE</label>
+                            <select name="id_materia_prima" class="form-select custom-input" required>
+                                <option value="" disabled selected>Selecione o insumo...</option>
+                                {% for m in materias %}
+                                <option value="{{ m[0] }}">{{ m[1] }} ({{ m[2] }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-white-50 small fw-bold">QTD UTILIZADA</label>
+                            <input type="number" step="0.001" name="quantidade" class="form-control custom-input" placeholder="Ex: 0.500" required>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-warning text-dark w-100 fw-bold py-2 rounded-3 transition-btn">
+                                <i class="bi bi-plus-lg"></i> COMPOR
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 mt-4 mb-5">
+            <div class="card bg-dark-card border-0 shadow-lg">
+                <div class="card-header border-0 bg-info bg-opacity-10 py-4 px-4">
+                    <h4 class="fw-bold text-info mb-0"><i class="bi bi-layers me-2"></i>Montagem Final (Inserir Subproduto no Produto Final)</h4>
+                </div>
+                <div class="card-body px-4 py-4">
+                    <form action="/vincular-subproduto-produto" method="POST" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label text-white-50 small fw-bold">PRODUTO DESTINO</label>
+                            <select name="id_produto" class="form-select custom-input" required>
+                                <option value="" disabled selected>Selecione o produto final...</option>
+                                {% for p in produtos %}
+                                <option value="{{ p[0] }}">{{ p[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-white-50 small fw-bold">SUBPRODUTO A SER INSERIDO</label>
+                            <select name="id_subproduto" class="form-select custom-input" required>
+                                <option value="" disabled selected>Selecione a matéria-base...</option>
+                                {% for s in subprodutos %}
+                                <option value="{{ s[0] }}">{{ s[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-white-50 small fw-bold">QTD NO PRODUTO</label>
+                            <input type="number" step="0.001" name="quantidade" class="form-control custom-input" placeholder="Ex: 0.060" required>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-info text-white w-100 fw-bold py-2 rounded-3 transition-btn">
+                                <i class="bi bi-link-45deg"></i> ACOPLAR
                             </button>
                         </div>
                     </form>
@@ -143,6 +249,9 @@
 
 <style>
     .bg-dark-card { background: #1e293b !important; border-radius: 24px; }
+    .text-violet { color: #a78bfa !important; }
+    .btn-violet { background-color: #7c3aed !important; border-color: #7c3aed !important; }
+    .btn-violet:hover { background-color: #6d28d9 !important; border-color: #6d28d9 !important; }
     .custom-input {
         background-color: #0f172a !important;
         border: 1px solid #334155 !important;

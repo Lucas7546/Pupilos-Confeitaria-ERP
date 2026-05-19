@@ -769,27 +769,58 @@ def deletar_mp(id_mp):
         return redirect("/estoque")
 
 
-# --- EXCLUIR/ESTORNAR VENDA ---
-@app.route("/excluir-venda/<int:id_venda>", methods=["POST"])
+# =========================================================
+# EXCLUIR / ESTORNAR VENDA
+# =========================================================
+@app.route("/deletar-venda/<int:id_venda>")
 @login_required
-@acesso_requerido("vendas")  # Proteção de escopo para o módulo comercial
-def estornar_venda(id_venda):
+@acesso_requerido("vendas")
+def deletar_venda(id_venda):
+
     try:
+
         usuario_atual = session.get("username", "Desconhecido")
-        
-        # Executa o estorno através do módulo comercial correspondente
-        if vendas.excluir_venda(id_venda):
-            registrar_log("ESTORNO", "VENDAS", f"Venda ID {id_venda} cancelada por '{usuario_atual}'")
-            flash("Venda estornada com sucesso e estoque devolvido!", "success")
+
+        # =====================================================
+        # EXECUTA ESTORNO
+        # =====================================================
+
+        sucesso = vendas.excluir_venda(id_venda)
+
+        if sucesso:
+
+            registrar_log(
+                "ESTORNO",
+                "VENDAS",
+                f"Venda ID {id_venda} cancelada por '{usuario_atual}'"
+            )
+
+            flash(
+                "Venda estornada com sucesso e estoque devolvido!",
+                "success"
+            )
+
         else:
-            flash("Não foi possível localizar ou estornar esta venda.", "warning")
-            
+
+            flash(
+                "Não foi possível localizar ou estornar esta venda.",
+                "warning"
+            )
+
     except Exception as e:
+
         print(f"❌ ERRO ROTA EXCLUIR VENDA: {e}")
-        flash(f"Erro crítico no processamento do estorno: {e}", "danger")
-        
-    # Redireciona de volta para o histórico ou painel comercial
-    return redirect(url_for("historico_vendas_page") if "historico_vendas_page" in globals() else url_for("dashboard"))
+
+        flash(
+            f"Erro crítico no processamento do estorno: {e}",
+            "danger"
+        )
+
+    # =====================================================
+    # REDIRECIONA PARA VENDAS
+    # =====================================================
+
+    return redirect("/vendas")
 
 
 @app.route("/estoque/fechamento")
@@ -950,34 +981,45 @@ def precificacao():
 # =====================================================================
 @app.route("/vendas")
 @login_required
-@acesso_requerido("vendas")
-def vendas_page():
+def pagina_vendas():
+
     try:
-        # Tenta buscar produtos com tratamento de exceção
-        try:
-            lista_produtos = produtos.buscar_produto_por_nome("") or []
-        except Exception as err:
-            print(f"⚠️ Falha ao ler produtos.buscar_produto_por_nome: {err}")
+
+        # ==========================================
+        # BUSCA PRODUTOS
+        # ==========================================
+
+        lista_produtos = produtos.buscar_produto_por_nome("")
+
+        if not lista_produtos:
             lista_produtos = []
 
-        # Tenta buscar histórico com tratamento de exceção
-        try:
-            historico = vendas.listar_vendas_recentes() or []
-        except Exception as err:
-            print(f"⚠️ Falha ao ler vendas.listar_vendas_recentes: {err}")
+        # ==========================================
+        # HISTÓRICO VENDAS
+        # ==========================================
+
+        historico = vendas.listar_vendas_recentes()
+
+        if not historico:
             historico = []
-        
-        # Retorna exatamente as chaves de variáveis que seu HTML usa
+
+        # ==========================================
+        # RENDERIZA
+        # ==========================================
+
         return render_template(
             "vendas.html",
             produtos=lista_produtos,
             historico_vendas=historico
         )
-    except Exception as e:
-        print(f"❌ Erro estrutural na rota vendas_page: {e}")
-        flash("Erro ao carregar os dados de vendas.", "danger")
-        return redirect(url_for("dashboard") if "dashboard" in globals() else "/")
 
+    except Exception as e:
+
+        print(f"ERRO PAGINA VENDAS: {e}")
+
+        flash("Erro ao carregar os dados de vendas.", "danger")
+
+        return redirect("/")
 
 @app.route("/vender", methods=["POST"])
 @login_required

@@ -351,53 +351,71 @@ def registrar_producao():
 @app.route("/estoque", methods=["GET"])
 @login_required
 def estoque_painel():
-    """Lista as matérias-primas calculando o saldo real via movimentacoes."""
+
     try:
+
+        # =====================================================
+        # MATÉRIAS-PRIMAS
+        # =====================================================
+
+        materias = estoque.listar_materia_prima()
+
+        # =====================================================
+        # SUBPRODUTOS
+        # =====================================================
+
         with conectar() as con:
+
             with con.cursor() as cur:
-                # Busca os dados oficiais com base no seu schema real
+
                 cur.execute("""
-                    SELECT 
-                        mp.id_materia_prima, 
-                        mp.nome, 
-                        mp.unidade_medida, 
-                        COALESCE(mp.estoque_minimo, 0.0),
-                        COALESCE(
-                            SUM(CASE WHEN mov.tipo_movimento IN ('entrada', 'ajuste') THEN mov.quantidade ELSE 0 END) -
-                            SUM(CASE WHEN mov.tipo_movimento = 'saida' THEN mov.quantidade ELSE 0 END), 
-                            0.0
-                        ) as estoque_atual
-                    FROM materia_prima mp
-                    LEFT JOIN movimentacao_estoque mov ON mp.id_materia_prima = mov.id_materia_prima
-                    GROUP BY mp.id_materia_prima, mp.nome, mp.unidade_medida, mp.estoque_minimo
-                    ORDER BY mp.nome ASC
+                    SELECT
+                        id_subproduto,
+                        nome,
+                        COALESCE(estoque_atual, 0),
+                        preco_custo_unidade,
+                        unidade_medida,
+                        data_cadastro
+                    FROM subprodutos
+                    ORDER BY nome ASC
                 """)
-                rows = cur.fetchall() or []
-                
-        materias = []
-        for r in rows:
-            id_mp, nome, unidade, minimo, atual = r
-            atual = float(atual)
-            minimo = float(minimo)
-            
-            # Cálculo de criticidade visual
-            status = "CRÍTICO" if atual <= (minimo * 0.5) else ("BAIXO" if atual <= minimo else "OK")
-            
-            # O dicionário precisa das chaves exatas que o estoque.html lê
-            materias.append({
-                "id_materia_prima": id_mp,
-                "nome": nome,
-                "unidade": unidade, # Compatibilidade se o HTML pedir 'unidade'
-                "unidade_medida": unidade,
-                "estoque_atual": atual,
-                "estoque_minimo": minimo,
-                "status": status
-            })
-            
-        return render_template("estoque.html", materias=materias)
+
+                subprodutos = cur.fetchall()
+
+                # =====================================================
+                # PRODUTOS FINAIS
+                # =====================================================
+
+                cur.execute("""
+                    SELECT
+                        id_produto,
+                        nome,
+                        preco_venda,
+                        categoria,
+                        COALESCE(estoque_atual, 0),
+                        data_cadastro
+                    FROM produtos
+                    ORDER BY nome ASC
+                """)
+
+                produtos = cur.fetchall()
+
+        return render_template(
+            "estoque.html",
+            materias=materias,
+            subprodutos=subprodutos,
+            produtos=produtos
+        )
+
     except Exception as e:
+
         print(f"❌ ERRO GRAVE NO PAINEL ESTOQUE: {e}")
-        flash("Não foi possível carregar os dados do painel de estoque.", "danger")
+
+        flash(
+            f"Não foi possível carregar os dados do painel de estoque: {e}",
+            "danger"
+        )
+
         return redirect("/")
 
 

@@ -297,21 +297,7 @@ def dashboard():
 # =========================
 # ESTOQUE
 # =========================
-@app.route("/estoque")
-@login_required
-@acesso_requerido("estoque")
-def estoque_page():
-    # Buscando as 3 listas do seu sistema de estoque
-    materias_lista = estoque.listar_materia_prima()
-    subprodutos_lista = estoque.listar_subprodutos()  # Ajuste o nome do método se for diferente no seu sistema
-    produtos_lista = estoque.listar_produtos_finais()  # Ajuste o nome do método se for diferente no seu sistema
 
-    return render_template(
-        "estoque.html", 
-        materias=materias_lista, 
-        subprodutos=subprodutos_lista, 
-        produtos=produtos_lista
-    )
 
 @app.route("/compras")
 @login_required
@@ -343,6 +329,9 @@ def registrar_producao():
         
     return redirect("/estoque")
 
+# =====================================================================
+# --- ROTA: PAINEL GLOBAL DE ESTOQUE (COM HISTÓRICO UNIFICADO) ---
+# =====================================================================
 @app.route("/estoque")
 @login_required
 @acesso_requerido("estoque")
@@ -365,6 +354,65 @@ def estoque_page():
         historico=historico_movimentos
     )
 
+# =====================================================================
+# --- ROTA: BALANÇO E CONCILIAÇÃO DIÁRIA (PRODUÇÃO, VENDAS E SOBRAS) ---
+# =====================================================================
+@app.route("/estoque/balanco-diario")
+@login_required
+@acesso_requerido("estoque")
+def balanco_diario_page():  # NOME EXCLUSIVO: Sem conflito de endpoint!
+    try:
+        # 1. Busca a lista de produtos cadastrados para pegar o Saldo Atual
+        lista_produtos = estoque.listar_produtos_finais() if hasattr(estoque, 'listar_produtos_finais') else (produtos.listar_todos() if 'produtos' in globals() else [])
+        
+        # 2. Busca o histórico de vendas completo
+        historico_vendas = estoque.listar_vendas() if hasattr(estoque, 'listar_vendas') else []
+        
+        # Pegar a data de hoje no formato do seu sistema (AAAA-MM-DD)
+        hoje_str = datetime.now().strftime("%Y-%m-%d")
+        
+        balanco = []
+        
+        for p in lista_produtos:
+            id_produto = p[0]
+            nome_produto = p[1]
+            
+            # Tratamento de índice seguro para capturar o saldo atual do produto
+            sobrou = p[4] if len(p) > 4 else (p[3] if len(p) > 3 else 0) 
+            
+            # Calcular quanto vendeu desse produto especificamente HOJE
+            vendido_hoje = 0
+            for v in historico_vendas:
+                if hasattr(v, 'id_produto') or isinstance(v, dict):
+                    v_id = v.get('id_produto') if isinstance(v, dict) else v.id_produto
+                    v_data = v.get('data') if isinstance(v, dict) else v.data
+                    v_qtd = v.get('quantidade') if isinstance(v, dict) else v.quantidade
+                else:
+                    v_id = v[2]    
+                    v_data = v[1]  
+                    v_qtd = v[3]   
+                
+                v_data_str = v_data if isinstance(v, str) else v_data.strftime("%Y-%m-%d") if hasattr(v_data, 'strftime') else str(v_data)
+                
+                if str(v_id) == str(id_produto) and hoje_str in v_data_str:
+                    vendido_hoje += int(v_qtd)
+            
+            # Matemática de Engenharia Reversa: Fabricado = Sobra + Vendas
+            feito_hoje = sobrou + vendido_hoje
+            
+            balanco.append({
+                "id": id_produto,
+                "nome": nome_produto,
+                "feito": feito_hoje,
+                "vendido": vendido_hoje,
+                "sobrou": sobrou
+            })
+            
+        return render_template("balanco_diario.html", data_hoje=datetime.now().strftime("%d/%m/%Y"), balanco=balanco)
+        
+    except Exception as e:
+        flash(f"Erro ao gerar balanço diário: {e}", "danger")
+        return redirect(url_for('estoque_page'))
 
 @app.route("/editar-produto/<int:id_produto>", methods=["POST"])
 @login_required

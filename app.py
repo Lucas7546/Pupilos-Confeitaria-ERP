@@ -3,7 +3,7 @@ import csv
 import io
 import json
 import pandas as pd
-
+from modules.normalizador_ia import encontrar_produto_similar
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
@@ -2374,6 +2374,11 @@ def compras_inteligentes():
 @login_required
 def processar_nota():
 
+    import os
+    import json
+    import uuid
+    from difflib import SequenceMatcher
+
     try:
 
         foto = request.files.get("foto_nota")
@@ -2382,29 +2387,35 @@ def processar_nota():
             flash("Nenhuma imagem enviada.", "danger")
             return redirect("/compras-inteligentes")
 
-        # ==========================================
-        # SALVA IMAGEM TEMPORÁRIA
-        # ==========================================
+        # =====================================================
+        # CRIA PASTA TEMP SE NÃO EXISTIR
+        # =====================================================
 
         pasta_temp = "temp"
 
         if not os.path.exists(pasta_temp):
             os.makedirs(pasta_temp)
 
+        # =====================================================
+        # NOME ÚNICO PRA NÃO DAR CONFLITO
+        # =====================================================
+
+        extensao = os.path.splitext(foto.filename)[1]
+
+        nome_arquivo = f"{uuid.uuid4()}{extensao}"
+
         caminho_imagem = os.path.join(
             pasta_temp,
-            foto.filename
+            nome_arquivo
         )
 
         foto.save(caminho_imagem)
 
-        # ==========================================
-        # GEMINI ANALISA NOTA
-        # ==========================================
+        # =====================================================
+        # ANALISA NOTA COM GEMINI
+        # =====================================================
 
         resposta = analisar_nota(caminho_imagem)
-
-        import json
 
         resposta_limpa = (
             resposta
@@ -2415,43 +2426,122 @@ def processar_nota():
 
         itens = json.loads(resposta_limpa)
 
-        # ==========================================
+        # =====================================================
         # CONEXÃO BANCO
-        # ==========================================
+        # =====================================================
 
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # ==========================================
+        itens_processados = []
+
+        # =====================================================
+        # FUNÇÃO PRA IA IDENTIFICAR NOMES PARECIDOS
+        # =====================================================
+
+        def encontrar_nome_semelhante(nome_novo, lista_nomes):
+
+            melhor_nome = None
+            melhor_score = 0
+
+            for nome_existente in lista_nomes:
+
+                score = SequenceMatcher(
+                    None,
+                    nome_novo.lower(),
+                    nome_existente.lower()
+                ).ratio()
+
+                if score > melhor_score:
+                    melhor_score = score
+                    melhor_nome = nome_existente
+
+            # =================================================
+            # LIMITE DE SEMELHANÇA
+            # 0.82 = MUITO BOM PRA NOTAS
+            # =================================================
+
+            if melhor_score >= 0.82:
+                return melhor_nome
+
+            return None
+
+        # =====================================================
+        # BUSCA TODAS MATÉRIAS-PRIMAS EXISTENTES
+        # =====================================================
+
+        cur.execute("""
+            SELECT id_materia_prima, nome
+            FROM materia_prima
+        """)
+
+        materias_existentes = cur.fetchall()
+
+        nomes_existentes = [m[1] for m in materias_existentes]
+
+        mapa_ids = {
+            m[1]: m[0]
+            for m in materias_existentes
+        }
+
+        # =====================================================
         # PROCESSA ITENS
-        # ==========================================
+        # =====================================================
 
         for item in itens:
 
-            nome = item.get("produto", "").strip()
+            nome_original = item.get("produto", "").strip()
 
             quantidade = float(item.get("quantidade", 0))
 
             valor_unitario = float(item.get("valor_unitario", 0))
 
-            if not nome:
+            if not nome_original:
                 continue
 
-            # ======================================
-            # PROCURA MATÉRIA-PRIMA
-            # ======================================
+            # =================================================
+            # REMOVE ESPAÇOS DUPLOS
+            # =================================================
+
+            nome_original = " ".join(nome_original.split())
+
+            # =================================================
+            # IA IDENTIFICA NOMES DUPLICADOS/PARECIDOS
+            # =================================================
+
+            nome_corrigido = encontrar_nome_semelhante(
+                nome_original,
+                nomes_existentes
+            )
+
+            if nome_corrigido:
+
+                nome_final = nome_corrigido
+
+                print(
+                    f"[IA] Produto corrigido: "
+                    f"'{nome_original}' -> '{nome_final}'"
+                )
+
+            else:
+
+                nome_final = nome_original
+
+            # =================================================
+            # VERIFICA EXISTÊNCIA
+            # =================================================
 
             cur.execute("""
                 SELECT id_materia_prima
                 FROM materia_prima
                 WHERE LOWER(nome) = LOWER(%s)
-            """, (nome,))
+            """, (nome_final,))
 
             materia = cur.fetchone()
 
-            # ======================================
-            # SE NÃO EXISTIR -> CRIA
-            # ======================================
+            # =================================================
+            # NÃO EXISTE -> CRIA
+            # =================================================
 
             if not materia:
 
@@ -2465,18 +2555,27 @@ def processar_nota():
                     VALUES (%s, %s, %s)
                     RETURNING id_materia_prima
                 """, (
-                    nome,
+                    nome_final,
                     "UN",
                     valor_unitario
                 ))
 
                 id_materia = cur.fetchone()[0]
 
+                nomes_existentes.append(nome_final)
+
+                mapa_ids[nome_final] = id_materia
+
+                print(f"[NOVO ITEM] {nome_final}")
+
             else:
 
                 id_materia = materia[0]
 
-                # Atualiza custo
+                # =============================================
+                # ATUALIZA PREÇO UNITÁRIO
+                # =============================================
+
                 cur.execute("""
                     UPDATE materia_prima
                     SET preco_unitario = %s
@@ -2486,9 +2585,9 @@ def processar_nota():
                     id_materia
                 ))
 
-            # ======================================
+            # =================================================
             # MOVIMENTAÇÃO ESTOQUE
-            # ======================================
+            # =================================================
 
             cur.execute("""
                 INSERT INTO movimentacao_estoque
@@ -2508,30 +2607,56 @@ def processar_nota():
                 current_user.username
             ))
 
+            # =================================================
+            # RETORNO FRONT
+            # =================================================
+
+            itens_processados.append({
+                "produto_original": nome_original,
+                "produto_final": nome_final,
+                "quantidade": quantidade,
+                "valor_unitario": valor_unitario
+            })
+
+        # =====================================================
+        # COMMIT
+        # =====================================================
+
         conn.commit()
 
         cur.close()
         conn.close()
 
-        # ==========================================
+        # =====================================================
         # REMOVE IMAGEM TEMP
-        # ==========================================
+        # =====================================================
 
-        os.remove(caminho_imagem)
+        if os.path.exists(caminho_imagem):
+            os.remove(caminho_imagem)
 
         flash("Nota processada com sucesso!", "success")
 
         return render_template(
             "resultado_nota.html",
-            itens=itens
+            itens=itens_processados
         )
 
     except Exception as e:
 
-        print("ERRO PROCESSAR NOTA:")
+        print("===================================")
+        print("ERRO PROCESSAR NOTA")
+        print("===================================")
         print(e)
 
-        flash("Erro ao processar nota.", "danger")
+        try:
+            conn.rollback()
+        except:
+            pass
+
+        flash(
+            "Erro ao processar nota fiscal.",
+            "danger"
+        )
 
         return redirect("/compras-inteligentes")
 # =========================

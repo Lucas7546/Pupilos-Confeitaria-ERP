@@ -57,7 +57,9 @@ from modules import (
     receitas,
     previsao
 )
+from werkzeug.utils import secure_filename
 
+from modules.ocr_notas import ler_nota, extrair_itens
 from modules.previsao import prever_consumo_materia_prima
 from modules.permissoes import acesso_requerido
 from modules.usuarios import registrar_log_db
@@ -2033,27 +2035,6 @@ def despesas():
     return render_template("despesa.html", despesas=lista_despesas)
 
 
-@app.route("/atualizar-banco-secreto-xyz")
-@login_required # Só quem está logado no sistema e tem nível master deve rodar migrações
-def atualizar_banco_secreto():
-    # Proteção extra: Valida se o usuário é admin antes de mexer na estrutura da tabela
-    if getattr(current_user, 'nivel', '') != 'admin':
-        registrar_log("ACESSO_NEGADO", "MIGRACAO", f"Tentativa não autorizada de rodar alteração de banco por: {current_user.username}")
-        return "Acesso negado. Apenas administradores podem executar scripts de estrutura.", 403
-
-    try:
-        with conectar() as con:
-            with con.cursor() as cursor:
-                # Executa o comando de forma segura
-                cursor.execute("ALTER TABLE produtos ADD COLUMN IF NOT EXISTS codigo_barras VARCHAR(50) UNIQUE;")
-                con.commit()
-        
-        registrar_log("MIGRACAO", "BANCO_DADOS", "Coluna 'codigo_barras' adicionada ou verificada com sucesso.")
-        return "⚡ [Sucesso] Coluna 'codigo_barras' validada e estruturada com sucesso no PostgreSQL do Render!"
-        
-    except Exception as e:
-        print(f"❌ Falha na migração executada via rota: {e}")
-        return f"❌ Erro ao tentar modificar a estrutura da tabela: {e}", 500
     
 # =====================================================================
 # --- EXPORTAR PREVISÃO CSV (COMPATÍVEL COM EXCEL WINDOWS) ---
@@ -2373,6 +2354,71 @@ def excluir_subproduto_banco(id_subproduto):
     except Exception as e:
         print(f"❌ Erro ao desativar subproduto do banco: {e}")
         return False
+    
+
+
+# =========================================================
+# COMPRAS INTELIGENTES
+# =========================================================
+
+@app.route("/compras-inteligentes")
+@login_required
+@acesso_requerido("estoque")
+def compras_inteligentes():
+    return render_template("compras_inteligentes.html")
+
+# =========================================================
+# PROCESSAR NOTA FISCAL COM IA
+# =========================================================
+@app.route("/processar-nota", methods=["POST"])
+@login_required
+@acesso_requerido("estoque")
+def processar_nota():
+
+    try:
+
+        if "foto_nota" not in request.files:
+            flash("Nenhuma imagem enviada.", "danger")
+            return redirect("/compras-inteligentes")
+
+        foto = request.files["foto_nota"]
+
+        if foto.filename == "":
+            flash("Arquivo inválido.", "danger")
+            return redirect("/compras-inteligentes")
+
+        # =====================================================
+        # SALVAR TEMPORARIAMENTE
+        # =====================================================
+
+        pasta_upload = "temp_notas"
+
+        os.makedirs(pasta_upload, exist_ok=True)
+
+        caminho_arquivo = os.path.join(
+            pasta_upload,
+            secure_filename(foto.filename)
+        )
+
+        foto.save(caminho_arquivo)
+
+        # =====================================================
+        # AQUI VAMOS CHAMAR O GEMINI
+        # =====================================================
+
+        print(f"Imagem salva em: {caminho_arquivo}")
+
+        flash("Nota enviada com sucesso! IA ainda será integrada.", "success")
+
+        return redirect("/compras-inteligentes")
+
+    except Exception as e:
+
+        print(f"ERRO PROCESSAR NOTA: {e}")
+
+        flash(f"Erro ao processar nota: {e}", "danger")
+
+        return redirect("/compras-inteligentes")
 # =========================
 # INICIALIZAÇÃO
 # =========================

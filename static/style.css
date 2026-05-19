@@ -1,96 +1,166 @@
 /* ==================================================
    GERAL & VARIAVEIS
 ================================================== */
+
 :root {
+
     --bg-dark: #0f172a;
     --card-bg: #1e293b;
-    --accent: #facc15; /* Amarelo iFood/Ouro */
+
+    --accent: #facc15;
     --accent-hover: #eab308;
+
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
+
     --border-color: rgba(255, 255, 255, 0.08);
+
+    --mobile-padding: 14px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
 }
 
 body {
+
     background: var(--bg-dark);
+
     color: var(--text-main);
+
     font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+
     -webkit-font-smoothing: antialiased;
+
+    overflow-x: hidden;
 }
 
 /* ==================================================
    NAVBAR (Glassmorphism)
 ================================================== */
+
 .navbar {
+
     background: rgba(15, 23, 42, 0.8) !important;
+
     backdrop-filter: blur(12px);
+
     border-bottom: 1px solid var(--border-color);
+
     padding: 15px 0;
 }
 
 .navbar-brand {
+
     font-size: 22px;
+
     font-weight: 800;
+
     color: var(--accent) !important;
+
     letter-spacing: -0.5px;
 }
 
 .nav-link {
+
     color: var(--text-muted) !important;
+
     font-weight: 600;
+
     padding: 10px 18px !important;
+
     border-radius: 12px;
+
     transition: all 0.3s ease;
 }
 
 .nav-link:hover {
+
     color: var(--accent) !important;
+
     background: rgba(250, 204, 21, 0.1);
 }
 
 .nav-link.active {
+
     color: var(--accent) !important;
+
     background: rgba(250, 204, 21, 0.05);
 }
 
 /* ==================================================
-   CARDS (Robustos)
+   CARDS
 ================================================== */
+
 .card {
+
     background: var(--card-bg);
+
     border: 1px solid var(--border-color);
+
     border-radius: 24px;
+
     box-shadow: 0 10px 30px -5px rgba(0,0,0,0.3);
+
     overflow: hidden;
+
     transition: transform 0.3s ease;
 }
 
+.card:hover {
+    transform: translateY(-2px);
+}
+
 .card-header {
+
     background: rgba(0, 0, 0, 0.2) !important;
+
     border-bottom: 1px solid var(--border-color);
+
     padding: 20px;
+
     color: var(--accent) !important;
+
     font-size: 1.1rem;
+
     text-transform: uppercase;
+
     letter-spacing: 1px;
 }
 
 /* ==================================================
-   INPUTS (Ajuste de contraste para Dark Mode)
-================================================= */
-.form-control, .form-select {
-    background: #0f172a !important; /* Escuro para não cegar o usuário */
+   INPUTS
+================================================== */
+
+.form-control,
+.form-select {
+
+    background: #0f172a !important;
+
     border: 2px solid #334155 !important;
+
     color: white !important;
+
     border-radius: 14px !important;
+
     padding: 14px !important;
+
     font-weight: 400;
+
     transition: all 0.2s ease;
 }
 
-.form-control:focus, .form-select:focus {
+.form-control:focus,
+.form-select:focus {
+
     border-color: var(--accent) !important;
+
     box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.15) !important;
+
     outline: none;
 }
 
@@ -99,27 +169,43 @@ body {
 }
 
 /* ==================================================
-   TABELAS (Estilo Admin Moderno)
+   TABELAS
 ================================================== */
+
 .table {
+
     color: var(--text-main);
+
     margin-bottom: 0;
 }
 
 .table thead th {
+
     background: #0f172a !important;
+
     color: var(--text-muted);
+
     font-weight: 600;
+
     text-transform: uppercase;
+
     font-size: 0.75rem;
+
     letter-spacing: 1px;
+
     border-bottom: 1px solid var(--border-color);
+
     padding: 15px;
+
+    white-space: nowrap;
 }
 
 .table tbody td {
+
     padding: 18px 15px;
+
     border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+
     vertical-align: middle;
 }
 
@@ -128,84 +214,421 @@ body {
 }
 
 /* ==================================================
-   BOTÕES (Premium)
+   BOTÕES
 ================================================== */
+
 .btn {
+
     border-radius: 14px;
+
     font-weight: 700;
+
     padding: 12px 24px;
+
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
     text-transform: uppercase;
+
     font-size: 0.85rem;
+
     letter-spacing: 0.5px;
 }
 
 .btn-warning {
+
     background: var(--accent) !important;
+
     border: none;
+
     color: #000 !important;
 }
 
 .btn-warning:hover {
+
     background: var(--accent-hover) !important;
+
     transform: translateY(-2px);
+
     box-shadow: 0 8px 15px rgba(250, 204, 21, 0.3);
 }
 
 .btn-success {
+
     background: #10b981 !important;
+
     box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
 }
 
 /* ==================================================
-   METRICAS (Dashboard)
+   MÉTRICAS
 ================================================== */
+
 .metric-card {
+
     background: linear-gradient(145deg, #1e293b, #0f172a);
+
     border: 1px solid var(--border-color);
+
     border-radius: 24px;
+
     padding: 30px;
+
     position: relative;
+
     overflow: hidden;
 }
 
 .metric-card::after {
+
     content: "";
+
     position: absolute;
-    top: 0; right: 0;
-    width: 100px; height: 100px;
+
+    top: 0;
+    right: 0;
+
+    width: 100px;
+    height: 100px;
+
     background: var(--accent);
+
     opacity: 0.03;
+
     border-radius: 50%;
+
     transform: translate(30%, -30%);
 }
 
 .metric-title {
+
     color: var(--text-muted);
+
     font-weight: 600;
+
     text-transform: uppercase;
+
     font-size: 0.8rem;
 }
 
 .metric-value {
+
     color: var(--text-main);
+
     font-size: 2.5rem;
+
     font-weight: 800;
+
     letter-spacing: -1px;
 }
 
 /* ==================================================
    BADGES & ALERTAS
 ================================================== */
+
 .badge {
+
     padding: 6px 12px;
+
     font-weight: 700;
+
     text-transform: uppercase;
+
     font-size: 0.7rem;
 }
 
 .alert {
+
     border-radius: 16px;
+
     font-weight: 500;
+
     border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* ==================================================
+   SCROLLBAR PREMIUM
+================================================== */
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+
+    background: #334155;
+
+    border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* ==================================================
+   RESPONSIVIDADE TABLET
+================================================== */
+
+@media (max-width: 991px) {
+
+    .container,
+    .container-fluid {
+
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+    }
+
+    .card {
+
+        border-radius: 20px;
+    }
+
+    .metric-card {
+
+        padding: 22px;
+    }
+
+    .metric-value {
+
+        font-size: 2rem;
+    }
+
+    .table thead th {
+
+        font-size: 0.68rem;
+    }
+
+    .table tbody td {
+
+        padding: 14px 10px;
+
+        font-size: 0.9rem;
+    }
+}
+
+/* ==================================================
+   RESPONSIVIDADE MOBILE / IPHONE
+================================================== */
+
+@media (max-width: 768px) {
+
+    body {
+
+        font-size: 14px;
+    }
+
+    h1 {
+
+        font-size: 1.7rem !important;
+
+        line-height: 1.2;
+    }
+
+    h2 {
+
+        font-size: 1.45rem !important;
+    }
+
+    h3 {
+
+        font-size: 1.2rem !important;
+    }
+
+    h4 {
+
+        font-size: 1rem !important;
+    }
+
+    p,
+    span,
+    td,
+    th,
+    label {
+
+        font-size: 0.9rem;
+    }
+
+    .card {
+
+        border-radius: 18px;
+
+        margin-bottom: 16px;
+    }
+
+    .card-body {
+
+        padding: 16px !important;
+    }
+
+    .card-header {
+
+        padding: 14px 16px;
+
+        font-size: 0.9rem;
+    }
+
+    .btn {
+
+        width: 100%;
+
+        min-height: 46px;
+
+        font-size: 0.78rem;
+
+        padding: 12px 16px;
+
+        border-radius: 12px;
+    }
+
+    .btn-group-mobile {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 10px;
+    }
+
+    .form-control,
+    .form-select {
+
+        font-size: 16px !important;
+
+        min-height: 48px;
+
+        padding: 12px !important;
+    }
+
+    .table-responsive {
+
+        border-radius: 16px;
+
+        overflow-x: auto;
+
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table {
+
+        min-width: 700px;
+    }
+
+    .table thead th {
+
+        font-size: 0.65rem;
+
+        padding: 10px;
+    }
+
+    .table tbody td {
+
+        font-size: 0.78rem;
+
+        padding: 10px;
+    }
+
+    .metric-card {
+
+        padding: 20px;
+    }
+
+    .metric-value {
+
+        font-size: 1.7rem;
+    }
+
+    .metric-title {
+
+        font-size: 0.7rem;
+    }
+
+    .badge {
+
+        font-size: 0.6rem;
+
+        padding: 5px 8px;
+    }
+
+    .navbar {
+
+        padding: 10px 0;
+    }
+
+    .navbar-brand {
+
+        font-size: 18px;
+    }
+
+    .alert {
+
+        font-size: 0.85rem;
+
+        padding: 12px;
+    }
+
+    .modal-dialog {
+
+        margin: 12px;
+    }
+
+    .modal-content {
+
+        border-radius: 18px;
+    }
+}
+
+/* ==================================================
+   MOBILE PEQUENO
+================================================== */
+
+@media (max-width: 480px) {
+
+    .container,
+    .container-fluid {
+
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    h1 {
+
+        font-size: 1.45rem !important;
+    }
+
+    .card-body {
+
+        padding: 14px !important;
+    }
+
+    .metric-card {
+
+        padding: 16px;
+    }
+
+    .metric-value {
+
+        font-size: 1.5rem;
+    }
+
+    .btn {
+
+        font-size: 0.72rem;
+    }
+}
+
+/* ==================================================
+   SAFE AREA IPHONE
+================================================== */
+
+@supports (padding: max(0px)) {
+
+    body {
+
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
 }

@@ -345,41 +345,50 @@ def registrar_producao():
     return redirect("/estoque")
 
 # =====================================================================
-# --- ROTA: PAINEL GLOBAL DE ESTOQUE (COM HISTÓRICO UNIFICADO) ---
-# =====================================================================
-# =====================================================================
-# --- PAINEL DE ESTOQUE E EXCLUSÃO DE MATÉRIA-PRIMA ---
+# --- PAINEL DE ESTOQUE E EXCLUSÃO (MATEI OS PLURAIS E COLUNAS ERRADAS) ---
 # =====================================================================
 
 @app.route("/estoque", methods=["GET"])
 @login_required
 def estoque_painel():
-    """Lista as matérias-primas e calcula o status do estoque."""
+    """Lista as matérias-primas calculando o saldo real via movimentacoes."""
     try:
         with conectar() as con:
             with con.cursor() as cur:
+                # Busca os dados oficiais com base no seu schema real
                 cur.execute("""
                     SELECT 
-                        id_materia_prima, 
-                        nome, 
-                        unidade, 
-                        COALESCE(estoque_atual, 0.0), 
-                        COALESCE(estoque_minimo, 0.0)
-                    FROM materias_primas
-                    WHERE ativa = 1
-                    ORDER BY nome ASC
+                        mp.id_materia_prima, 
+                        mp.nome, 
+                        mp.unidade_medida, 
+                        COALESCE(mp.estoque_minimo, 0.0),
+                        COALESCE(
+                            SUM(CASE WHEN mov.tipo_movimento IN ('entrada', 'ajuste') THEN mov.quantidade ELSE 0 END) -
+                            SUM(CASE WHEN mov.tipo_movimento = 'saida' THEN mov.quantidade ELSE 0 END), 
+                            0.0
+                        ) as estoque_atual
+                    FROM materia_prima mp
+                    LEFT JOIN movimentacao_estoque mov ON mp.id_materia_prima = mov.id_materia_prima
+                    GROUP BY mp.id_materia_prima, mp.nome, mp.unidade_medida, mp.estoque_minimo
+                    ORDER BY mp.nome ASC
                 """)
                 rows = cur.fetchall() or []
                 
         materias = []
         for r in rows:
-            atual = float(r[3])
-            minimo = float(r[4])
+            id_mp, nome, unidade, minimo, atual = r
+            atual = float(atual)
+            minimo = float(minimo)
+            
+            # Cálculo de criticidade visual
             status = "CRÍTICO" if atual <= (minimo * 0.5) else ("BAIXO" if atual <= minimo else "OK")
+            
+            # O dicionário precisa das chaves exatas que o estoque.html lê
             materias.append({
-                "id_materia_prima": r[0],
-                "nome": r[1],
-                "unidade": r[2],
+                "id_materia_prima": id_mp,
+                "nome": nome,
+                "unidade": unidade, # Compatibilidade se o HTML pedir 'unidade'
+                "unidade_medida": unidade,
                 "estoque_atual": atual,
                 "estoque_minimo": minimo,
                 "status": status
@@ -387,7 +396,7 @@ def estoque_painel():
             
         return render_template("estoque.html", materias=materias)
     except Exception as e:
-        print(f"❌ ERRO PAINEL ESTOQUE: {e}")
+        print(f"❌ ERRO GRAVE NO PAINEL ESTOQUE: {e}")
         flash("Não foi possível carregar os dados do painel de estoque.", "danger")
         return redirect("/")
 
@@ -737,13 +746,12 @@ def deletar_produto(id_produto):
 @acesso_requerido("estoque")
 def deletar_mp(id_mp):
     """
-    Mantém a sua lógica original de verificação de receitas ativas,
-    mas altera o nome da função para 'deletar_mp' para alinhar com o seu HTML.
+    Seu endpoint que o HTML chama. Mantém a trava de segurança 
+    do seu módulo estoque original.
     """
     try:
         usuario_atual = session.get("username", "Desconhecido")
         
-        # Usa o seu módulo original que checa as receitas antes de deletar
         if estoque.excluir_materia(id_mp):
             if 'registrar_log' in globals():
                 registrar_log("DELETAR", "MATERIA_PRIMA", f"Insumo ID {id_mp} removido por '{usuario_atual}'")
@@ -752,10 +760,9 @@ def deletar_mp(id_mp):
             flash("Não foi possível remover o insumo. Certifique-se de que ele não faz parte de nenhuma receita ativa.", "warning")
             
     except Exception as e:
-        print(f"❌ ERRO ROTA EXCLUIR MP: {e}")
+        print(f"❌ ERRO OPERACIONAL EXCLUIR MP: {e}")
         flash(f"Erro ao tentar deletar o insumo: {e}", "danger")
         
-    # Garante o redirecionamento seguro para a sua rota de cadastro/estoque
     try:
         return redirect(url_for("render_cadastro"))
     except Exception:
@@ -939,57 +946,50 @@ def precificacao():
 
 
 # =====================================================================
-# --- VENDAS (CÓDIGO ORIGINAL BLINDADO CONTRA CRASHES OPERACIONAIS) ---
+# --- VENDAS (MANTENDO O SEU DICIONÁRIO DE DIRECIONAMENTO) ---
 # =====================================================================
 @app.route("/vendas")
 @login_required
 @acesso_requerido("vendas")
 def vendas_page():
-    """Garante a renderização do painel tratando falhas nos módulos externos."""
     try:
-        # Puxa os produtos tratando possíveis falhas de conexão ou retornos nulos
+        # Tenta buscar produtos com tratamento de exceção
         try:
             lista_produtos = produtos.buscar_produto_por_nome("") or []
-        except Exception as err_prod:
-            print(f"⚠️ Alerta no módulo produtos.buscar_produto_por_nome: {err_prod}")
+        except Exception as err:
+            print(f"⚠️ Falha ao ler produtos.buscar_produto_por_nome: {err}")
             lista_produtos = []
 
-        # Puxa o histórico tratando possíveis falhas estruturais no módulo de vendas
+        # Tenta buscar histórico com tratamento de exceção
         try:
             historico = vendas.listar_vendas_recentes() or []
-        except Exception as err_vend:
-            print(f"⚠️ Alerta no módulo vendas.listar_vendas_recentes: {err_vend}")
+        except Exception as err:
+            print(f"⚠️ Falha ao ler vendas.listar_vendas_recentes: {err}")
             historico = []
         
-        # Retorna mantendo rigorosamente os nomes exigidos pelo seu arquivo HTML
+        # Retorna exatamente as chaves de variáveis que seu HTML usa
         return render_template(
             "vendas.html",
             produtos=lista_produtos,
             historico_vendas=historico
         )
     except Exception as e:
-        print(f"❌ Erro crítico ao renderizar painel de vendas: {e}")
-        flash("Erro ao carregar os dados de vendas. Verifique os logs do sistema.", "danger")
-        try:
-            return redirect(url_for("dashboard"))
-        except Exception:
-            return redirect("/")
+        print(f"❌ Erro estrutural na rota vendas_page: {e}")
+        flash("Erro ao carregar os dados de vendas.", "danger")
+        return redirect(url_for("dashboard") if "dashboard" in globals() else "/")
 
 
 @app.route("/vender", methods=["POST"])
 @login_required
 def vender():
-    """Processa a venda mantendo todas as suas regras de validação originais."""
+    """Sua lógica de gravação e validação usando seus módulos."""
     try:
         id_p_raw = request.form.get("id_produto")
-        qtd_raw = request.form.get("whitespace" if not request.form.get("quantidade") else "quantidade")
+        qtd_raw = request.form.get("quantidade")
 
-        # 1. Validação estrita de inputs originais
-        if not id_p_raw or not request.form.get("quantidade"):
+        if not id_p_raw or not qtd_raw:
             flash("Por favor, selecione um produto e informe a quantidade.", "warning")
             return redirect("/vendas")
-
-        qtd_raw = request.form.get("quantidade")
 
         if not id_p_raw.isdigit() or not qtd_raw.isdigit():
             flash("Os dados enviados contêm caracteres inválidos.", "danger")
@@ -1002,57 +1002,35 @@ def vender():
             flash("A quantidade vendida deve ser maior que zero.", "warning")
             return redirect("/vendas")
 
-        # 2. Busca resiliente no seu catálogo de produtos
-        prods = []
-        try:
-            prods = produtos.buscar_produto_por_nome("") or []
-        except Exception as e:
-            print(f"❌ Erro ao buscar catálogo para validação: {e}")
-            flash("Erro interno ao acessar o catálogo de produtos.", "danger")
-            return redirect("/vendas")
-
+        prods = produtos.buscar_produto_por_nome("") or []
         produto = next((p for p in prods if p[0] == id_p), None)
 
         if not produto:
             flash("Produto não encontrado no catálogo.", "danger")
             return redirect("/vendas")
 
-        # 3. Cálculo de Valor Total baseado no índice do seu banco
         try:
             preco_unitario = float(produto[2])
             valor_total = preco_unitario * qtd
-        except (IndexError, ValueError, TypeError) as e:
-            print(f"❌ Erro ao processar preço do produto no índice 2: {e}")
+        except Exception:
             flash("Erro ao processar o preço do produto cadastrado.", "danger")
             return redirect("/vendas")
 
-        # 4. Validação de Estoque utilizando a sua regra de negócio
-        try:
-            estoque_ok = vendas.validar_estoque_suficiente(id_p, qtd)
-        except Exception as e:
-            print(f"❌ Erro no método vendas.validar_estoque_suficiente: {e}")
-            estoque_ok = False
-
+        # Validações dos seus arquivos internos
+        estoque_ok = vendas.validar_estoque_suficiente(id_p, qtd)
         if not estoque_ok:
             flash("Estoque insuficiente para produzir essa venda.", "danger")
             return redirect("/vendas")
 
-        # 5. Captura do usuário logado de forma dinâmica
         usuario_atual = getattr(current_user, 'username', session.get('username', 'Desconhecido'))
         
-        # 6. Gravação oficial no banco de dados via módulo vendas
-        sucesso = False
-        try:
-            sucesso = vendas.registrar_venda(
-                id_produto=id_p,
-                quantidade=qtd,
-                valor_total=valor_total,
-                usuario=usuario_atual
-            )
-        except Exception as e:
-            print(f"❌ Erro mecânico no método vendas.registrar_venda: {e}")
+        sucesso = vendas.registrar_venda(
+            id_produto=id_p,
+            quantidade=qtd,
+            valor_total=valor_total,
+            usuario=usuario_atual
+        )
 
-        # 7. Geração de logs e feedback visual
         if sucesso:
             if 'registrar_log' in globals():
                 registrar_log("VENDA", "VENDAS", f"Produto ID {id_p} | Qtd {qtd} | Total R$ {valor_total:.2f}")
@@ -1061,10 +1039,11 @@ def vender():
             flash("Erro interno ao salvar a venda no banco de dados.", "danger")
 
     except Exception as e:
-        print(f"❌ Erro crítico absoluto na rota vender: {e}")
+        print(f"❌ Erro crítico no processo de checkout de vendas: {e}")
         flash(f"Erro inesperado ao registrar a venda: {e}", "danger")
 
     return redirect("/vendas")
+
 # =====================================================================
 # --- INTERFACE DE AUDITORIA (VISUALIZAR LOGS) ---
 # =====================================================================
@@ -1690,11 +1669,9 @@ def escanear_inteligente():
         return jsonify({"status": "erro", "mensagem": f"Falha no processador de Visão Computacional: {str(e)}"}), 500
 
 
+
 # =====================================================================
-# --- PREVISÃO DE DEMANDA E CONSUMO INTELIGENTE (ESTOQUE) ---
-# =====================================================================
-# =====================================================================
-# --- PREVISÃO DE DEMANDA E CONSUMO INTELIGENTE (ESTOQUE) ---
+# --- PREVISÃO DE DEMANDA E CONSUMO INTELIGENTE (ESTOQUE CORRIGIDO) ---
 # =====================================================================
 @app.route("/previsao-estoque")
 @login_required
@@ -1702,11 +1679,10 @@ def previsao_estoque():
     try:
         previsoes = []
 
-        # Usando contexto seguro para isolar o bloco de consultas consecutivas
         with conectar() as con:
             with con.cursor() as cur:
                 
-                # 1. Busca todas as matérias-primas cadastradas da tabela correta
+                # 1. Busca todas as matérias-primas cadastradas (tabela: materia_prima)
                 cur.execute("""
                     SELECT id_materia_prima, nome, unidade_medida 
                     FROM materia_prima 
@@ -1728,7 +1704,7 @@ def previsao_estoque():
                     """, (id_mp,))
                     estoque_atual = float(cur.fetchone()[0] or 0)
 
-                    # Cálculo de saídas históricas do último mês (AJUSTADO PARA: data_movimento)
+                    # CORREÇÃO CRÍTICA: data_movimento em vez de data_movimentacao
                     cur.execute("""
                         SELECT COALESCE(SUM(quantidade), 0)
                         FROM movimentacao_estoque
@@ -1738,20 +1714,18 @@ def previsao_estoque():
                     """, (id_mp,))
                     total_consumido = float(cur.fetchone()[0] or 0)
 
-                    # Motor Matemático Preditivo (Com fator de tendência sazonal original)
+                    # Seu Motor Matemático Preditivo intacto
                     media_diaria = total_consumido / 30.0 if total_consumido > 0 else 0.0
                     fator_tendencia = 1.15
 
                     consumo_previsto_7d = round(media_diaria * 7 * fator_tendencia, 2)
                     consumo_previsto_15d = round(media_diaria * 15 * fator_tendencia, 2)
 
-                    # Determinação matemática do Runway (Tempo de duração do estoque)
                     if media_diaria > 0:
                         dias_restantes = round(estoque_atual / media_diaria, 1)
                     else:
                         dias_restantes = 999.0
 
-                    # Matriz de Risco operacional
                     if dias_restantes <= 2:
                         risco = "CRÍTICO"
                     elif dias_restantes <= 5:
@@ -1761,7 +1735,6 @@ def previsao_estoque():
                     else:
                         risco = "BAIXO"
 
-                    # Algoritmo de sugestão de compras para suprimento de 15 dias
                     sugestao_compra = max(round(consumo_previsto_15d - estoque_atual, 2), 0.0)
 
                     previsoes.append({
@@ -1776,10 +1749,7 @@ def previsao_estoque():
                         "sugestao_compra": sugestao_compra
                     })
 
-        # Ordenação prioritária baseada no menor tempo de duração em estoque (Risco Urgente primeiro)
         previsoes.sort(key=lambda x: x["dias_restantes"])
-
-        # Retorna mantendo exatamente a variável que o seu HTML original puxa
         return render_template("previsao.html", previsoes=previsoes)
 
     except Exception as e:

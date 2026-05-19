@@ -332,31 +332,6 @@ def registrar_producao():
 # =====================================================================
 # --- ROTA: PAINEL GLOBAL DE ESTOQUE (COM HISTÓRICO UNIFICADO) ---
 # =====================================================================
-@app.route("/estoque")
-@login_required
-@acesso_requerido("estoque")
-def estoque_page():
-    # 1. Carrega as matérias-primas (mantendo o seu padrão)
-    materias_lista = estoque.listar_materia_prima()
-    
-    # 2. Carrega os subprodutos e produtos finais (para alimentar as novas abas)
-    subprodutos_lista = estoque.listar_subprodutos() if hasattr(estoque, 'listar_subprodutos') else []
-    produtos_lista = produtos.listar_todos() if 'produtos' in globals() else []
-    
-    # 3. Carrega o histórico cronológico unificado (O Kardex temporal)
-    historico_movimentos = estoque.obter_historico_movimentacoes() if hasattr(estoque, 'obter_historico_movimentacoes') else []
-    
-    return render_template(
-        "estoque.html", 
-        materias=materias_lista,
-        subprodutos=subprodutos_lista,
-        produtos=produtos_lista,
-        historico=historico_movimentos
-    )
-
-# =====================================================================
-# --- ROTA: BALANÇO E CONCILIAÇÃO DIÁRIA (PRODUÇÃO, VENDAS E SOBRAS) ---
-# =====================================================================
 @app.route("/estoque/balanco-diario")
 @login_required
 @acesso_requerido("estoque")
@@ -377,8 +352,14 @@ def balanco_diario_page():  # NOME EXCLUSIVO: Sem conflito de endpoint!
             id_produto = p[0]
             nome_produto = p[1]
             
-            # Tratamento de índice seguro para capturar o saldo atual do produto
-            sobrou = p[4] if len(p) > 4 else (p[3] if len(p) > 3 else 0) 
+            # Tratamento de índice seguro para capturar o saldo atual do produto (guardando na variável certa)
+            dado_sobrou = p[4] if len(p) > 4 else (p[3] if len(p) > 3 else 0) 
+            
+            # BLINDAGEM DE TIPAGEM: Garante que a sobra sempre seja um número inteiro
+            try:
+                sobrou = int(dado_sobrou) if dado_sobrou is not None else 0
+            except (ValueError, TypeError):
+                sobrou = 0
             
             # Calcular quanto vendeu desse produto especificamente HOJE
             vendido_hoje = 0
@@ -395,7 +376,11 @@ def balanco_diario_page():  # NOME EXCLUSIVO: Sem conflito de endpoint!
                 v_data_str = v_data if isinstance(v, str) else v_data.strftime("%Y-%m-%d") if hasattr(v_data, 'strftime') else str(v_data)
                 
                 if str(v_id) == str(id_produto) and hoje_str in v_data_str:
-                    vendido_hoje += int(v_qtd)
+                    # BLINDAGEM DE VENDAS: Garante que o incremento não quebre caso a quantidade seja string
+                    try:
+                        vendido_hoje += int(v_qtd)
+                    except (ValueError, TypeError):
+                        pass
             
             # Matemática de Engenharia Reversa: Fabricado = Sobra + Vendas
             feito_hoje = sobrou + vendido_hoje

@@ -1,13 +1,3 @@
-Tens toda razão, peço desculpas pelo meu vacilo! Acabei me perdendo nas mensagens anteriores e não olhei o seu app.py com a atenção que deveria. Você me mandou justamente para eu ver como os dados saem do banco e o HTML para ver como eles são lidos.
-
-Para resolver isso de vez, sem achismos e sem quebrar nada do seu sistema, vamos ajustar o HTML para ler exatamente o que a sua função estoque.listar_materia_prima() e as outras entregam (que são tuplas, por índices como item[0], item[1]).
-
-Geralmente, nas tabelas de estoque bem estruturadas como a sua, a linha do banco de dados vem com a data na última ou penúltima posição da tupla.
-
-Aqui está o código HTML completo e ajustado. Note que mudei a leitura da data para índices numéricos (item[7], sub[5], prod[5]). Caso a data não apareça na coluna, me avise qual é a ordem das colunas no seu banco que eu mudo o número do índice na hora para você!
-
-Código HTML Completo e Blindado:
-HTML
 {% extends "base.html" %}
 
 {% block content %}
@@ -23,7 +13,7 @@ HTML
             </p>
         </div>
 
-        <div class="d-flex gap-2">
+        <div class="d-flex align-items-center gap-3">
             <div class="bg-dark-card border border-secondary border-opacity-25 rounded-3 px-4 py-2 shadow-sm text-center">
                 <small class="text-white-50 d-block fw-bold text-uppercase" style="font-size: 0.6rem;">
                     Itens Cadastrados
@@ -32,10 +22,27 @@ HTML
                     {{ (materias|length) + (subprodutos|length) + (produtos|length) }}
                 </span>
             </div>
-            <a href="/compras" class="btn btn-warning d-flex align-items-center fw-bold px-4 rounded-3 shadow">
-                <i class="bi bi-plus-lg me-2"></i>
-                NOVA ENTRADA
-            </a>
+            
+            <div class="dropdown">
+                <button class="btn btn-warning dropdown-toggle fw-bold px-4 py-2 rounded-3 shadow d-flex align-items-center" type="button" id="dropdownEntradas" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-plus-lg me-2"></i> NOVA ENTRADA / LANÇAMENTO
+                </button>
+                <ul class="dropdown-menu dropdown-menu-dark bg-dark-card border-secondary border-opacity-25 shadow-lg rounded-3 p-2" aria-labelledby="dropdownEntradas">
+                    <li>
+                        <a class="dropdown-item py-2 rounded-2" href="/compras">
+                            <i class="bi bi-cart-plus me-2 text-primary"></i> Registrar Compra (Insumos/MP)
+                        </a>
+                    </li>
+                    <li>
+                        <hr class="dropdown-divider border-secondary border-opacity-25">
+                    </li>
+                    <li>
+                        <a class="dropdown-item py-2 rounded-2" href="#" data-bs-toggle="modal" data-bs-target="#modalProducaoAvulsa">
+                            <i class="bi bi-hammer me-2 text-info"></i> Lançar Produção Interna (Subproduto/Final)
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -76,13 +83,13 @@ HTML
             <table id="tabelaGlobalEstoque" class="table table-hover table-dark align-middle mb-0" style="--bs-table-bg: transparent;">
                 <thead class="bg-black bg-opacity-50">
                     <tr class="text-white-50 small text-uppercase">
-                        <th class="ps-4 py-3" style="width: 90px;">ID</th>
+                        <th class="ps-4 py-3" style="width: 120px;">ID</th>
                         <th class="py-3">Item / Registro</th>
                         <th class="py-3">Tipo</th>
                         <th class="py-3 text-center">Unidade</th>
                         <th class="py-3 text-center">Saldo Atual</th>
                         <th class="py-3 text-center">Data Cadastro</th>
-                        <th class="py-3 text-end pe-4" style="width: 180px;">Ações</th>
+                        <th class="py-3 text-end pe-4" style="width: 220px;">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -129,7 +136,7 @@ HTML
                                 </div>
                                 <form action="{{ url_for('processar_edicao_mp', id_mp=item[0]) }}" method="POST">
                                     <div class="modal-body px-4">
-                                        <p class="text-white-50 small mb-4">Editando: <br><strong class="text-warning fs-5">{{ item[1] }}</strong></p>
+                                        <p class="text-white-50 small mb-4">Editando: <strong class="text-warning fs-6 d-block mt-1">{{ item[1] }}</strong></p>
                                         <div class="mb-3">
                                             <label class="form-label text-white-50 small fw-bold">NOME DO INSUMO</label>
                                             <input type="text" name="nome" class="form-control bg-dark text-white border-secondary border-opacity-50" value="{{ item[1] }}" required>
@@ -180,7 +187,7 @@ HTML
                         <td>
                             <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 rounded-pill">Subproduto</span>
                         </td>
-                        <td class="text-center font-monospace text-white-50">{{ sub[3] or 'un' }}</td>
+                        <td class="text-center font-monospace text-white-50">un</td>
                         <td class="text-center">
                             <span class="fs-5 fw-extrabold text-white">{{ sub[2] }}</span>
                         </td>
@@ -188,11 +195,40 @@ HTML
                             {{ sub[5] if sub[5] else '--/--/----' }}
                         </td>
                         <td class="text-end pe-4">
-                            <a href="/subprodutos/historico/{{ sub[0] }}" class="btn btn-outline-info btn-sm px-3 rounded-3 fw-bold">
-                                <i class="bi bi-eye"></i> VER LOTE
-                            </a>
+                            <div class="d-flex justify-content-end gap-2">
+                                <button class="btn btn-outline-warning btn-sm px-2 rounded-3 fw-bold" data-bs-toggle="modal" data-bs-target="#modalAjustarSub{{ sub[0] }}">
+                                    <i class="bi bi-sliders"></i> AJUSTAR
+                                </button>
+                                <a href="/subprodutos/historico/{{ sub[0] }}" class="btn btn-outline-info btn-sm px-2 rounded-3 fw-bold">
+                                    <i class="bi bi-eye"></i> LOTE
+                                </a>
+                            </div>
                         </td>
                     </tr>
+
+                    <div class="modal fade" id="modalAjustarSub{{ sub[0] }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+                            <div class="modal-content bg-dark-card border border-secondary border-opacity-25 rounded-4">
+                                <div class="modal-header border-0 pt-4 px-4">
+                                    <h5 class="modal-title fw-bold text-white">Ajustar Saldo Subproduto</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form action="/subprodutos/ajustar-estoque/{{ sub[0] }}" method="POST">
+                                    <div class="modal-body px-4">
+                                        <p class="text-white-50 small">Corrigir estoque de: <strong class="text-warning fs-6 d-block mt-1">{{ sub[1] }}</strong></p>
+                                        <div class="mb-3">
+                                            <label class="form-label text-white-50 small fw-bold">NOVA QUANTIDADE ATUAL</label>
+                                            <input type="number" name="nova_quantidade" class="form-control bg-dark text-white border-secondary border-opacity-50" value="{{ sub[2] }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-0 p-4">
+                                        <button type="button" class="btn btn-link text-white-50 text-decoration-none" data-bs-dismiss="modal">Fechar</button>
+                                        <button type="submit" class="btn btn-warning px-4 fw-bold rounded-3">SALVAR</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                     {% endfor %}
 
 
@@ -214,15 +250,82 @@ HTML
                             {{ prod[5] if prod[5] else '--/--/----' }}
                         </td>
                         <td class="text-end pe-4">
-                            <a href="/ficha-tecnica/{{ prod[0] }}" class="btn btn-outline-warning btn-sm px-3 rounded-3 fw-bold">
-                                <i class="bi bi-journal-text"></i> FICHA
-                            </a>
+                            <div class="d-flex justify-content-end gap-2">
+                                <button class="btn btn-outline-warning btn-sm px-2 rounded-3 fw-bold" data-bs-toggle="modal" data-bs-target="#modalEditarProd{{ prod[0] }}">
+                                    <i class="bi bi-pencil-square"></i> AJUSTAR
+                                </button>
+                                <a href="/ficha-tecnica/{{ prod[0] }}" class="btn btn-outline-info btn-sm px-2 rounded-3 fw-bold">
+                                    <i class="bi bi-journal-text"></i> FICHA
+                                </a>
+                            </div>
                         </td>
                     </tr>
+
+                    <div class="modal fade" id="modalEditarProd{{ prod[0] }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+                            <div class="modal-content bg-dark-card border border-secondary border-opacity-25 rounded-4 shadow-2xl">
+                                <div class="modal-header border-0 pt-4 px-4">
+                                    <h5 class="modal-title fw-bold text-white">Editar Dados do Produto</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form action="/editar-produto/{{ prod[0] }}" method="POST">
+                                    <div class="modal-body px-4">
+                                        <div class="mb-3">
+                                            <label class="form-label text-white-50 small fw-bold">NOME COMERCIAL</label>
+                                            <input type="text" name="nome" class="form-control bg-dark text-white border-secondary border-opacity-50" value="{{ prod[1] }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label text-white-50 small fw-bold">PREÇO DE VENDA (R$)</label>
+                                            <input type="number" step="0.01" name="preco" class="form-control bg-dark text-white border-secondary border-opacity-50" value="{{ prod[2] }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-0 p-4">
+                                        <button type="button" class="btn btn-link text-white-50 text-decoration-none" data-bs-dismiss="modal">Sair</button>
+                                        <button type="submit" class="btn btn-warning px-4 fw-bold rounded-3">ATUALIZAR</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                     {% endfor %}
 
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalProducaoAvulsa" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 450px;">
+        <div class="modal-content bg-dark-card border border-secondary border-opacity-25 rounded-4">
+            <div class="modal-header border-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold text-white">⚙️ Registrar Lote de Produção</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/subprodutos/registrar-lote" method="POST">
+                <div class="modal-body px-4">
+                    <p class="text-white-50 small mb-3">Utilize este formulário para injetar estoque em itens fabricados internamente na confeitaria.</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-white-50 small fw-bold">SELECIONE O SUBPRODUTO</label>
+                        <select name="id_subproduto" class="form-select bg-dark text-white border-secondary border-opacity-50" required>
+                            <option value="" disabled selected>Escolha o subproduto...</option>
+                            {% for sub in subprodutos %}
+                            <option value="{{ sub[0] }}">{{ sub[1] }} (Atual: {{ sub[2] }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-white-50 small fw-bold">QUANTIDADE FABRICADA (UN)</label>
+                        <input type="number" name="quantidade" class="form-control bg-dark text-white border-secondary border-opacity-50" placeholder="Ex: 50" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4">
+                    <button type="button" class="btn btn-link text-white-50 text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning px-4 fw-bold rounded-3">CONFIRMAR ENTRADA</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -235,7 +338,7 @@ function filtrarEstoqueUnificado() {
     let linhas = document.querySelectorAll('#tabelaGlobalEstoque tbody tr[data-tipo]');
     
     linhas.forEach(linha => {
-        let elementoNome = linha.querySelector('.alvo-busca-nome');
+        let elementoNome = WebKitMutationObserver ? linha.querySelector('.alvo-busca-nome') : linha.querySelector('.alvo-busca-nome');
         if (!elementoNome) return;
         
         let nomeItem = elementoNome.textContent.toLowerCase();

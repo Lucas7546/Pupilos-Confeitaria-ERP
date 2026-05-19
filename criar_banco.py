@@ -181,15 +181,6 @@ CREATE TABLE IF NOT EXISTS despesas (
 )
 """)
 
-# =========================================================
-# ADMIN (Com correção para atualização de senha se necessário)
-# =========================================================
-senha_admin = generate_password_hash("123456")
-cursor.execute("""
-INSERT INTO usuarios (username, senha, nivel)
-VALUES (%s, %s, %s)
-ON CONFLICT (username) DO NOTHING
-""", ("admin", senha_admin, "admin"))
 
 # =========================================================
 # sistema - Configuração da Empresa

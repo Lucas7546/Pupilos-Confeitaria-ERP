@@ -1,51 +1,53 @@
-import easyocr
-import re
+import os
+import json
+from google import genai
 
-reader = easyocr.Reader(['pt'])
-
-# =========================================================
-# LER NOTA FISCAL
-# =========================================================
-def ler_nota(caminho_imagem):
-
-    resultados = reader.readtext(caminho_imagem, detail=0)
-
-    texto = "\n".join(resultados)
-
-    return texto
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
-# =========================================================
-# EXTRAIR ITENS DA NOTA
-# =========================================================
-def extrair_itens(texto):
+def extrair_itens(imagem_bytes):
 
-    itens = []
+    prompt = """
+    Você é um sistema especialista em leitura de notas fiscais brasileiras.
 
-    linhas = texto.split("\n")
+    Analise a imagem enviada e extraia:
 
-    for linha in linhas:
+    - nome do produto
+    - quantidade
+    - valor unitário
+    - valor total
 
-        linha = linha.strip()
+    Retorne APENAS JSON válido.
 
-        # Exemplo:
-        # LEITE INTEGRAL 2 12,99
+    Exemplo:
 
-        match = re.search(
-            r"([A-Za-zÀ-ÿ\s]+)\s+(\d+)\s+([\d,]+)",
-            linha
-        )
+    [
+      {
+        "produto": "Leite Condensado",
+        "quantidade": 2,
+        "valor_unitario": 7.50,
+        "valor_total": 15.00
+      }
+    ]
+    """
 
-        if match:
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=[
+            prompt,
+            {
+                "mime_type": "image/jpeg",
+                "data": imagem_bytes
+            }
+        ]
+    )
 
-            nome = match.group(1).strip()
-            quantidade = int(match.group(2))
-            valor = float(match.group(3).replace(",", "."))
+    texto = response.text.strip()
 
-            itens.append({
-                "nome": nome,
-                "quantidade": quantidade,
-                "valor": valor
-            })
+    texto = texto.replace("```json", "").replace("```", "").strip()
 
-    return itens
+    try:
+        return json.loads(texto)
+    except:
+        return []
+

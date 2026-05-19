@@ -213,7 +213,7 @@
                                     <h5 class="modal-title fw-bold text-white">Ajustar Saldo Subproduto</h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
-                                <form action="/subprodutos/ajustar-estoque/{{ sub[0] }}" method="POST">
+                                <form action="{{ url_for('ajustar_estoque_subproduto', id_subproduto=sub[0]) }}" method="POST">
                                     <div class="modal-body px-4">
                                         <p class="text-white-50 small">Corrigir estoque de: <strong class="text-warning fs-6 d-block mt-1">{{ sub[1] }}</strong></p>
                                         <div class="mb-3">
@@ -268,7 +268,7 @@
                                     <h5 class="modal-title fw-bold text-white">Editar Dados do Produto</h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
-                                <form action="/editar-produto/{{ prod[0] }}" method="POST">
+                                <form action="/subprodutos/registrar-lote" method="POST">
                                     <div class="modal-body px-4">
                                         <div class="mb-3">
                                             <label class="form-label text-white-50 small fw-bold">NOME COMERCIAL</label>

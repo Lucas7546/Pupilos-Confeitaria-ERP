@@ -332,19 +332,37 @@ def registrar_producao():
 # =====================================================================
 # --- ROTA: PAINEL GLOBAL DE ESTOQUE (COM HISTÓRICO UNIFICADO) ---
 # =====================================================================
+Perfeito! Olhando o seu código do app.py, matei exatamente por que o filtro de data não estava funcionando e como ajustar para ficar 100% integrado.
+
+A sua rota hoje está travada para pegar apenas a data do sistema (hoje_str = datetime.now().strftime("%Y-%m-%d")). Vamos torná-la dinâmica para ler o que vem do nosso novo input do HTML e ajustar o cálculo.
+
+Aqui está o código completo da sua rota ajustado como engenharia sênior. Substitua essa rota no seu app.py:
+
+Python
 @app.route("/estoque/balanco-diario")
 @login_required
 @acesso_requerido("estoque")
 def balanco_diario_page():  # NOME EXCLUSIVO: Sem conflito de endpoint!
     try:
-        # 1. Busca a lista de produtos cadastrados para pegar o Saldo Atual
+        # 1. Captura a data enviada pelo filtro do HTML (?data=AAAA-MM-DD). Se não houver, usa a data de hoje.
+        data_param = request.args.get('data')
+        if data_param:
+            hoje_str = data_param
+            # Formata para exibição amigável no topo do card (Ex: 2026-05-19 vira 19/05/2026)
+            try:
+                ano, mes, dia = hoje_str.split('-')
+                data_exibicao = f"{dia}/{mes}/{ano}"
+            except ValueError:
+                data_exibicao = hoje_str
+        else:
+            hoje_str = datetime.now().strftime("%Y-%m-%d")
+            data_exibicao = datetime.now().strftime("%d/%m/%Y")
+
+        # 2. Busca a lista de produtos cadastrados para pegar o Saldo Atual
         lista_produtos = estoque.listar_produtos_finais() if hasattr(estoque, 'listar_produtos_finais') else (produtos.listar_todos() if 'produtos' in globals() else [])
         
-        # 2. Busca o histórico de vendas completo
+        # 3. Busca o histórico de vendas completo
         historico_vendas = estoque.listar_vendas() if hasattr(estoque, 'listar_vendas') else []
-        
-        # Pegar a data de hoje no formato do seu sistema (AAAA-MM-DD)
-        hoje_str = datetime.now().strftime("%Y-%m-%d")
         
         balanco = []
         
@@ -352,7 +370,7 @@ def balanco_diario_page():  # NOME EXCLUSIVO: Sem conflito de endpoint!
             id_produto = p[0]
             nome_produto = p[1]
             
-            # Tratamento de índice seguro para capturar o saldo atual do produto (guardando na variável certa)
+            # Tratamento de índice seguro para capturar o saldo atual do produto
             dado_sobrou = p[4] if len(p) > 4 else (p[3] if len(p) > 3 else 0) 
             
             # BLINDAGEM DE TIPAGEM: Garante que a sobra sempre seja um número inteiro
@@ -361,7 +379,7 @@ def balanco_diario_page():  # NOME EXCLUSIVO: Sem conflito de endpoint!
             except (ValueError, TypeError):
                 sobrou = 0
             
-            # Calcular quanto vendeu desse produto especificamente HOJE
+            # Calcular quanto vendeu desse produto especificamente na data escolhida (hoje_str)
             vendido_hoje = 0
             for v in historico_vendas:
                 if hasattr(v, 'id_produto') or isinstance(v, dict):
@@ -375,8 +393,9 @@ def balanco_diario_page():  # NOME EXCLUSIVO: Sem conflito de endpoint!
                 
                 v_data_str = v_data if isinstance(v, str) else v_data.strftime("%Y-%m-%d") if hasattr(v_data, 'strftime') else str(v_data)
                 
+                # Procura a correspondência exata do ID do produto e se a data de busca está contida no registro
                 if str(v_id) == str(id_produto) and hoje_str in v_data_str:
-                    # BLINDAGEM DE VENDAS: Garante que o incremento não quebre caso a quantidade seja string
+                    # BLINDAGEM DE VENDAS
                     try:
                         vendido_hoje += int(v_qtd)
                     except (ValueError, TypeError):
@@ -393,7 +412,14 @@ def balanco_diario_page():  # NOME EXCLUSIVO: Sem conflito de endpoint!
                 "sobrou": sobrou
             })
             
-        return render_template("balanco_diario.html", data_hoje=datetime.now().strftime("%d/%m/%Y"), balanco=balanco)
+        # Retorna o template passando as variáveis dinâmicas de data de busca atual
+        return render_template(
+            "balanco_diario.html", 
+            data_hoje=data_exibicao, 
+            data_busca_atual=hoje_str, 
+            datetime_hoje=datetime.now().strftime("%Y-%m-%d"),
+            balanco=balanco
+        )
         
     except Exception as e:
         flash(f"Erro ao gerar balanço diário: {e}", "danger")

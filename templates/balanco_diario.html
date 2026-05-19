@@ -6,10 +6,10 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
         <div>
             <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.2rem; letter-spacing: -1px;">
-                📊 Balanço e <span class="text-warning">Fechamento do Dia</span>
+                📊 Balanço e <span class="text-warning">Fechamento de Caixa</span>
             </h1>
             <p class="text-white-50 mb-0">
-                Resumo de produção, saídas e sobras para a data de hoje: <strong class="text-warning">{{ data_hoje }}</strong>
+                Resumo de produção, saídas e sobras para a data selecionada.
             </p>
         </div>
         <div>
@@ -21,19 +21,30 @@
 
     <div class="card bg-dark-card border border-secondary border-opacity-10 mb-4 rounded-4 shadow-lg">
         <div class="card-body p-4">
-            <div class="row align-items-center">
-                <div class="col-md-8">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
                     <label class="form-label text-white-50 small font-monospace mb-2">Filtrar Produto Específico</label>
                     <div class="input-group">
                         <span class="input-group-text bg-black bg-opacity-35 border-secondary border-opacity-25 text-white-50">
                             <i class="bi bi-search"></i>
                         </span>
-                        <input type="text" id="buscaBalancoItem" class="form-control bg-dark text-white border-secondary border-opacity-25 shadow-none py-2" placeholder="Digite o nome do produto para auditar...">
+                        <input type="text" id="buscaBalancoItem" class="form-control bg-dark text-white border-secondary border-opacity-25 shadow-none py-2" placeholder="Digite o nome para auditar...">
                     </div>
                 </div>
-                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+
+                <div class="col-md-4">
+                    <label class="form-label text-white-50 small font-monospace mb-2">Período do Balanço</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-black bg-opacity-35 border-secondary border-opacity-25 text-white-50">
+                            <i class="bi bi-calendar3"></i>
+                        </span>
+                        <input type="date" id="filtroDataBalanco" class="form-control bg-dark text-white border-secondary border-opacity-25 shadow-none py-2" value="{{ data_busca_atual or datetime_hoje }}">
+                    </div>
+                </div>
+
+                <div class="col-md-4 text-md-end">
                     <span class="text-white-50 small d-block font-monospace">Total de Itens Auditados</span>
-                    <span class="fs-4 fw-bold text-white">{{ balanco|length }}</span>
+                    <span class="fs-4 fw-bold text-white" id="contadorItens">{{ balanco|length }}</span>
                 </div>
             </div>
         </div>
@@ -46,9 +57,9 @@
                     <tr class="text-white-50 small text-uppercase">
                         <th class="ps-4 py-3" style="width: 120px;">ID</th>
                         <th class="py-3">Produto</th>
-                        <th class="py-3 text-center text-info" style="background: rgba(13, 202, 240, 0.03);">🏭 Feitos Hoje</th>
-                        <th class="py-3 text-center text-warning" style="background: rgba(255, 193, 7, 0.03);">🛒 Vendidos Hoje</th>
-                        <th class="py-3 text-center text-success" style="background: rgba(25, 135, 84, 0.03);">📦 Sobrou (Saldo)</th>
+                        <th class="py-3 text-center text-info" style="background: rgba(13, 202, 240, 0.03);">🏭 Feitos no Período</th>
+                        <th class="py-3 text-center text-warning" style="background: rgba(255, 193, 7, 0.03);">🛒 Vendidos no Período</th>
+                        <th class="py-3 text-center text-success" style="background: rgba(25, 135, 84, 0.03);">📦 Sobrou (Saldo Atual)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -72,7 +83,7 @@
                     {% else %}
                     <tr>
                         <td colspan="5" class="text-center py-4 text-white-50">
-                            Nenhum produto encontrado para processar o fechamento de hoje.
+                            Nenhum produto encontrado para processar o fechamento.
                         </td>
                     </tr>
                     {% endfor %}
@@ -83,9 +94,11 @@
 </div>
 
 <script>
+// Filtro em tempo real por nome do produto
 document.getElementById('buscaBalancoItem').addEventListener('keyup', function() {
     let textoBusca = this.value.toLowerCase().trim();
     let linhas = document.querySelectorAll('#tabelaBalancoDiario tbody .item-linha-balanco');
+    let visiveis = 0;
 
     linhas.forEach(linha => {
         let elementoNome = linha.querySelector('.alvo-busca-nome');
@@ -95,10 +108,20 @@ document.getElementById('buscaBalancoItem').addEventListener('keyup', function()
         
         if (textoBusca === '' || nomeProduto.includes(textoBusca)) {
             linha.style.display = '';
+            visiveis++;
         } else {
             linha.style.display = 'none';
         }
     });
+    document.getElementById('contadorItens').textContent = visiveis;
+});
+
+// Filtro por alteração de data (Recarrega a rota passando a data escolhida como parâmetro)
+document.getElementById('filtroDataBalanco').addEventListener('change', function() {
+    let dataSelecionada = this.value;
+    if (dataSelecionada) {
+        window.location.href = "/estoque/balanco-diario?data=" + dataSelecionada;
+    }
 });
 </script>
 

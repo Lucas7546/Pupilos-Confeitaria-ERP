@@ -414,14 +414,16 @@ def balanco_diario_page():  # NOME EXCLUSIVO: Sem conflito de endpoint!
         flash(f"Erro ao gerar balanço diário: {e}", "danger")
         return redirect(url_for('estoque_page'))
 
+
+# =====================================================================
+# --- ROTA: ATUALIZAR PRODUTO (CORRIGIDA E SEGURA) ---
+# =====================================================================
 @app.route("/editar-produto/<int:id_produto>", methods=["POST"])
 @login_required
-def atualizar_produto():
+def atualizar_produto(id_produto):  # <-- AGORA RECEBENDO O ID CORRETAMENTE
 
     try:
-
         nome = request.form.get("nome", "").strip()
-
         preco = request.form.get("preco", 0)
 
         sucesso = usuarios.update_produto(
@@ -431,29 +433,25 @@ def atualizar_produto():
         )
 
         if sucesso:
-
             flash(
-                "Produto atualizado com sucesso!",
+                "Produto updated com sucesso!",
                 "success"
             )
-
         else:
-
             flash(
                 "Erro ao atualizar produto.",
                 "danger"
             )
 
     except Exception as e:
-
         print(f"Erro rota atualizar produto: {e}")
-
         flash(
             f"Erro: {e}",
             "danger"
         )
 
-    return redirect(url_for("listar_estoque"))
+    # Retorna para a página unificada de estoque do sistema
+    return redirect(url_for("estoque_page"))
 
 
 @app.route("/editar-materia-prima/<int:id_mp>", methods=["POST"])
@@ -504,67 +502,7 @@ def processar_edicao_mp(id_mp):
     return redirect(url_for('estoque_page'))
 
 
-@app.route("/estoque/balanco-diario")
-@login_required
-@acesso_requerido("estoque")  # Mantendo o padrão de segurança do seu sistema
-def balanco_diario_page():
-    try:
-        # 1. Busca a lista de produtos cadastrados para pegar o Saldo Atual
-        # Esperado que retorne tuplas onde: p[0]=id, p[1]=nome, p[4]=estoque_atual (ou ajuste o índice)
-        lista_produtos = estoque.listar_produtos_finais() 
-        
-        # 2. Busca o histórico de vendas completo
-        historico_vendas = estoque.listar_vendas() # Modifique para a sua função real de listar vendas se o nome for diferente
-        
-        # Pegar a data de hoje no formato do seu sistema (ex: AAAA-MM-DD)
-        hoje_str = datetime.now().strftime("%Y-%m-%d")
-        
-        balanco = []
-        
-        for p in lista_produtos:
-            id_produto = p[0]
-            nome_produto = p[1]
-            
-            # Tratamento de índice: Garanta qual posição está o saldo atual de produtos.
-            # Se for na posição 4 (como na tabela global), usamos p[4]. Se não houver, assume 0.
-            sobrou = p[4] if len(p) > 4 else 0 
-            
-            # Calcular quanto vendeu desse produto especificamente HOJE
-            vendido_hoje = 0
-            for v in historico_vendas:
-                # Se os dados da venda forem dicionário ou objeto:
-                if hasattr(v, 'id_produto') or isinstance(v, dict):
-                    v_id = v.get('id_produto') if isinstance(v, dict) else v.id_produto
-                    v_data = v.get('data') if isinstance(v, dict) else v.data
-                    v_qtd = v.get('quantidade') if isinstance(v, dict) else v.quantidade
-                else:
-                    # Se for tupla pura direto do banco (Ajuste os índices se necessário)
-                    v_id = v[2]    # Ex: ID do produto vendido
-                    v_data = v[1]  # Ex: Data da venda
-                    v_qtd = v[3]   # Ex: Quantidade vendida
-                
-                # Forçar conversão da data para string para comparar com o dia de hoje
-                v_data_str = v_data if isinstance(v, str) else v_data.strftime("%Y-%m-%d") if hasattr(v_data, 'strftime') else str(v_data)
-                
-                if str(v_id) == str(id_produto) and hoje_str in v_data_str:
-                    vendido_hoje += int(v_qtd)
-            
-            # Engenharia reversa: Fabricado = Sobra + Vendas
-            feito_hoje = sobrou + vendido_hoje
-            
-            balanco.append({
-                "id": id_produto,
-                "nome": nome_produto,
-                "feito": feito_hoje,
-                "vendido": vendido_hoje,
-                "sobrou": sobrou
-            })
-            
-        return render_template("balanco_diario.html", data_hoje=datetime.now().strftime("%d/%m/%Y"), balanco=balanco)
-        
-    except Exception as e:
-        flash(f"Erro ao gerar balanço diário: {e}", "danger")
-        return redirect(url_for('estoque_page'))
+
 
 # =========================
 # CADASTRO PRODUTOS/MATERIA-PRIMA

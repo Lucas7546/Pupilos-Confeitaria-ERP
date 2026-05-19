@@ -354,30 +354,117 @@ def estoque_painel():
 
     try:
 
-        # =====================================================
-        # MATÉRIAS-PRIMAS
-        # =====================================================
-
-        materias = estoque.listar_materia_prima()
-
-        # =====================================================
-        # SUBPRODUTOS
-        # =====================================================
-
         with conectar() as con:
 
             with con.cursor() as cur:
 
+                # =====================================================
+                # MATÉRIAS-PRIMAS
+                # =====================================================
+
                 cur.execute("""
+
+                    SELECT 
+                        m.id_materia_prima,
+                        m.nome,
+                        m.unidade_medida,
+                        m.estoque_minimo,
+
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN mov.tipo_movimento IN ('entrada', 'ajuste')
+                                    THEN mov.quantidade
+                                    ELSE 0
+                                END
+                            ), 0
+                        )
+
+                        -
+
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN mov.tipo_movimento = 'saida'
+                                    THEN mov.quantidade
+                                    ELSE 0
+                                END
+                            ), 0
+                        ) AS estoque_atual,
+
+                        CASE
+                            WHEN (
+                                COALESCE(
+                                    SUM(
+                                        CASE
+                                            WHEN mov.tipo_movimento IN ('entrada', 'ajuste')
+                                            THEN mov.quantidade
+                                            ELSE 0
+                                        END
+                                    ), 0
+                                )
+
+                                -
+
+                                COALESCE(
+                                    SUM(
+                                        CASE
+                                            WHEN mov.tipo_movimento = 'saida'
+                                            THEN mov.quantidade
+                                            ELSE 0
+                                        END
+                                    ), 0
+                                )
+
+                            ) <= m.estoque_minimo
+
+                            THEN 'BAIXO'
+
+                            ELSE 'OK'
+
+                        END AS status,
+
+                        COALESCE(m.preco_unitario, 0),
+
+                        TO_CHAR(m.data_cadastro, 'DD/MM/YYYY')
+
+                    FROM materia_prima m
+
+                    LEFT JOIN movimentacao_estoque mov
+                        ON m.id_materia_prima = mov.id_materia_prima
+
+                    GROUP BY
+                        m.id_materia_prima,
+                        m.nome,
+                        m.unidade_medida,
+                        m.estoque_minimo,
+                        m.preco_unitario,
+                        m.data_cadastro
+
+                    ORDER BY m.nome ASC
+
+                """)
+
+                materias = cur.fetchall()
+
+                # =====================================================
+                # SUBPRODUTOS
+                # =====================================================
+
+                cur.execute("""
+
                     SELECT
                         id_subproduto,
                         nome,
-                        COALESCE(estoque_atual, 0),
+                        0 as estoque_atual,
                         preco_custo_unidade,
                         unidade_medida,
-                        data_cadastro
+                        TO_CHAR(data_cadastro, 'DD/MM/YYYY')
+
                     FROM subprodutos
+
                     ORDER BY nome ASC
+
                 """)
 
                 subprodutos = cur.fetchall()
@@ -387,15 +474,19 @@ def estoque_painel():
                 # =====================================================
 
                 cur.execute("""
+
                     SELECT
                         id_produto,
                         nome,
                         preco_venda,
                         categoria,
-                        COALESCE(estoque_atual, 0),
-                        data_cadastro
+                        0 as estoque_atual,
+                        TO_CHAR(data_cadastro, 'DD/MM/YYYY')
+
                     FROM produtos
+
                     ORDER BY nome ASC
+
                 """)
 
                 produtos = cur.fetchall()
@@ -417,7 +508,6 @@ def estoque_painel():
         )
 
         return redirect("/")
-
 
 @app.route("/estoque/balanco-diario")
 @login_required

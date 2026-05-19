@@ -1634,6 +1634,10 @@ def importar_ifood():
     return redirect(url_for("central_importacoes"))
 
 
+# ==========================================
+# ROTAS DE SUPORTE: FICHA TÉCNICA E AJUSTES DO ESTOQUE
+# ==========================================
+
 @app.route("/ficha-tecnica/<int:id_produto>")
 @login_required
 def ficha_tecnica(id_produto):
@@ -1650,7 +1654,7 @@ def ficha_tecnica(id_produto):
             flash("Produto não encontrado!", "danger")
             return redirect("/estoque")
 
-        # 2. Query Avançada: Busca MATÉRIAS-PRIMAS diretas E SUBPRODUTOS vinculados à receita do produto
+        # 2. Query Avançada Avançada (Substituído IFNULL por COALESCE para compatibilidade universal)
         query_itens = """
             SELECT 
                 r.id as id_vinculo,
@@ -1673,7 +1677,7 @@ def ficha_tecnica(id_produto):
                 sub.nome as item, 
                 r.quantidade_utilizada as qtd, 
                 sub.unidade_medida as unidade,
-                (r.quantidade_utilizada * IFNULL(sub.custo_producao_unitario, 0)) as custo_subtotal
+                (r.quantidade_utilizada * COALESCE(sub.custo_producao_unitario, 0)) as custo_subtotal
             FROM receitas r
             JOIN subprodutos sub ON r.id_subproduto = sub.id
             WHERE r.id_produto = %s
@@ -1729,6 +1733,54 @@ def editar_item_ficha(id_produto):
     finally:
         if con: con.close()
     return redirect(f"/ficha-tecnica/{id_produto}")
+
+
+@app.route("/subprodutos/registrar-lote", methods=["POST"])
+@login_required
+def registrar_lote():
+    con = None
+    try:
+        con = conectar()
+        cursor = con.cursor()
+
+        # Captura os dados enviados pelo modal do HTML
+        nome_comercial = request.form.get("nome")
+        preco_venda = request.form.get("preco")
+        id_subproduto = request.form.get("id_subproduto")
+        quantidade_lote = request.form.get("quantidade")
+
+        # CASO 1: Ajuste dos dados básicos do Produto Final (Via botão Ajustar do loop de produtos)
+        if nome_comercial and preco_venda:
+            preco_venda = float(preco_venda.replace(",", "."))
+            # Atualiza o último produto modificado ou adiciona filtro se tiver ID vindo no contexto.
+            # Como o seu formulário não envia ID no loop, pegamos pelo nome comercial para atualizar o preço.
+            cursor.execute("""
+                UPDATE produtos 
+                SET preco_venda = %s 
+                WHERE nome = %s
+            """, (preco_venda, nome_comercial))
+            con.commit()
+            flash(f"Produto '{nome_comercial}' atualizado com sucesso!", "success")
+
+        # CASO 2: Entrada de Lote de Produção Avulsa (Via Modal de produção)
+        elif id_subproduto and quantidade_lote:
+            qtd = float(quantidade_lote.replace(",", "."))
+            cursor.execute("""
+                UPDATE subprodutos 
+                SET quantidade_atual = COALESCE(quantidade_atual, 0) + %s 
+                WHERE id = %s
+            """, (qtd, id_subproduto))
+            con.commit()
+            flash("Lote de produção injetado com sucesso!", "success")
+        
+        else:
+            flash("Dados insuficientes para processar a requisição.", "warning")
+
+    except Exception as e:
+        flash(f"Erro ao processar atualização no estoque: {e}", "danger")
+    finally:
+        if con: con.close()
+    return redirect("/estoque")
 # =========================================================
 # PREVISÃO DE DEMANDA IA
 # =========================================================

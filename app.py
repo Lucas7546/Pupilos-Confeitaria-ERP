@@ -332,6 +332,27 @@ def registrar_producao():
 # =====================================================================
 # --- ROTA: PAINEL GLOBAL DE ESTOQUE (COM HISTÓRICO UNIFICADO) ---
 # =====================================================================
+@app.route("/estoque")
+@login_required
+@acesso_requerido("estoque")
+def estoque_page():
+    try:
+        # Busca os dados unificados do banco de dados exatamente como o estoque.html precisa
+        lista_materias = estoque.listar_materias_primas() if hasattr(estoque, 'listar_materias_primas') else []
+        lista_subprodutos = estoque.listar_subprodutos() if hasattr(estoque, 'listar_subprodutos') else []
+        lista_produtos = estoque.listar_produtos_finais() if hasattr(estoque, 'listar_produtos_finais') else (produtos.listar_todos() if 'produtos' in globals() else [])
+        
+        return render_template(
+            "estoque.html", 
+            materias=lista_materias, 
+            subprodutos=lista_subprodutos, 
+            produtos=lista_produtos
+        )
+    except Exception as e:
+        flash(f"Erro ao carregar o painel de estoque: {e}", "danger")
+        return redirect(url_for('index'))  # Redireciona para a home caso dê algum erro interno
+
+
 @app.route("/estoque/balanco-diario")
 @login_required
 @acesso_requerido("estoque")

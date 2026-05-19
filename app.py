@@ -425,7 +425,6 @@ def balanco_diario_page():  # NOME EXCLUSIVO: Sem conflito de endpoint!
         flash(f"Erro ao gerar balanço diário: {e}", "danger")
         return redirect(url_for('estoque_page'))
 
-
 # =====================================================================
 # --- ROTA: ATUALIZAR PRODUTO (CORRIGIDA E SEGURA) ---
 # =====================================================================

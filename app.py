@@ -59,7 +59,7 @@ from modules import (
 )
 from werkzeug.utils import secure_filename
 
-from modules.ocr_notas import extrair_itens
+from modules.ocr_notas import analisar_nota
 from modules.previsao import prever_consumo_materia_prima
 from modules.permissoes import acesso_requerido
 from modules.usuarios import registrar_log_db
@@ -2382,11 +2382,142 @@ def processar_nota():
             flash("Nenhuma imagem enviada.", "danger")
             return redirect("/compras-inteligentes")
 
-        imagem_bytes = foto.read()
+        # ==========================================
+        # SALVA IMAGEM TEMPORÁRIA
+        # ==========================================
 
-        itens = extrair_itens(imagem_bytes)
+        pasta_temp = "temp"
 
-        print(itens)
+        if not os.path.exists(pasta_temp):
+            os.makedirs(pasta_temp)
+
+        caminho_imagem = os.path.join(
+            pasta_temp,
+            foto.filename
+        )
+
+        foto.save(caminho_imagem)
+
+        # ==========================================
+        # GEMINI ANALISA NOTA
+        # ==========================================
+
+        resposta = analisar_nota(caminho_imagem)
+
+        import json
+
+        resposta_limpa = (
+            resposta
+            .replace("```json", "")
+            .replace("```", "")
+            .strip()
+        )
+
+        itens = json.loads(resposta_limpa)
+
+        # ==========================================
+        # CONEXÃO BANCO
+        # ==========================================
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # ==========================================
+        # PROCESSA ITENS
+        # ==========================================
+
+        for item in itens:
+
+            nome = item.get("produto", "").strip()
+
+            quantidade = float(item.get("quantidade", 0))
+
+            valor_unitario = float(item.get("valor_unitario", 0))
+
+            if not nome:
+                continue
+
+            # ======================================
+            # PROCURA MATÉRIA-PRIMA
+            # ======================================
+
+            cur.execute("""
+                SELECT id_materia_prima
+                FROM materia_prima
+                WHERE LOWER(nome) = LOWER(%s)
+            """, (nome,))
+
+            materia = cur.fetchone()
+
+            # ======================================
+            # SE NÃO EXISTIR -> CRIA
+            # ======================================
+
+            if not materia:
+
+                cur.execute("""
+                    INSERT INTO materia_prima
+                    (
+                        nome,
+                        unidade_medida,
+                        preco_unitario
+                    )
+                    VALUES (%s, %s, %s)
+                    RETURNING id_materia_prima
+                """, (
+                    nome,
+                    "UN",
+                    valor_unitario
+                ))
+
+                id_materia = cur.fetchone()[0]
+
+            else:
+
+                id_materia = materia[0]
+
+                # Atualiza custo
+                cur.execute("""
+                    UPDATE materia_prima
+                    SET preco_unitario = %s
+                    WHERE id_materia_prima = %s
+                """, (
+                    valor_unitario,
+                    id_materia
+                ))
+
+            # ======================================
+            # MOVIMENTAÇÃO ESTOQUE
+            # ======================================
+
+            cur.execute("""
+                INSERT INTO movimentacao_estoque
+                (
+                    id_materia_prima,
+                    tipo_movimento,
+                    quantidade,
+                    observacao,
+                    usuario
+                )
+                VALUES (%s, %s, %s, %s, %s)
+            """, (
+                id_materia,
+                "ENTRADA",
+                quantidade,
+                "Importado automaticamente via nota fiscal",
+                current_user.username
+            ))
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        # ==========================================
+        # REMOVE IMAGEM TEMP
+        # ==========================================
+
+        os.remove(caminho_imagem)
 
         flash("Nota processada com sucesso!", "success")
 
@@ -2396,7 +2527,9 @@ def processar_nota():
         )
 
     except Exception as e:
-        print("ERRO OCR:", e)
+
+        print("ERRO PROCESSAR NOTA:")
+        print(e)
 
         flash("Erro ao processar nota.", "danger")
 

@@ -332,13 +332,6 @@ def registrar_producao():
 # =====================================================================
 # --- ROTA: PAINEL GLOBAL DE ESTOQUE (COM HISTÓRICO UNIFICADO) ---
 # =====================================================================
-Perfeito! Olhando o seu código do app.py, matei exatamente por que o filtro de data não estava funcionando e como ajustar para ficar 100% integrado.
-
-A sua rota hoje está travada para pegar apenas a data do sistema (hoje_str = datetime.now().strftime("%Y-%m-%d")). Vamos torná-la dinâmica para ler o que vem do nosso novo input do HTML e ajustar o cálculo.
-
-Aqui está o código completo da sua rota ajustado como engenharia sênior. Substitua essa rota no seu app.py:
-
-Python
 @app.route("/estoque/balanco-diario")
 @login_required
 @acesso_requerido("estoque")

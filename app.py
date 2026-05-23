@@ -63,7 +63,7 @@ from werkzeug.utils import secure_filename
 from modules.ocr_notas import analisar_nota
 from modules.previsao import prever_consumo_materia_prima
 from modules.permissoes import acesso_requerido
-from modules.usuarios import registrar_log_db
+
 from modules.db import conectar
 import psycopg2
 
@@ -881,7 +881,7 @@ def deletar_mp(id_mp):
 
         usuario_atual = session.get("username", "Desconhecido")
 
-        if estoque.excluir_materia_prima(id_mp):
+        if usuarios.excluir_materia_prima(id_mp):
 
             if 'registrar_log' in globals():
                 registrar_log(

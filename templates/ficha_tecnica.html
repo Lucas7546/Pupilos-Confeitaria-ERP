@@ -2,6 +2,7 @@
 
 {% block content %}
 <div class="container py-4 animate-in">
+    <!-- Cabeçalho e Estrutura inicial mantidos -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
             <nav aria-label="breadcrumb">
@@ -25,8 +26,10 @@
         </div>
     </div>
 
+    <!-- Conteúdo Principal (Row) -->
     <div class="row g-4">
         <div class="col-lg-7">
+            <!-- Tabela de Componentes -->
             <div class="card bg-dark-card border-0 shadow-lg rounded-4 overflow-hidden">
                 <div class="card-header bg-black bg-opacity-30 border-0 py-3 px-4 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 text-white fw-bold small text-uppercase tracking-wider">Estrutura de Componentes</h5>
@@ -85,13 +88,15 @@
             </div>
         </div>
 
+        <!-- Coluna de Performance (5 col) -->
         <div class="col-lg-5">
+            <!-- Inclua aqui o card de performance que você enviou -->
             <div class="card bg-dark-card border-0 shadow-lg rounded-4 h-100 p-4 d-flex flex-column justify-content-between">
                 <div>
                     <div class="card-header bg-transparent border-0 p-0 text-center mb-4">
                         <h5 class="mb-0 text-white fw-bold small text-uppercase tracking-wider">Performance Comercial</h5>
                     </div>
-                    
+        
                     <div class="text-center mb-4">
                         <span class="text-white-50 small text-uppercase">Preço de Venda Praticado</span>
                         <div class="display-5 fw-extrabold text-success mb-1">R$ {{ "%.2f"|format(produto[2]|float) }}</div>
@@ -111,7 +116,7 @@
                         </div>
                         <div class="col-6">
                             <div class="p-3 rounded-4 bg-black bg-opacity-20 text-center">
-                                <small class="text-white-50 d-block mb-1">Lucro Nominal bruto</small>
+                                <small class="text-white-50 d-block mb-1">Lucro Nominal</small>
                                 <span class="fs-4 fw-bold text-info font-monospace">R$ {{ "%.2f"|format(lucro) }}</span>
                             </div>
                         </div>
@@ -122,69 +127,97 @@
                             <div class="fs-2">
                                 {% if margem >= 30 %} 🚀 {% else %} ⚠️ {% endif %}
                             </div>
-                            <div>
-                                <h6 class="fw-bold mb-1 {{ 'text-success' if margem >= 30 else 'text-danger' }}">
-                                    {% if margem >= 30 %}Saúde de Margem Alta{% else %}Alerta de Margem Baixa{% endif %}
-                                </h6>
-                                <p class="small mb-0 text-white-50">
-                                    {% if margem >= 30 %}
-                                        A composição atual deste produto está saudável e deixa margem operacional livre excelente.
-                                    {% else %}
-                                        Verifique se há erro de quantidade cadastrada ou se o custo de algum subproduto subiu.
-                                    {% endif %}
-                                </p>
-                            </div>
+                        <div>
+                            <h6 class="fw-bold mb-1 {{ 'text-success' if margem >= 30 else 'text-danger' }}">
+                                {% if margem >= 30 %}Saúde de Margem Alta{% else %}Alerta de Margem Baixa{% endif %}
+                            </h6>
+                            <p class="small mb-0 text-white-50">
+                                {% if margem >= 30 %}
+                                A composição atual deste produto está saudável e deixa margem operacional livre excelente.
+                                {% else %}
+                                Verifique se há erro de quantidade cadastrada ou se o custo de algum subproduto subiu.
+                                {% endif %}
+                            </p>
                         </div>
                     </div>
                 </div>
-
-                <div class="mt-4 pt-4 border-top border-secondary border-opacity-10">
-                    <button class="btn btn-outline-info w-100 rounded-3 py-2 fw-bold transition-btn" onclick="alert('Módulo de simulação automatizado em processamento!')">
-                        <i class="bi bi-graph-up-arrow me-2"></i>Simular Alteração de Preço Praticado
-                    </button>
-                </div>
             </div>
+
+            <div class="mt-4 pt-4 border-top border-secondary border-opacity-10">
+                <button class="btn btn-outline-info w-100 rounded-3 py-2 fw-bold transition-btn" onclick="alert('Módulo de simulação automatizado em processamento!')">
+                    <i class="bi bi-graph-up-arrow me-2"></i>Simular Alteração de Preço
+                </button>
+            </div>
+    </div>
         </div>
     </div>
 </div>
 
+<!-- Modais aqui -->
 {% for i in itens %}
-<div class="modal fade" id="modalEditarFicha{{ i.id_vinculo }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
-        <div class="modal-content bg-dark-card border border-secondary border-opacity-25 rounded-4 shadow-lg">
-            <div class="modal-header border-0 pt-4 px-4">
-                <h5 class="modal-title fw-bold text-white">Ajustar Quantidade</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="{{ url_for('editar_item_ficha', id_produto=produto[0]) }}" method="POST">
-                <input type="hidden" name="id_vinculo" value="{{ i.id_vinculo }}">
-                <div class="modal-body px-4">
-                    <p class="text-white-50 small mb-3">
-                        Corrigindo proporção do item:<br>
-                        <strong class="text-warning fs-5">{{ i.item }}</strong>
-                    </p>
-                    <div class="mb-2">
-                        <label class="form-label text-white-50 small fw-bold">NOVA QUANTIDADE UTILIZADA</label>
-                        <div class="input-group">
-                            <input type="number" step="0.0001" name="quantidade" class="form-control bg-dark text-white border-secondary border-opacity-50 fs-5 font-monospace" value="{{ i.qtd }}" required>
-                            <span class="input-group-text bg-secondary bg-opacity-20 text-white-50 border-secondary border-opacity-50">{{ i.unidade }}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer border-0 p-4 pt-2">
-                    <button type="button" class="btn btn-link text-white-50 text-decoration-none fw-bold shadow-none btn-sm" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-warning px-4 fw-bold rounded-3 btn-sm shadow">SALVAR ALTERAÇÃO</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<!-- Modal -->
 {% endfor %}
 
+<!-- Estilização corrigida -->
 <style>
     .bg-dark-card { background: #1e293b !important; border-radius: 24px; }
     .text-violet { color: #c084fc !important; }
     .border-violet { border-color: rgba(192, 132, 252, 0.3) !important; }
     .tracking-wider { letter-spacing: 0.05em; }
     .fw-extrabold { font-weight: 800; }
-    .font-monospace { font-
+    .font-monospace { 
+        font-family: 'JetBrains Mono', 'Courier New', monospace !important; 
+    }
+
+    .animate-in {
+        animation: slideUp 0.5s ease-out;
+    }
+
+    .transition-btn {
+        transition: all 0.2s ease-in-out;
+    }
+
+    .transition-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(15px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media print {
+
+        body {
+            background: white !important;
+        }
+
+        .btn,
+        .breadcrumb,
+        .modal,
+        nav {
+            display: none !important;
+        }
+
+        .card {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+
+        .text-white,
+        .text-warning,
+        .text-success,
+        .text-info,
+        .text-danger {
+            color: black !important;
+        }
+    }
+</style>
+
+{% endblock %}

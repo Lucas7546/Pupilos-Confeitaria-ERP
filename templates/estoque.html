@@ -89,7 +89,7 @@
                         <th class="py-3 text-center">Unidade</th>
                         <th class="py-3 text-center">Saldo Atual</th>
                         <th class="py-3 text-center">Data Cadastro</th>
-                        <th class="py-3 text-end pe-4" style="width: 220px;">Ações</th>
+                        <th class="py-3 text-end pe-4" style="min-width: 320px;">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -114,11 +114,11 @@
                             {{ item[7] if item[7] else '--/--/----' }}
                         </td>
                         <td class="text-end pe-4">
-                            <div class="d-flex justify-content-end gap-2">
+                            <div class="d-flex justify-content-end align-items-center gap-2 flex-nowrap">
                                 <button class="btn btn-outline-warning btn-sm px-3 rounded-3 fw-bold" data-bs-toggle="modal" data-bs-target="#modalEditarMP{{ item[0] }}">
                                     <i class="bi bi-pencil-square"></i> AJUSTAR
                                 </button>
-                                {% if session.get('nivel') in ['admin', 'socios'] %}
+                                {% if session.get('nivel')|lower in ['admin', 'administrador', 'socios'] %}
                                 <form action="{{ url_for('deletar_mp', id_mp=item[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Deseja excluir {{ item[1] }}?')">
                                      <button type="submit" class="btn btn-outline-danger btn-sm px-2 rounded-3">
                                         <i class="bi bi-trash3"></i>
@@ -259,6 +259,13 @@
                                 <a href="/ficha-tecnica/{{ prod[0]|int }}" class="btn btn-outline-info btn-sm px-2 rounded-3 fw-bold">
                                     <i class="bi bi-journal-text"></i> FICHA
                                 </a>
+                                {% if session.get('nivel')|lower in ['admin', 'administrador', 'socios'] %}
+                                 <form action="{{ url_for('deletar_produto', id_produto=prod[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Deseja excluir o produto {{ prod[1] }}?')">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm px-2 rounded-3">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                 </form>
+                                 {% endif %}
                             </div>
                         </td>
                     </tr>

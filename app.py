@@ -2,6 +2,7 @@ import os
 import csv
 import io
 import json
+import uuid
 import pandas as pd
 from modules.normalizador_ia import encontrar_produto_similar
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -828,56 +829,85 @@ def vincular_receita():
 # --- EXCLUIR PRODUTO ---
 @app.route("/excluir-produto/<int:id_produto>", methods=["POST"])
 @login_required
-@acesso_requerido("estoque")  # Garante privilégio antes da deleção
+@acesso_requerido("estoque")
 def deletar_produto(id_produto):
+
     try:
-        # CORREÇÃO SÊNIOR: Captura o usuário real conectado na sessão
+
         usuario_atual = session.get("username", "Desconhecido")
-        
-        # Tenta executar a exclusão através do módulo de produtos
-        if produtos.excluir_produto(id_produto):
-            registrar_log("DELETAR", "PRODUTOS", f"ID {id_produto} removido por '{usuario_atual}'")
+
+        if usuarios.excluir_produto(id_produto):
+
+            registrar_log(
+                "DELETAR",
+                "PRODUTOS",
+                f"ID {id_produto} removido por '{usuario_atual}'"
+            )
+
             flash("Produto excluído com sucesso!", "success")
+
         else:
-            flash("Não foi possível excluir o produto. Verifique se ele possui vínculos ativos.", "warning")
-            
+
+            flash(
+                "Não foi possível excluir o produto. Verifique vínculos ativos.",
+                "warning"
+            )
+
     except Exception as e:
+
         print(f"❌ ERRO ROTA EXCLUIR PRODUTO: {e}")
-        flash(f"Erro interno ao tentar processar a exclusão: {e}", "danger")
-        
-    return redirect(url_for("render_cadastro"))
+
+        flash(
+            f"Erro interno ao tentar processar a exclusão: {e}",
+            "danger"
+        )
+
+    return redirect(url_for("estoque_painel"))
 
 
 # =====================================================================
 # --- EXCLUIR MATÉRIA-PRIMA (INSUMO - ADAPTADO E CORRIGIDO) ---
 # =====================================================================
+# =====================================================================
+# --- EXCLUIR MATÉRIA-PRIMA (IMPLEMENTAÇÃO COMPLETA) ---
+# =====================================================================
+
 @app.route("/excluir-mp/<int:id_mp>", methods=["POST"])
 @login_required
 @acesso_requerido("estoque")
 def deletar_mp(id_mp):
-    """
-    Seu endpoint que o HTML chama. Mantém a trava de segurança 
-    do seu módulo estoque original.
-    """
-    try:
-        usuario_atual = session.get("username", "Desconhecido")
-        
-        if estoque.excluir_materia(id_mp):
-            if 'registrar_log' in globals():
-                registrar_log("DELETAR", "MATERIA_PRIMA", f"Insumo ID {id_mp} removido por '{usuario_atual}'")
-            flash("Matéria-prima excluída com sucesso!", "success")
-        else:
-            flash("Não foi possível remover o insumo. Certifique-se de que ele não faz parte de nenhuma receita ativa.", "warning")
-            
-    except Exception as e:
-        print(f"❌ ERRO OPERACIONAL EXCLUIR MP: {e}")
-        flash(f"Erro ao tentar deletar o insumo: {e}", "danger")
-        
-    try:
-        return redirect(url_for("render_cadastro"))
-    except Exception:
-        return redirect("/estoque")
 
+    try:
+
+        usuario_atual = session.get("username", "Desconhecido")
+
+        if estoque.excluir_materia_prima(id_mp):
+
+            if 'registrar_log' in globals():
+                registrar_log(
+                    "DELETAR",
+                    "MATERIA_PRIMA",
+                    f"Insumo ID {id_mp} removido por '{usuario_atual}'"
+                )
+
+            flash("Matéria-prima excluída com sucesso!", "success")
+
+        else:
+            flash(
+                "Não foi possível remover o insumo.",
+                "warning"
+            )
+
+    except Exception as e:
+
+        print(f"❌ ERRO OPERACIONAL EXCLUIR MP: {e}")
+
+        flash(
+            f"Erro ao tentar deletar o insumo: {e}",
+            "danger"
+        )
+
+    return redirect(url_for("estoque_painel")
 
 # =========================================================
 # EXCLUIR / ESTORNAR VENDA
@@ -1520,7 +1550,7 @@ def area_admin():
 @app.route("/cadastro-central")
 @login_required
 def cadastro_central():
-    return redirect(url_for("render_cadastro"))
+    return redirect(url_for("estoque_painel"))
 
 # =====================================================================
 # --- CENTRAL DE IMPORTAÇÕES (AUDITADO E ADAPTADO) ---
@@ -2370,35 +2400,151 @@ def compras_inteligentes():
 @app.route("/processar-nota", methods=["POST"])
 @login_required
 def processar_nota():
-    import os, json, uuid
-    
-    foto = request.files.get("foto_nota")
-    if not foto:
-        flash("Nenhuma imagem enviada.", "danger")
-        return redirect("/compras-inteligentes")
 
-    # Cria pasta temp e salva
-    if not os.path.exists("temp"): os.makedirs("temp")
-    caminho_imagem = os.path.join("temp", f"{uuid.uuid4()}{os.path.splitext(foto.filename)[1]}")
-    foto.save(caminho_imagem)
+    
 
     try:
-        # Chama a IA
+
+        foto = request.files.get("foto_nota")
+
+        # =====================================================
+        # VALIDAÇÃO IMAGEM
+        # =====================================================
+
+        if not foto or foto.filename == "":
+
+            flash("Nenhuma imagem enviada.", "danger")
+            return redirect("/compras-inteligentes")
+
+        # =====================================================
+        # CRIA PASTA TEMP
+        # =====================================================
+
+        pasta_temp = "temp"
+
+        if not os.path.exists(pasta_temp):
+            os.makedirs(pasta_temp)
+
+        # =====================================================
+        # NOME SEGURO + UUID
+        # =====================================================
+
+        extensao = os.path.splitext(foto.filename)[1].lower()
+
+        extensoes_permitidas = [
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp"
+        ]
+
+        if extensao not in extensoes_permitidas:
+
+            flash("Formato de imagem inválido.", "danger")
+            return redirect("/compras-inteligentes")
+
+        nome_arquivo = f"{uuid.uuid4()}{extensao}"
+
+        caminho_imagem = os.path.join(
+            pasta_temp,
+            nome_arquivo
+        )
+
+        # =====================================================
+        # SALVA IMAGEM
+        # =====================================================
+
+        foto.save(caminho_imagem)
+
+        # =====================================================
+        # CHAMA IA
+        # =====================================================
+
         resposta = analisar_nota(caminho_imagem)
-        resposta_limpa = resposta.replace("```json", "").replace("```", "").strip()
+
+        if not resposta:
+
+            flash("A IA não retornou resposta.", "danger")
+            return redirect("/compras-inteligentes")
+
+        # =====================================================
+        # LIMPA JSON
+        # =====================================================
+
+        resposta_limpa = (
+            resposta
+            .replace("```json", "")
+            .replace("```", "")
+            .strip()
+        )
+
+        # =====================================================
+        # CONVERTE JSON
+        # =====================================================
+
         itens = json.loads(resposta_limpa)
-        
-        # Remove a imagem após processar a IA
-        if os.path.exists(caminho_imagem): os.remove(caminho_imagem)
-        
-        # Renderiza a página de conferência (resultado_nota.html)
-        return render_template("resultado_nota.html", itens=itens)
-        
-    except Exception as e:
-        print(f"ERRO PROCESSAR NOTA: {e}")
-        flash("Erro ao processar a nota com a IA.", "danger")
+
+        # =====================================================
+        # VALIDA RESULTADO
+        # =====================================================
+
+        if not isinstance(itens, list):
+
+            flash("A IA retornou um formato inválido.", "danger")
+            return redirect("/compras-inteligentes")
+
+        # =====================================================
+        # REMOVE IMAGEM TEMP
+        # =====================================================
+
+        if os.path.exists(caminho_imagem):
+            os.remove(caminho_imagem)
+
+        # =====================================================
+        # EXIBE TELA CONFERÊNCIA
+        # =====================================================
+
+        return render_template(
+            "resultado_nota.html",
+            itens=itens
+        )
+
+    except json.JSONDecodeError:
+
+        print("ERRO JSON IA")
+
+        flash(
+            "A IA retornou um JSON inválido.",
+            "danger"
+        )
+
         return redirect("/compras-inteligentes")
-    
+
+    except Exception as e:
+
+        print("ERRO PROCESSAR NOTA:")
+        print(e)
+
+        flash(
+            "Erro ao processar a nota fiscal.",
+            "danger"
+        )
+
+        return redirect("/compras-inteligentes")
+
+    finally:
+
+        # GARANTE LIMPEZA DO ARQUIVO
+
+        try:
+
+            if 'caminho_imagem' in locals():
+
+                if os.path.exists(caminho_imagem):
+                    os.remove(caminho_imagem)
+
+        except:
+            pass
 
 
 @app.route("/confirmar-nota", methods=["POST"])

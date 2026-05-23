@@ -119,9 +119,11 @@
                                     <i class="bi bi-pencil-square"></i> AJUSTAR
                                 </button>
                                 {% if session.get('nivel') in ['admin', 'socios'] %}
-                                <a href="{{ url_for('deletar_mp', id_mp=item[0]) }}" class="btn btn-outline-danger btn-sm px-2 rounded-3" onclick="return confirm('Deseja excluir {{ item[1] }}?')">
-                                    <i class="bi bi-trash3"></i>
-                                </a>
+                                <form action="{{ url_for('deletar_mp', id_mp=item[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Deseja excluir {{ item[1] }}?')">
+                                     <button type="submit" class="btn btn-outline-danger btn-sm px-2 rounded-3">
+                                        <i class="bi bi-trash3"></i>
+                                     </button>
+                                </form>
                                 {% endif %}
                             </div>
                         </td>
@@ -268,7 +270,7 @@
                                     <h5 class="modal-title fw-bold text-white">Editar Dados do Produto</h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
-                                <form action="/subprodutos/registrar-lote" method="POST">
+                                <form action="{{ url_for('atualizar_produto', id_produto=prod[0]) }}" method="POST">
                                     <div class="modal-body px-4">
                                         <div class="mb-3">
                                             <label class="form-label text-white-50 small fw-bold">NOME COMERCIAL</label>
@@ -338,7 +340,7 @@ function filtrarEstoqueUnificado() {
     let linhas = document.querySelectorAll('#tabelaGlobalEstoque tbody tr[data-tipo]');
     
     linhas.forEach(linha => {
-        let elementoNome = WebKitMutationObserver ? linha.querySelector('.alvo-busca-nome') : linha.querySelector('.alvo-busca-nome');
+        let elementoNome = linha.querySelector('.alvo-busca-nome');
         if (!elementoNome) return;
         
         let nomeItem = elementoNome.textContent.toLowerCase();

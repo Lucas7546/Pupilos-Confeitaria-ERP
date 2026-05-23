@@ -907,7 +907,7 @@ def deletar_mp(id_mp):
             "danger"
         )
 
-    return redirect(url_for("estoque_painel")
+    return redirect(url_for("estoque_painel"))
 
 # =========================================================
 # EXCLUIR / ESTORNAR VENDA

@@ -921,11 +921,7 @@ def deletar_venda(id_venda):
 
         usuario_atual = session.get("username", "Desconhecido")
 
-        # =====================================================
-        # EXECUTA ESTORNO
-        # =====================================================
-
-        sucesso = vendas.excluir_venda(id_venda)
+        sucesso = usuarios.excluir_venda(id_venda)
 
         if sucesso:
 
@@ -955,6 +951,8 @@ def deletar_venda(id_venda):
             f"Erro crítico no processamento do estorno: {e}",
             "danger"
         )
+
+    return redirect(url_for("vendas"))
 
     # =====================================================
     # REDIRECIONA PARA VENDAS

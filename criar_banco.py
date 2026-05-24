@@ -125,6 +125,32 @@ CREATE TABLE IF NOT EXISTS vendas (
 )
 """)
 
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS vendas_delivery (
+
+    id_delivery SERIAL PRIMARY KEY,
+
+    produto TEXT,
+
+    quantidade REAL,
+
+    valor_unitario REAL,
+
+    valor_total REAL,
+
+    taxa REAL,
+
+    repasse REAL,
+
+    data_venda TIMESTAMP,
+
+    canal_delivery TEXT,
+
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
 # =========================================================
 # 6. ITENS VENDA (Sem alteração de colunas)
 # =========================================================

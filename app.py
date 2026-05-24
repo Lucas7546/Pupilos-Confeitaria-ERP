@@ -3,7 +3,16 @@ import csv
 import io
 import json
 import uuid
+import tempfile
 import pandas as pd
+from modules.importador_ia import processar_relatorio_delivery
+from modules.importador_ia import (
+    ler_arquivo,
+    interpretar_relatorio_com_ia,
+    normalizar_vendas,
+    salvar_vendas,
+    gerar_financeiro
+)
 from modules.normalizador_ia import encontrar_produto_similar
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -61,7 +70,7 @@ from modules import (
     previsao
 )
 from werkzeug.utils import secure_filename
-
+from modules.importador_ia import *
 from modules.ocr_notas import analisar_nota
 from modules.previsao import prever_consumo_materia_prima
 from modules.permissoes import acesso_requerido
@@ -1554,6 +1563,7 @@ def cadastro_central():
 # =====================================================================
 # --- CENTRAL DE IMPORTAÇÕES (AUDITADO E ADAPTADO) ---
 # =====================================================================
+
 @app.route("/importacoes")
 @login_required
 @acesso_requerido("vendas")
@@ -1565,30 +1575,123 @@ def central_importacoes():
 @login_required
 @acesso_requerido("vendas")
 def importar_ifood():
+
     try:
+
         arquivo = request.files.get("arquivo")
-        
+
         if not arquivo or arquivo.filename == '':
             flash("Nenhum arquivo selecionado!", "warning")
             return redirect(url_for("central_importacoes"))
 
-        # Registro de Log unificado e blindado usando o username real
-        usuario_atual = getattr(current_user, 'username', session.get('username', 'Desconhecido'))
+        usuario_atual = getattr(
+            current_user,
+            'username',
+            session.get('username', 'Desconhecido')
+        )
+
         registrar_log(
-            acao="IMPORT_IFOOD", 
-            modulo="VENDAS", 
+            acao="IMPORT_IFOOD",
+            modulo="VENDAS",
             detalhe=f"Importação iniciada por '{usuario_atual}': {arquivo.filename}"
         )
 
-        # O pipeline do Pandas (pd.read_excel/csv) rodará aqui sobre a variável 'arquivo'
-        
-        flash(f"Arquivo '{arquivo.filename}' recebido com sucesso! O processamento foi registrado.", "success")
-        
+        # =========================================
+        # SALVA TEMPORÁRIO
+        # =========================================
+
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=arquivo.filename
+        ) as temp:
+
+            arquivo.save(temp.name)
+
+            caminho_arquivo = temp.name
+
+        # =========================================
+        # LEITURA
+        # =========================================
+
+        df = ler_arquivo(caminho_arquivo)
+
+        # =========================================
+        # IA INTERPRETA
+        # =========================================
+
+        dados_ia = interpretar_relatorio_com_ia(df)
+
+        # =========================================
+        # NORMALIZA
+        # =========================================
+
+        vendas_normalizadas = normalizar_vendas(
+            dados_ia
+        )
+
+        # =========================================
+        # IDENTIFICA PRODUTOS ERP
+        # =========================================
+
+        for venda in vendas_normalizadas:
+
+            id_produto = localizar_produto_erp(
+                venda["produto"]
+            )
+
+            venda["id_produto"] = id_produto
+
+        # =========================================
+        # SALVA VENDAS
+        # =========================================
+
+        salvar_vendas(
+            vendas_normalizadas
+        )
+
+        # =========================================
+        # BAIXA ESTOQUE AUTOMÁTICA
+        # =========================================
+
+        baixar_estoque_delivery(
+            vendas_normalizadas
+        )
+
+        # =========================================
+        # GERA FINANCEIRO
+        # =========================================
+
+        financeiro = gerar_financeiro(
+            vendas_normalizadas
+        )
+
+        # =========================================
+        # REMOVE TEMP
+        # =========================================
+
+        os.remove(caminho_arquivo)
+
+        flash(
+            f"""
+            Importação concluída!
+            {len(vendas_normalizadas)} vendas processadas.
+            Faturamento: R$ {financeiro['faturamento']:.2f}
+            """,
+            "success"
+        )
+
     except Exception as e:
-        print(f"❌ Erro na rota de importação iFood: {e}")
-        flash(f"Erro crítico na importação: {e}", "danger")
-        
-    return redirect(url_for("central_importacoes"))
+
+        print(f"❌ ERRO IMPORTAÇÃO IA: {e}")
+
+        flash(
+            f"Erro crítico na importação: {e}",
+            "danger"
+        )
+
+    return redirect(
+        url_for("central_importacoes")
+    )
 
 
 # =====================================================================

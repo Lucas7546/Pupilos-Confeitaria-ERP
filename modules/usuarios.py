@@ -33,21 +33,33 @@ def buscar_usuario(username):
 # CRIAR USUÁRIO (FORÇADO PADRÃO LIMPO)
 # =========================
 def criar_usuario(username, senha, nivel="colaborador"):
+
     conn = None
+
     try:
+
         conn = conectar()
         cursor = conn.cursor()
 
-        username = username.strip()
+        username = username.strip().lower()
         nivel = nivel.strip().lower()
 
         # valida nível
-        if nivel not in ["admin", "socios", "colaborador"]:
+        if nivel not in [
+            "admin",
+            "socios",
+            "ti",
+            "financeiro",
+            "dono",
+            "colaborador"
+        ]:
             raise Exception("Nível inválido")
 
         # checar duplicado
         cursor.execute("""
-            SELECT id_usuario FROM usuarios WHERE username = %s
+            SELECT id_usuario
+            FROM usuarios
+            WHERE username = %s
         """, (username,))
 
         if cursor.fetchone():
@@ -56,18 +68,31 @@ def criar_usuario(username, senha, nivel="colaborador"):
         senha_hash = generate_password_hash(senha)
 
         cursor.execute("""
-            INSERT INTO usuarios (username, senha, nivel, ativo)
+            INSERT INTO usuarios (
+                username,
+                senha,
+                nivel,
+                ativo
+            )
             VALUES (%s, %s, %s, 1)
-        """, (username, senha_hash, nivel))
+        """, (
+            username,
+            senha_hash,
+            nivel
+        ))
 
         conn.commit()
+
         return True
 
     except Exception as e:
+
         print(f"Erro ao criar usuário: {e}")
+
         return False
 
     finally:
+
         if conn:
             conn.close()
 

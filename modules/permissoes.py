@@ -9,7 +9,10 @@ from flask import redirect, url_for, flash # adicione os imports caso não exist
 PERMISSOES = {
     "admin": ["usuarios", "estoque", "vendas", "financeiro", "cadastro", "auditoria", "produtos"],
     "socios": ["estoque", "vendas", "financeiro", "cadastro", "auditoria", "produtos"],
+    "dono": ["estoque", "vendas", "financeiro", "cadastro", "auditoria", "produtos"],
+    "financeiro":["financeiro", "vendas", "cadastro" ],
     "colaborador": ["estoque", "vendas"],
+    "ti": ["usuarios","auditoria"],
     "bloqueado": []
 }
 
@@ -27,7 +30,7 @@ def pode_acessar(modulo):
         return False
 
     # A MARRETA: Se você logar como admin, você manda em tudo, ponto final.
-    if str(usuario[1]).lower() == 'admin':
+    if str(usuario[3]).lower() == 'admin':
         nivel = 'admin'
     else:
         try:
@@ -50,3 +53,11 @@ def acesso_requerido(modulo):
             return f(*args, **kwargs)
         return wrapper
     return decorator
+
+
+
+
+
+
+
+

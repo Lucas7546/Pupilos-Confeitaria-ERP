@@ -29,9 +29,11 @@ from flask import (
     request,
     redirect,
     url_for,
+    jsonify,
     flash,
     abort,
     session,
+    
     send_file
 )
 
@@ -952,13 +954,11 @@ def deletar_venda(id_venda):
             "danger"
         )
 
-    return redirect(url_for("vendas"))
+    return redirect("/vendas")
 
     # =====================================================
     # REDIRECIONA PARA VENDAS
-    # =====================================================
-
-    return redirect("/vendas")
+    # ====================================================
 
 
 @app.route("/estoque/fechamento")
@@ -1103,6 +1103,7 @@ def precificacao():
                 "id": p['id_produto'],
                 "nome": p['nome'],
                 "atual": venda,
+                "custo": custo,
                 "equilibrio": equilibrio,
                 "sugerido": sugerido,
                 "alerta": venda < equilibrio if custo > 0 else False
@@ -2578,6 +2579,62 @@ def confirmar_nota():
         
     flash("Estoque atualizado com sucesso!", "success")
     return redirect("/estoque") # Altere para a rota que você usa para listar o estoque
+
+
+@app.route('/api/atualizar-precos', methods=['POST'])
+@login_required
+def atualizar_precos():
+
+    niveis_permitidos = ["admin", "socio", "dono"]
+
+    if current_user.nivel not in niveis_permitidos:
+        abort(403)
+
+    data = request.json
+
+    if not data or 'itens' not in data:
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Dados inválidos"
+        }), 400
+
+    con = None
+
+    try:
+
+        con = conectar()
+        cur = con.cursor()
+
+        for item in data['itens']:
+
+            cur.execute("""
+                UPDATE produtos
+                SET preco_venda = %s
+                WHERE id_produto = %s
+            """, (
+                item['novo_preco'],
+                item['id']
+            ))
+
+        con.commit()
+
+        return jsonify({
+            "status": "sucesso"
+        }), 200
+
+    except Exception as e:
+
+        print(f"Erro atualizar preços: {e}")
+
+        return jsonify({
+            "status": "erro",
+            "mensagem": str(e)
+        }), 500
+
+    finally:
+
+        if con:
+            con.close()
 # =========================
 # INICIALIZAÇÃO
 # =========================

@@ -82,9 +82,6 @@ import psycopg2
 # =========================
 # APP
 # =========================
-ENV = os.getenv("ENV", "production")
-if ENV == "development":
-    print("Modo dev ativo")
 client = genai.Client()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "pupilos-confeitaria-senha-segura-2026")
@@ -141,33 +138,25 @@ with app.app_context():
 # ========================================================
 # LOGS (CORRIGIDO)
 # ========================================================
-def registrar_log(acao, modulo, detalhe="", usuario_manual=None):
-
+def registrar_log(acao, modulo, detalhe=""):
     try:
+        usuario_atual = "Sistema"
 
-        if usuario_manual:
+        if current_user.is_authenticated:
+            usuario_atual = getattr(current_user, "username", "Desconhecido")
+        elif session.get("username"):
+            usuario_atual = session.get("username")
 
-            usuario_log = usuario_manual
-
-        elif current_user.is_authenticated:
-
-            # SALVA O USERNAME
-            usuario_log = current_user.username
-
-        else:
-
-            usuario_log = "anonimo"
-
-        usuarios.registrar_log_db(
-            usuario_log,
-            acao,
-            modulo,
-            detalhe
-        )
+        with conectar() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO logs (usuario, acao, modulo, detalhe)
+                    VALUES (%s, %s, %s, %s)
+                """, (usuario_atual, acao, modulo, detalhe))
+                conn.commit()
 
     except Exception as e:
-
-        print(f"ERRO AO SALVAR LOG: {e}")
+        print(f"❌ FALHA AO GRAVAR LOG: {e}")
 
 # =========================
 # ROTAS DE AUTENTICAÇÃO
@@ -618,7 +607,7 @@ def balanco_diario_page():
     except Exception as e:
         print(f"❌ ERRO GRAVE NO BALANÇO DIÁRIO: {e}")
         flash(f"Erro interno ao processar o balanço diário: {e}", "danger")
-        return redirect(url_for('estoque_page'))
+        return redirect(url_for('estoque_painel'))
 
 # =====================================================================
 # --- ROTA: ATUALIZAR PRODUTO (HIGIENIZAÇÃO E SEGURANÇA) ---
@@ -632,7 +621,7 @@ def atualizar_produto(id_produto):
 
         if not nome:
             flash("O nome do produto não pode ficar em branco.", "warning")
-            return redirect(url_for("estoque_page"))
+            return redirect(url_for("estoque_painel"))
 
         # Conversão segura de valores monetários vindos do formulário
         try:
@@ -641,7 +630,7 @@ def atualizar_produto(id_produto):
                 raise ValueError
         except ValueError:
             flash("Preço inválido informado. O valor deve ser um número positivo.", "danger")
-            return redirect(url_for("estoque_page"))
+            return redirect(url_for("estoque_painel"))
 
         # Executa a atualização (Padrão mantido no módulo atual)
         sucesso = produtos.update_produto(id_produto, nome, preco)
@@ -656,7 +645,7 @@ def atualizar_produto(id_produto):
         print(f"❌ ERRO ROTA ATUALIZAR PRODUTO: {e}")
         flash(f"Erro inesperado: {e}", "danger")
 
-    return redirect(url_for("estoque_page"))
+    return redirect(url_for("estoque_painel"))
 
 
 # =====================================================================
@@ -673,7 +662,7 @@ def processar_edicao_mp(id_mp):
 
         if not nome or not unidade:
             flash("Nome e Unidade de Medida são obrigatórios.", "warning")
-            return redirect(url_for('estoque_page'))
+            return redirect(url_for('estoque_painel'))
 
         # Blindagem numérica contra falhas de digitação (Ex: '2,5' ou espaços vazios)
         try:
@@ -683,7 +672,7 @@ def processar_edicao_mp(id_mp):
                 raise ValueError
         except ValueError:
             flash("Valores numéricos de custo ou quantidade inválidos.", "danger")
-            return redirect(url_for('estoque_page'))
+            return redirect(url_for('estoque_painel'))
 
         # Executa a atualização usando a função mapeada
         sucesso = estoque.atualizar_materia_prima(id_mp, nome, preco, unidade, quantidade)
@@ -698,7 +687,7 @@ def processar_edicao_mp(id_mp):
         print(f"❌ ERRO ROTA EDITAR MATÉRIA-PRIMA: {e}")
         flash(f"Erro inesperado: {e}", "danger")
 
-    return redirect(url_for('estoque_page'))
+    return redirect(url_for('estoque_painel'))
 
 
 
@@ -1057,7 +1046,7 @@ def vincular_subproduto_produto():
 def deletar_subproduto(id_subproduto):
     if session.get("nivel") not in ["admin", "socios"]:
         flash("Acesso negado! Apenas sócios podem excluir subprodutos.", "danger")
-        return redirect(url_for('estoque_page'))
+        return redirect(url_for('estoque_painel'))
 
     try:
         sucesso = estoque.excluir_subproduto_banco(id_subproduto)
@@ -1074,7 +1063,7 @@ def deletar_subproduto(id_subproduto):
     except Exception as e:
         flash(f"Erro ao excluir subproduto: {e}", "danger")
 
-    return redirect(url_for('estoque_page'))
+    return redirect(url_for('estoque_painel'))
 
 # --- ROTA: PRECIFICAÇÃO ---
 from psycopg2.extras import RealDictCursor
@@ -1328,36 +1317,6 @@ def listar_logs_auditoria_filtrado(limite=100, usuario=None, acao=None, modulo=N
         print(f"❌ Erro na consulta de logs filtrados: {e}")
         return []
 
-# =========================================================
-# REGISTRAR LOG DE AUDITORIA (MOTOR UNIFICADO)
-# =========================================================
-def registrar_log(acao, modulo, detalhe):
-    """
-    Grava uma ação de auditoria no banco de dados de forma isolada e segura.
-    Garante o fechamento da conexão mesmo se o insert falhar.
-    """
-    query = """
-        INSERT INTO logs (usuario, acao, modulo, detalhe)
-        VALUES (%s, %s, %s, %s)
-    """
-    try:
-        # Captura o usuário logado de forma resiliente (Flask-Login ou Session)
-        usuario_atual = "Sistema"
-        if 'current_user' in globals() and hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
-            usuario_atual = getattr(current_user, 'username', 'Desconhecido')
-        elif 'session' in globals() and session.get("username"):
-            usuario_atual = session.get("username")
-
-        # Garante que a conexão abra, salve e feche sem travar o pool do Render
-        with conectar() as conn:
-            with conn.cursor() as cur:
-                cur.execute(query, (usuario_atual, acao, modulo, detalhe))
-                conn.commit()
-
-    except Exception as e:
-        # Logamos no console do Render para você não perder o rastro do erro,
-        # mas não travamos a experiência do usuário na tela por falha de log.
-        print(f"❌ FALHA CRÍTICA AO GRAVAR LOG DE AUDITORIA: {e}")
 
 # =====================================================================
 # --- EXPORTAÇÃO DE BACKUP JSON (VERSÃO BLINDADA) ---
@@ -1747,7 +1706,7 @@ def ficha_tecnica(id_produto):
 
                 if not produto:
                     flash("Produto não encontrado no catálogo!", "danger")
-                    return redirect(url_for("estoque_page") if "estoque_page" in globals() else "/estoque")
+                    return redirect(url_for("estoque_painel") if "estoque_painel" in globals() else "/estoque")
 
                 produto_lista = [produto[0], produto[1], float(produto[2] or 0)]
 
@@ -1773,7 +1732,7 @@ def ficha_tecnica(id_produto):
     except Exception as e:
         print(f"❌ ERRO GRAVE FICHA TÉCNICA (ID PROD {id_produto}): {e}")
         flash(f"Erro ao processar dados da ficha técnica: {e}", "danger")
-        return redirect(url_for("estoque_page") if "estoque_page" in globals() else "/estoque")
+        return redirect(url_for("estoque_painel") if "estoque_painel" in globals() else "/estoque")
 
 
 @app.route("/ficha-tecnica/editar-item/<int:id_produto>", methods=["POST"])
@@ -1836,7 +1795,7 @@ def registrar_lote():
                         if preco_venda < 0: raise ValueError
                     except ValueError:
                         flash("Preço de venda inválido.", "danger")
-                        return redirect(url_for("estoque_page") if "estoque_page" in globals() else "/estoque")
+                        return redirect(url_for("estoque_painel") if "estoque_painel" in globals() else "/estoque")
 
                     cursor.execute("""
                         UPDATE produtos 
@@ -1856,7 +1815,7 @@ def registrar_lote():
                         if qtd < 0: raise ValueError
                     except ValueError:
                         flash("Quantidade de lote informada é inválida.", "danger")
-                        return redirect(url_for("estoque_page") if "estoque_page" in globals() else "/estoque")
+                        return redirect(url_for("estoque_painel") if "estoque_painel" in globals() else "/estoque")
 
                     # CORREÇÃO SÊNIOR: Ajustado de 'id' para a coluna correta 'id_subproduto' de acordo com criar_banco.py
                     cursor.execute("""
@@ -1876,7 +1835,7 @@ def registrar_lote():
         print(f"❌ ERRO ROTA REGISTRAR LOTE: {e}")
         flash(f"Erro operacional ao atualizar registros: {e}", "danger")
         
-    return redirect(url_for("estoque_page") if "estoque_page" in globals() else "/estoque")
+    return redirect(url_for("estoque_painel") if "estoque_painel" in globals() else "/estoque")
 
 
 
@@ -2742,11 +2701,6 @@ def atualizar_precos():
 
         if con:
             con.close()
-
-
-app.route("/health")
-def health():
-    return {"status": "ok"}, 200
 # =========================
 # INICIALIZAÇÃO
 # =========================

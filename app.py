@@ -82,6 +82,9 @@ import psycopg2
 # =========================
 # APP
 # =========================
+ENV = os.getenv("ENV", "production")
+if ENV == "development":
+    print("Modo dev ativo")
 client = genai.Client()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "pupilos-confeitaria-senha-segura-2026")
@@ -2739,6 +2742,11 @@ def atualizar_precos():
 
         if con:
             con.close()
+
+
+app.route("/health")
+def health():
+    return {"status": "ok"}, 200
 # =========================
 # INICIALIZAÇÃO
 # =========================

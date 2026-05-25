@@ -1071,39 +1071,44 @@ from psycopg2.extras import RealDictCursor
 @app.route("/precificacao")
 @login_required
 def precificacao():
+
     con = None
+
     try:
         con = conectar()
-        cursor = con.cursor(cursor_factory=RealDictCursor)
-        
-        # SQL ajustado para os nomes exatos das suas tabelas
-        query = """
-            SELECT 
-                p.id_produto, 
-                p.nome, 
-                p.preco_venda,
-                COALESCE(SUM(r.quantidade_utilizada * mp.preco_unitario), 0) as custo_producao
-            FROM produtos p
-            LEFT JOIN receitas r ON p.id_produto = r.id_produto
-            LEFT JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
-            WHERE p.ativo = 1
-            GROUP BY p.id_produto, p.nome, p.preco_venda
-            ORDER BY p.nome ASC
-        """
-        cursor.execute(query)
-        produtos_db = cursor.fetchall()
-        
+
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+
+            query = """
+                SELECT 
+                    p.id_produto, 
+                    p.nome, 
+                    p.preco_venda,
+                    COALESCE(SUM(r.quantidade_utilizada * mp.preco_unitario), 0) as custo_producao
+                FROM produtos p
+                LEFT JOIN receitas r ON p.id_produto = r.id_produto
+                LEFT JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
+                WHERE p.ativo = 1
+                GROUP BY p.id_produto, p.nome, p.preco_venda
+                ORDER BY p.nome ASC
+            """
+
+            cursor.execute(query)
+            produtos_db = cursor.fetchall()
+
         tabela_formatada = []
+
         for p in produtos_db:
-            custo = float(p['custo_producao'])
-            venda = float(p['preco_venda'])
-            
+
+            custo = float(p["custo_producao"] or 0)
+            venda = float(p["preco_venda"] or 0)
+
             equilibrio = custo * 1.10
-            sugerido = custo / 0.7 if custo > 0 else 0
-            
+            sugerido = (custo / 0.7) if custo > 0 else 0
+
             tabela_formatada.append({
-                "id": p['id_produto'],
-                "nome": p['nome'],
+                "id": p["id_produto"],
+                "nome": p["nome"],
                 "atual": venda,
                 "custo": custo,
                 "equilibrio": equilibrio,
@@ -1112,8 +1117,15 @@ def precificacao():
             })
 
         return render_template("precificacao.html", tabela=tabela_formatada)
+
+    except Exception as e:
+        print(f"❌ Erro precificacao: {e}")
+        flash("Erro ao carregar precificação.", "danger")
+        return redirect(url_for("dashboard"))
+
     finally:
-        if con: con.close()
+        if con:
+            con.close()
 
 
 
@@ -2664,25 +2676,23 @@ def atualizar_precos():
             "mensagem": "Dados inválidos"
         }), 400
 
-    con = None
-
     try:
 
-        con = conectar()
-        cur = con.cursor()
+        with conectar() as con:
+            with con.cursor() as cur:
 
-        for item in data['itens']:
+                for item in data['itens']:
 
-            cur.execute("""
-                UPDATE produtos
-                SET preco_venda = %s
-                WHERE id_produto = %s
-            """, (
-                item['novo_preco'],
-                item['id']
-            ))
+                    cur.execute("""
+                        UPDATE produtos
+                        SET preco_venda = %s
+                        WHERE id_produto = %s
+                    """, (
+                        item['novo_preco'],
+                        item['id']
+                    ))
 
-        con.commit()
+            con.commit()
 
         return jsonify({
             "status": "sucesso"
@@ -2696,11 +2706,6 @@ def atualizar_precos():
             "status": "erro",
             "mensagem": str(e)
         }), 500
-
-    finally:
-
-        if con:
-            con.close()
 # =========================
 # INICIALIZAÇÃO
 # =========================

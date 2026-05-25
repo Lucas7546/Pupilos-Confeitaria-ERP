@@ -199,6 +199,63 @@ CREATE TABLE IF NOT EXISTS logs (
 )
 """)
 
+# =========================================================
+# 9. ALIASES PRODUTOS (IA aprende nomes do delivery)
+# =========================================================
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS aliases_produtos (
+
+    id_alias SERIAL PRIMARY KEY,
+
+    nome_delivery TEXT UNIQUE,
+
+    id_produto INTEGER REFERENCES produtos(id_produto)
+    ON DELETE CASCADE,
+
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+)
+""")
+
+
+# =========================================================
+# 10. SABORES
+# =========================================================
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS sabores (
+
+    id_sabor SERIAL PRIMARY KEY,
+
+    nome TEXT NOT NULL UNIQUE,
+
+    ativo INTEGER DEFAULT 1,
+
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+)
+""")
+
+
+# =========================================================
+# 11. TAMANHOS
+# =========================================================
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS tamanhos (
+
+    id_tamanho SERIAL PRIMARY KEY,
+
+    nome TEXT NOT NULL UNIQUE,
+
+    ativo INTEGER DEFAULT 1,
+
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+)
+""")
+
+# =========================================================
+# 12. Despesas
+# =========================================================
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS despesas (
     id_despesa SERIAL PRIMARY KEY,
@@ -209,7 +266,7 @@ CREATE TABLE IF NOT EXISTS despesas (
 
 
 # =========================================================
-# sistema - Configuração da Empresa
+# 13. Empresa Configuração
 # =========================================================
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS empresa_config (

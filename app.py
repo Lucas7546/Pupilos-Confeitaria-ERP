@@ -5,12 +5,13 @@ import json
 import uuid
 import tempfile
 import pandas as pd
-from modules.importador_ia import processar_relatorio_delivery
+from utils.logger import log_info
 from modules.importador_ia import (
     ler_arquivo,
     interpretar_relatorio_com_ia,
     normalizar_vendas,
     salvar_vendas,
+    processar_relatorio_delivery,
     gerar_financeiro
 )
 from modules.normalizador_ia import encontrar_produto_similar
@@ -640,7 +641,7 @@ def atualizar_produto(id_produto):
             return redirect(url_for("estoque_page"))
 
         # Executa a atualização (Padrão mantido no módulo atual)
-        sucesso = usuarios.update_produto(id_produto, nome, preco)
+        sucesso = produtos.update_produto(id_produto, nome, preco)
 
         if sucesso:
             registrar_log("ALTERAR", "PRODUTOS", f"Produto ID {id_produto} alterado para: {nome} | R$ {preco}")
@@ -682,7 +683,7 @@ def processar_edicao_mp(id_mp):
             return redirect(url_for('estoque_page'))
 
         # Executa a atualização usando a função mapeada
-        sucesso = usuarios.atualizar_materia_prima(id_mp, nome, preco, unidade, quantidade)
+        sucesso = estoque.atualizar_materia_prima(id_mp, nome, preco, unidade, quantidade)
 
         if sucesso:
             registrar_log("ALTERAR", "MATERIA_PRIMA", f"Insumo ID {id_mp} alterado: {nome} | Estoque: {quantidade} {unidade}")
@@ -847,7 +848,7 @@ def deletar_produto(id_produto):
 
         usuario_atual = session.get("username", "Desconhecido")
 
-        if usuarios.excluir_produto(id_produto):
+        if produtos.excluir_produto(id_produto):
 
             registrar_log(
                 "DELETAR",
@@ -892,7 +893,7 @@ def deletar_mp(id_mp):
 
         usuario_atual = session.get("username", "Desconhecido")
 
-        if usuarios.excluir_materia_prima(id_mp):
+        if estoque.excluir_materia_prima(id_mp):
 
             if 'registrar_log' in globals():
                 registrar_log(
@@ -932,7 +933,7 @@ def deletar_venda(id_venda):
 
         usuario_atual = session.get("username", "Desconhecido")
 
-        sucesso = usuarios.excluir_venda(id_venda)
+        sucesso = vendas.excluir_venda(id_venda)
 
         if sucesso:
 
@@ -1207,7 +1208,7 @@ def vender():
             return redirect("/vendas")
 
         # Validações dos seus arquivos internos
-        estoque_ok = vendas.validar_estoque_suficiente(id_p, qtd)
+        estoque_ok = receitas.validar_estoque_suficiente(id_p, qtd)
         if not estoque_ok:
             flash("Estoque insuficiente para produzir essa venda.", "danger")
             return redirect("/vendas")

@@ -1,6 +1,6 @@
 from modules.db import conectar
 from datetime import datetime
-
+from utils.logger import log_info, log_erro # <--- Importando nosso novo logger
 # =========================================================
 # ENTRADA ESTOQUE
 # =========================================================
@@ -17,13 +17,11 @@ def entrada_estoque(materia_prima_id, quantidade):
         """, (materia_prima_id, float(quantidade)))
 
         con.commit()
-
+        log_info(f"Entrada de estoque realizada. ID MP: {materia_prima_id}, Qtd: {quantidade}")
     except Exception as e:
-        print(f"Erro entrada_estoque: {e}")
-
+        log_erro(f"Erro entrada_estoque: {e}")
     finally:
-        if con:
-            con.close()
+        if con: con.close()
 
 
 # =========================================================
@@ -42,13 +40,10 @@ def saida_estoque(materia_prima_id, quantidade, observacao='Movimentação manua
         """, (materia_prima_id, float(quantidade), observacao))
 
         con.commit()
-
+        log_info(f"Saída de estoque realizada. ID MP: {materia_prima_id}, Qtd: {quantidade}")
     except Exception as e:
-        print(f"Erro saida_estoque: {e}")
-
+        log_erro(f"Erro saida_estoque: {e}")
     finally:
-        if con:
-            con.close()
 
             
 
@@ -72,14 +67,11 @@ def calcular_estoque(materia_prima_id):
 
         resultado = cursor.fetchone()[0]
         return float(resultado or 0)
-
     except Exception as e:
-        print(f"Erro calcular_estoque: {e}")
+        log_erro(f"Erro calcular_estoque: {e}")
         return 0.0
-
     finally:
-        if con:
-            con.close()
+        if con: con.close()
 
 
 # =========================================================
@@ -167,12 +159,20 @@ def listar_materia_prima():
             )
 
         return lista_final
+    except Exception as e:
+        log_erro(f"Erro listar_materia_prima: {e}")
+        return []
 
     finally:
 
         if con:
             con.close()
 
+Perfeito, vamos aplicar o padrão de logs nessas funções que faltavam. Notei que em registrar_compra_estoque você tinha um pequeno erro de digitação nas variáveis do log_info (estavam chamando variáveis que não existem nessa função), então eu corrigi para refletir o contexto correto.
+
+Aqui está o código ajustado:
+
+Python
 # =========================================================
 # CADASTRAR MATÉRIA PRIMA
 # =========================================================
@@ -192,8 +192,13 @@ def cadastrar_materia(nome, unidade, preco, estoque_inicial, estoque_minimo):
                 INSERT INTO movimentacao_estoque (id_materia_prima, tipo_movimento, quantidade, observacao)
                 VALUES (%s, 'entrada', %s, 'Estoque inicial')
             """, (id_mp, estoque_inicial))
+        
         con.commit()
+        log_info(f"Matéria-prima cadastrada com sucesso: {nome} (ID: {id_mp})")
         return True
+    except Exception as e:
+        log_erro(f"Erro ao cadastrar matéria-prima '{nome}': {e}")
+        return False
     finally:
         if con: con.close()
 
@@ -219,6 +224,7 @@ def registrar_compra_estoque(id_materia_prima, quantidade_comprada, valor_total_
         """, (novo_preco_unitario, id_materia_prima))
 
         # entrada no estoque
+        data_str = datetime.now().strftime('%d/%m/%Y')
         cursor.execute("""
             INSERT INTO movimentacao_estoque 
             (id_materia_prima, tipo_movimento, quantidade, observacao)
@@ -226,19 +232,17 @@ def registrar_compra_estoque(id_materia_prima, quantidade_comprada, valor_total_
         """, (
             id_materia_prima,
             float(quantidade_comprada),
-            f"Compra em {datetime.now().strftime('%d/%m/%Y')}"
+            f"Compra em {data_str}"
         ))
 
         con.commit()
+        log_info(f"Compra registrada. ID MP: {id_materia_prima}, Qtd: {quantidade_comprada}, Novo Preço: {novo_preco_unitario}")
         return True
-
     except Exception as e:
-        print(f"Erro registrar_compra_estoque: {e}")
+        log_erro(f"Erro ao registrar compra (ID MP: {id_materia_prima}): {e}")
         return False
-
     finally:
-        if con:
-            con.close()
+        if con: con.close()
 
 
 # =========================================================
@@ -257,13 +261,11 @@ def ajustar_estoque(id_mp, novo_valor):
         """, (id_mp, float(novo_valor)))
 
         con.commit()
-
+        log_info(f"Ajuste manual de estoque realizado. ID MP: {id_mp}, Quantidade ajustada: {novo_valor}")
     except Exception as e:
-        print(f"Erro ajustar_estoque: {e}")
-
+        log_erro(f"Erro ao ajustar estoque (ID MP: {id_mp}): {e}")
     finally:
-        if con:
-            con.close()
+        if con: con.close()
 
 
 def previsao_demanda():
@@ -415,9 +417,7 @@ def previsao_demanda():
         return previsoes
 
     except Exception as e:
-
-        print(f"Erro previsão demanda: {e}")
-
+        log_erro(f"Erro na geração da previsão de demanda: {e}")
         return []
 
     finally:
@@ -476,8 +476,82 @@ def obter_historico_movimentacoes():
             
         return historico
     except Exception as e:
-        print(f"Erro ao obter historico unificado: {e}")
+        log_erro(f"Erro ao obter histórico de movimentações: {e}")
         return []
     finally:
         if con:
             con.close()
+
+def excluir_produto(id_produto):
+    """Exclui produto e remove dependências (receitas e itens de venda)."""
+    try:
+        with conectar() as conn:
+            with conn.cursor() as cursor:
+                # Remove receitas ligadas ao produto
+                cursor.execute("DELETE FROM receitas WHERE id_produto = %s", (id_produto,))
+                
+                # Remove itens de venda ligados ao produto
+                cursor.execute("DELETE FROM itens_venda WHERE id_produto = %s", (id_produto,))
+                
+                # Remove produto
+                cursor.execute("DELETE FROM produtos WHERE id_produto = %s", (id_produto,))
+                
+                conn.commit()
+                log_info(f"Produto {id_produto} excluído com sucesso.")
+                return True
+    except Exception as e:
+        log_erro(f"Erro ao excluir produto {id_produto}: {e}")
+        return False
+    
+
+# =========================
+# EXCLUIR MATÉRIA PRIMA
+# =========================
+def excluir_materia_prima(id_mp):
+    """Exclui matéria-prima e remove suas dependências (receitas e movimentações)."""
+    try:
+        with conectar() as conn:
+            with conn.cursor() as cursor:
+                # Remove receitas vinculadas
+                cursor.execute("DELETE FROM receitas WHERE id_materia_prima = %s", (id_mp,))
+                
+                # Remove movimentações
+                cursor.execute("DELETE FROM movimentacao_estoque WHERE id_materia_prima = %s", (id_mp,))
+                
+                # Remove matéria-prima
+                cursor.execute("DELETE FROM materia_prima WHERE id_materia_prima = %s", (id_mp,))
+                
+                conn.commit()
+                log_info(f"Matéria-prima ID {id_mp} excluída com sucesso.")
+                return True
+    except Exception as e:
+        log_erro(f"Erro ao excluir matéria-prima ID {id_mp}: {e}")
+        return False
+    
+# =========================
+# ATUALIZAR MATÉRIA PRIMA
+# =========================
+def atualizar_materia_prima(id_mp, nome, preco, unidade, quantidade):
+    """Atualiza dados da matéria-prima e registra ajuste manual no estoque se necessário."""
+    try:
+        with conectar() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE materia_prima
+                    SET nome = %s, preco_unitario = %s, unidade_medida = %s
+                    WHERE id_materia_prima = %s
+                """, (nome, preco, unidade, id_mp))
+
+                # Ajuste de estoque se houver quantidade informada
+                if quantidade and float(quantidade) > 0:
+                    cursor.execute("""
+                        INSERT INTO movimentacao_estoque (id_materia_prima, tipo_movimento, quantidade, observacao)
+                        VALUES (%s, 'entrada', %s, 'Ajuste manual de estoque')
+                    """, (id_mp, quantidade))
+
+                conn.commit()
+                log_info(f"Matéria-prima ID {id_mp} atualizada com sucesso.")
+                return True
+    except Exception as e:
+        log_erro(f"Erro ao atualizar matéria-prima ID {id_mp}: {e}")
+        return False

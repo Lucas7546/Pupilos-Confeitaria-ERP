@@ -1,502 +1,231 @@
 from datetime import datetime, timedelta
 from modules.db import conectar
+from utils.logger import log_info, log_erro
+# No topo do vendas.py
+from modules.receitas import (
+    validar_estoque_suficiente, 
+    calcular_custo_receita, 
+    cadastrar_receita, 
+    listar_itens_receita
+)
 
 # ===================================================
 # RESUMO PARA O DASHBOARD
 # ===================================================
 def obter_resumo_periodo(dias=7):
-
-    con = None
-
     try:
-
-        con = conectar()
-        cursor = con.cursor()
-
-        # ============================================
-        # DATA INICIAL
-        # ============================================
-
         data_inicio = datetime.now() - timedelta(days=dias)
+        with conectar() as con:
+            with con.cursor() as cursor:
+                # Resumo Geral
+                cursor.execute("""
+                    SELECT 
+                        COALESCE(SUM(valor_total), 0),
+                        COUNT(id_venda),
+                        COALESCE(SUM(lucro), 0)
+                    FROM vendas
+                    WHERE data_venda >= %s
+                """, (data_inicio,))
+                faturamento, total_vendas, lucro = cursor.fetchone()
 
-        # ============================================
-        # RESUMO GERAL
-        # ============================================
-
-        cursor.execute("""
-            SELECT 
-                COALESCE(SUM(valor_total), 0) as faturamento,
-                COUNT(id_venda) as total_vendas,
-                COALESCE(SUM(lucro), 0) as lucro
-            FROM vendas
-            WHERE data_venda >= %s
-        """, (data_inicio,))
-
-        resultado = cursor.fetchone()
-
-        faturamento = float(resultado[0] or 0)
-        total_vendas = int(resultado[1] or 0)
-        lucro = float(resultado[2] or 0)
-
-        # ============================================
-        # DADOS DO GRÁFICO
-        # ============================================
-
-        cursor.execute("""
-            SELECT 
-                TO_CHAR(DATE(data_venda), 'DD/MM') as dia,
-                COALESCE(SUM(valor_total), 0) as total
-            FROM vendas
-            WHERE data_venda >= %s
-            GROUP BY DATE(data_venda)
-            ORDER BY DATE(data_venda)
-        """, (data_inicio,))
-
-        grafico = cursor.fetchall()
-
-        dias_grafico = []
-        valores_grafico = []
-
-        for linha in grafico:
-
-            dias_grafico.append(linha[0])
-            valores_grafico.append(float(linha[1]))
-
-        # ============================================
-        # RETORNO FINAL
-        # ============================================
+                # Gráfico
+                cursor.execute("""
+                    SELECT TO_CHAR(DATE(data_venda), 'DD/MM'), COALESCE(SUM(valor_total), 0)
+                    FROM vendas
+                    WHERE data_venda >= %s
+                    GROUP BY DATE(data_venda)
+                    ORDER BY DATE(data_venda)
+                """, (data_inicio,))
+                grafico = cursor.fetchall()
 
         return {
-            "faturamento": faturamento,
-            "total_vendas": total_vendas,
-            "lucro": lucro,
-            "dias_grafico": dias_grafico,
-            "valores_grafico": valores_grafico
+            "faturamento": float(faturamento or 0),
+            "total_vendas": int(total_vendas or 0),
+            "lucro": float(lucro or 0),
+            "dias_grafico": [l[0] for l in grafico],
+            "valores_grafico": [float(l[1]) for l in grafico]
         }
-
     except Exception as e:
-
-        print(f"Erro ao obter resumo: {e}")
-
-        return {
-            "faturamento": 0.0,
-            "total_vendas": 0,
-            "lucro": 0.0,
-            "dias_grafico": [],
-            "valores_grafico": []
-        }
-
-    finally:
-
-        if con:
-            con.close()
+        log_erro(f"Erro ao obter resumo de vendas: {e}")
+        return {"faturamento": 0.0, "total_vendas": 0, "lucro": 0.0, "dias_grafico": [], "valores_grafico": []}
 
 # ===================================================
 # REGISTRAR VENDA
 # ===================================================
 def registrar_venda(id_produto, quantidade, valor_total, usuario="Sistema"):
-    con = None
-
     try:
-        con = conectar()
-        cursor = con.cursor()
+        with conectar() as con:
+            with con.cursor() as cursor:
+                custo_unitario = calcular_custo_receita(id_produto)
+                lucro_total = float(valor_total) - (float(custo_unitario) * float(quantidade))
 
-        # =====================================================
-        # CALCULA CUSTO/LUCRO
-        # =====================================================
+                # Registrar Venda
+                cursor.execute("""
+                    INSERT INTO vendas (valor_total, lucro, canal_venda, usuario)
+                    VALUES (%s, %s, 'Sistema', %s) RETURNING id_venda
+                """, (valor_total, lucro_total, usuario))
+                id_venda = cursor.fetchone()[0]
 
-        custo_unitario = calcular_custo_receita(id_produto)
+                # Preço Unitário
+                cursor.execute("SELECT preco_venda FROM produtos WHERE id_produto = %s", (id_produto,))
+                preco_unitario = float(cursor.fetchone()[0])
 
-        lucro_total = float(valor_total) - (
-            float(custo_unitario) * float(quantidade)
-        )
+                # Item Venda
+                cursor.execute("""
+                    INSERT INTO itens_venda (id_venda, id_produto, quantidade, valor_unitario)
+                    VALUES (%s, %s, %s, %s)
+                """, (id_venda, id_produto, quantidade, preco_unitario))
 
-        # =====================================================
-        # CRIA VENDA
-        # =====================================================
+                # Baixa Estoque
+                cursor.execute("SELECT id_materia_prima, quantidade_utilizada FROM receitas WHERE id_produto = %s", (id_produto,))
+                for id_mp, qtd_receita in cursor.fetchall():
+                    cursor.execute("""
+                        INSERT INTO movimentacao_estoque (id_materia_prima, tipo_movimento, quantidade, observacao)
+                        VALUES (%s, 'saida', %s, %s)
+                    """, (id_mp, float(qtd_receita) * float(quantidade), f'Venda ID {id_venda}'))
 
-        cursor.execute("""
-            INSERT INTO vendas (
-                valor_total,
-                lucro,
-                canal_venda,
-                usuario
-            )
-            VALUES (%s, %s, %s, %s)
-            RETURNING id_venda
-        """, (
-            valor_total,
-            lucro_total,
-            'Sistema',
-            usuario
-        ))
-
-        id_venda = cursor.fetchone()[0]
-
-        # =====================================================
-        # BUSCA PREÇO UNITÁRIO
-        # =====================================================
-
-        cursor.execute("""
-            SELECT preco_venda
-            FROM produtos
-            WHERE id_produto = %s
-        """, (id_produto,))
-
-        preco_unitario = float(cursor.fetchone()[0])
-
-        # =====================================================
-        # SALVA ITEM VENDA
-        # =====================================================
-
-        cursor.execute("""
-            INSERT INTO itens_venda (
-                id_venda,
-                id_produto,
-                quantidade,
-                valor_unitario
-            )
-            VALUES (%s, %s, %s, %s)
-        """, (
-            id_venda,
-            id_produto,
-            quantidade,
-            preco_unitario
-        ))
-
-        # =====================================================
-        # BAIXA ESTOQUE
-        # =====================================================
-
-        cursor.execute("""
-            SELECT
-                id_materia_prima,
-                quantidade_utilizada
-            FROM receitas
-            WHERE id_produto = %s
-        """, (id_produto,))
-
-        ingredientes = cursor.fetchall()
-
-        for id_mp, qtd_receita in ingredientes:
-
-            qtd_saida = float(qtd_receita) * float(quantidade)
-
-            cursor.execute("""
-                INSERT INTO movimentacao_estoque (
-                    id_materia_prima,
-                    tipo_movimento,
-                    quantidade,
-                    observacao
-                )
-                VALUES (%s, 'saida', %s, %s)
-            """, (
-                id_mp,
-                qtd_saida,
-                f'Venda Produto ID {id_produto}'
-            ))
-
-        con.commit()
-
-        return True
-
+            con.commit()
+            log_info(f"Venda {id_venda} registrada com sucesso para o produto {id_produto}.")
+            return True
     except Exception as e:
-
-        if con:
-            con.rollback()
-
-        print(f"Erro registrar_venda: {e}")
-
+        log_erro(f"Erro ao registrar venda (Prod: {id_produto}): {e}")
         return False
 
-    finally:
-
-        if con:
-            con.close()
-
-# ===================================================
-# LISTAR VENDAS RECENTES
-# ===================================================
 # ===================================================
 # LISTAR VENDAS RECENTES
 # ===================================================
 def listar_vendas_recentes(limite=10):
-
-    con = None
-
     try:
-
-        con = conectar()
-
-        cursor = con.cursor()
-
-        cursor.execute("""
-            SELECT
-                v.id_venda,
-                p.nome,
-                iv.quantidade,
-                v.valor_total,
-                v.data_venda
-            FROM vendas v
-
-            JOIN itens_venda iv
-                ON iv.id_venda = v.id_venda
-
-            JOIN produtos p
-                ON p.id_produto = iv.id_produto
-
-            ORDER BY v.data_venda DESC
-
-            LIMIT %s
-        """, (limite,))
-
-        vendas = cursor.fetchall()
-
-        historico = []
-
-        for v in vendas:
-
-            historico.append({
-
-                "id_venda": v[0],
-
-                "nome_produto": v[1],
-
-                "quantidade": v[2],
-
-                "valor_total": float(v[3]),
-
-                "data": v[4].strftime("%d/%m/%Y %H:%M")
-
-            })
-
-        return historico
-
+        with conectar() as con:
+            with con.cursor() as cursor:
+                cursor.execute("""
+                    SELECT v.id_venda, p.nome, iv.quantidade, v.valor_total, v.data_venda
+                    FROM vendas v
+                    JOIN itens_venda iv ON iv.id_venda = v.id_venda
+                    JOIN produtos p ON p.id_produto = iv.id_produto
+                    ORDER BY v.data_venda DESC LIMIT %s
+                """, (limite,))
+                return [{"id_venda": v[0], "nome_produto": v[1], "quantidade": v[2], "valor_total": float(v[3]), "data": v[4].strftime("%d/%m/%Y %H:%M")} for v in cursor.fetchall()]
     except Exception as e:
-
-        print(f"Erro listar vendas: {e}")
-
+        log_erro(f"Erro ao listar vendas recentes: {e}")
         return []
-
-    finally:
-
-        if con:
-            con.close()
-# ===================================================
-# VALIDA ESTOQUE
-# ===================================================
-def validar_estoque_suficiente(id_produto, quantidade_venda):
-    from modules.estoque import calcular_estoque
-
-    con = None
-    try:
-        con = conectar()
-        cursor = con.cursor()
-
-        cursor.execute("""
-            SELECT id_materia_prima, quantidade_utilizada
-            FROM receitas
-            WHERE id_produto = %s
-        """, (id_produto,))
-
-        ingredientes = cursor.fetchall()
-
-        for id_mp, qtd_necessaria in ingredientes:
-            estoque_atual = calcular_estoque(id_mp)
-
-            if estoque_atual < (qtd_necessaria * quantidade_venda):
-                return False
-
-        return True
-
-    except Exception as e:
-        print(f"Erro validação estoque: {e}")
-        return False
-
-    finally:
-        if con:
-            con.close()
-
-
-# ===================================================
-# CUSTO DA RECEITA
-# ===================================================
-def calcular_custo_receita(id_produto):
-    con = None
-    try:
-        con = conectar()
-        cursor = con.cursor()
-
-        cursor.execute("""
-            SELECT r.quantidade_utilizada, mp.preco_unitario
-            FROM receitas r
-            JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
-            WHERE r.id_produto = %s
-        """, (id_produto,))
-
-        linhas = cursor.fetchall()
-
-        total = sum(float(q) * float(p) for q, p in linhas)
-
-        return round(total, 2)
-
-    except Exception as e:
-        print(f"Erro custo receita: {e}")
-        return 0.0
-
-    finally:
-        if con:
-            con.close()
-
-
-# ===================================================
-# CADASTRAR / VINCULAR RECEITA
-# ===================================================
-def cadastrar_receita(id_produto, id_materia_prima, quantidade):
-    con = None
-    try:
-        con = conectar()
-        cursor = con.cursor()
-
-        cursor.execute("""
-            SELECT id_receita
-            FROM receitas
-            WHERE id_produto = %s
-            AND id_materia_prima = %s
-        """, (id_produto, id_materia_prima))
-
-        existe = cursor.fetchone()
-
-        if existe:
-            cursor.execute("""
-                UPDATE receitas
-                SET quantidade_utilizada = %s
-                WHERE id_produto = %s
-                AND id_materia_prima = %s
-            """, (quantidade, id_produto, id_materia_prima))
-        else:
-            cursor.execute("""
-                INSERT INTO receitas (id_produto, id_materia_prima, quantidade_utilizada)
-                VALUES (%s, %s, %s)
-            """, (id_produto, id_materia_prima, quantidade))
-
-        con.commit()
-        return True
-
-    except Exception as e:
-        print(f"Erro receita: {e}")
-        return False
-
-    finally:
-        if con:
-            con.close()
-
-
-# ===================================================
-# LISTAR RECEITA
-# ===================================================
-def listar_itens_receita(id_produto):
-    con = None
-    try:
-        con = conectar()
-        cursor = con.cursor()
-
-        cursor.execute("""
-            SELECT mp.nome, r.quantidade_utilizada, mp.unidade_medida, mp.preco_unitario
-            FROM receitas r
-            JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
-            WHERE r.id_produto = %s
-            ORDER BY mp.nome ASC
-        """, (id_produto,))
-
-        return cursor.fetchall()
-
-    finally:
-        if con:
-            con.close()
-
 
 # ===================================================
 # CUSTO TOTAL DAS VENDAS
 # ===================================================
 def obter_custo_total_vendas(dias=30):
-
-    con = None
-
     try:
-
-        con = conectar()
-        cursor = con.cursor()
-
         data_inicio = datetime.now() - timedelta(days=dias)
-
-        cursor.execute("""
-            SELECT COALESCE(SUM(lucro), 0)
-            FROM vendas
-            WHERE data_venda >= %s
-        """, (data_inicio,))
-
-        lucro_total = float(cursor.fetchone()[0] or 0)
-
-        cursor.execute("""
-            SELECT COALESCE(SUM(valor_total), 0)
-            FROM vendas
-            WHERE data_venda >= %s
-        """, (data_inicio,))
-
-        faturamento = float(cursor.fetchone()[0] or 0)
-
-        custo = faturamento - lucro_total
-
-        return round(custo, 2)
-
+        with conectar() as con:
+            with con.cursor() as cursor:
+                cursor.execute("SELECT COALESCE(SUM(lucro), 0), COALESCE(SUM(valor_total), 0) FROM vendas WHERE data_venda >= %s", (data_inicio,))
+                lucro_total, faturamento = cursor.fetchone()
+                return round(float(faturamento) - float(lucro_total), 2)
     except Exception as e:
-
-        print(f"Erro custo vendas: {e}")
-
+        log_erro(f"Erro ao calcular custo total das vendas: {e}")
         return 0.0
-
-    finally:
-
-        if con:
-            con.close()
 
 
 # ===================================================
 # LISTAR DESPESAS
 # ===================================================
 def listar_despesas(dias=30):
-
-    con = None
+    try:
+        data_inicio = datetime.now() - timedelta(days=dias)
+        with conectar() as con:
+            with con.cursor() as cursor:
+                cursor.execute("SELECT id_despesa, descricao, valor, categoria, data_despesa FROM despesas WHERE data_despesa >= %s ORDER BY data_despesa DESC", (data_inicio,))
+                return cursor.fetchall()
+    except Exception as e:
+        log_erro(f"Erro ao listar despesas: {e}")
+        return []
+    
+def excluir_venda(id_venda):
+    """Exclui venda e realiza rollback do estoque das matérias-primas."""
 
     try:
+        with conectar() as conn:
+            with conn.cursor() as cursor:
 
-        con = conectar()
-        cursor = con.cursor()
+                # =========================================
+                # VERIFICA SE VENDA EXISTE
+                # =========================================
+                cursor.execute("""
+                    SELECT 1
+                    FROM vendas
+                    WHERE id_venda = %s
+                """, (id_venda,))
 
-        data_inicio = datetime.now() - timedelta(days=dias)
+                if not cursor.fetchone():
+                    log_info(f"Venda {id_venda} não encontrada.")
+                    return False
 
-        cursor.execute("""
-            SELECT
-                id_despesa,
-                descricao,
-                valor,
-                categoria,
-                data_despesa
-            FROM despesas
-            WHERE data_despesa >= %s
-            ORDER BY data_despesa DESC
-        """, (data_inicio,))
+                # =========================================
+                # BUSCA ITENS DA VENDA
+                # =========================================
+                cursor.execute("""
+                    SELECT id_produto, quantidade
+                    FROM itens_venda
+                    WHERE id_venda = %s
+                """, (id_venda,))
 
-        return cursor.fetchall()
+                itens = cursor.fetchall()
+
+                if not itens:
+                    log_info(f"Venda {id_venda} sem itens vinculados.")
+
+                # =========================================
+                # ROLLBACK DE ESTOQUE (MATÉRIA-PRIMA)
+                # =========================================
+                for id_produto, quantidade_vendida in itens:
+
+                    cursor.execute("""
+                        SELECT id_materia_prima, quantidade_utilizada
+                        FROM receitas
+                        WHERE id_produto = %s
+                    """, (id_produto,))
+
+                    ingredientes = cursor.fetchall()
+
+                    for id_mp, qtd_receita in ingredientes:
+
+                        qtd_retorno = float(qtd_receita) * float(quantidade_vendida)
+
+                        cursor.execute("""
+                            INSERT INTO movimentacao_estoque (
+                                id_materia_prima,
+                                tipo_movimento,
+                                quantidade,
+                                observacao
+                            )
+                            VALUES (%s, 'entrada', %s, %s)
+                        """, (
+                            id_mp,
+                            qtd_retorno,
+                            f'ROLLBACK AUTOMÁTICO VENDA ID {id_venda}'
+                        ))
+
+                # =========================================
+                # REMOVE ITENS DA VENDA
+                # =========================================
+                cursor.execute("""
+                    DELETE FROM itens_venda
+                    WHERE id_venda = %s
+                """, (id_venda,))
+
+                # =========================================
+                # REMOVE VENDA
+                # =========================================
+                cursor.execute("""
+                    DELETE FROM vendas
+                    WHERE id_venda = %s
+                """, (id_venda,))
+
+                conn.commit()
+
+                log_info(f"Venda {id_venda} excluída com rollback realizado.")
+                return True
 
     except Exception as e:
-
-        print(f"Erro listar despesas: {e}")
-
-        return []
-
-    finally:
-
-        if con:
-            con.close()
+        log_erro(f"Erro ao excluir venda {id_venda}: {e}")
+        return False

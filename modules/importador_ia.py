@@ -1,676 +1,357 @@
-from datetime import datetime
-import pandas as pd
 import json
 from difflib import SequenceMatcher
+import pandas as pd
 from google import genai
+
 from modules.db import conectar
 from modules.produtos import cadastrar_produto
-
+from utils.logger import log_info, log_erro
 
 client = genai.Client()
 
+# =========================
+# UTIL
+# =========================
 
 def limpar_numero(valor):
-
-    if valor is None:
-        return 0
-
-    valor = str(valor)
-
-    valor = (
-        valor
-        .replace("R$", "")
-        .replace(".", "")
-        .replace(",", ".")
-        .strip()
-    )
+    if not valor:
+        return 0.0
 
     try:
-        return float(valor)
-
+        return float(
+            str(valor)
+            .replace("R$", "")
+            .replace(".", "")
+            .replace(",", ".")
+            .strip()
+        )
     except:
-        return 0
+        return 0.0
 
+
+# =========================
+# LEITURA
+# =========================
 
 def ler_arquivo(arquivo):
-    """
-    Lê CSV ou Excel automaticamente.
-    """
-
     nome = arquivo.filename.lower()
 
     if nome.endswith(".csv"):
-
         df = pd.read_csv(arquivo)
-
-    elif nome.endswith(".xlsx") or nome.endswith(".xls"):
-
+    elif nome.endswith((".xlsx", ".xls")):
         df = pd.read_excel(arquivo)
-
     else:
+        raise ValueError("Formato não suportado.")
 
-        raise Exception("Formato de arquivo não suportado.")
-
-    # normaliza nomes colunas
-    df.columns = [
-        str(col).strip().lower()
-        for col in df.columns
-    ]
-
+    df.columns = [str(c).strip().lower() for c in df.columns]
     return df
 
 
+# =========================
+# IA - INTERPRETAÇÃO
+# =========================
 
 def interpretar_relatorio_com_ia(df):
-    """
-    Usa IA para interpretar qualquer relatório de delivery.
-    """
-
-    # =========================
-    # FILTRAR COLUNAS RELEVANTES
-    # =========================
-
-    colunas_permitidas = []
-
-    for coluna in df.columns:
-
-        nome = coluna.lower()
-
-        if any(x in nome for x in [
-            "produto",
-            "item",
-            "valor",
-            "total",
-            "pedido",
-            "data",
-            "quantidade",
-            "taxa",
-            "repasse",
-            "canal"
-        ]):
-
-            colunas_permitidas.append(coluna)
-
-    if colunas_permitidas:
-        df = df[colunas_permitidas]
-
-    # =========================
-    # PEGAR AMOSTRA SEGURA
-    # =========================
-
-    amostra = (
-        df
-        .fillna("")
-        .head(50)
-        .astype(str)
-        .to_dict(orient="records")
-    )
-
-    colunas = list(df.columns)
-
-    texto = json.dumps({
-        "colunas": colunas,
-        "amostra": amostra
-    }, ensure_ascii=False)
-
-    # =========================
-    # PROMPT IA
-    # =========================
-
-    prompt = f"""
-    Você é um sistema especialista em relatórios de delivery.
-
-    Analise o JSON abaixo e descubra automaticamente:
-
-    - produto
-    - quantidade
-    - valor_unitario
-    - valor_total
-    - taxa
-    - repasse
-    - data
-    - canal_delivery
-
-    IMPORTANTE:
-
-    - O relatório pode ser do iFood, Keeta, 99Food ou qualquer delivery.
-    - Os nomes das colunas podem variar.
-    - Você deve identificar automaticamente os significados.
-    - Ignore colunas irrelevantes.
-    - Retorne SOMENTE JSON válido.
-    - Nunca explique nada.
-    - Nunca use markdown.
-    - O retorno deve ser uma LISTA JSON.
-
-    JSON DO RELATÓRIO:
-
-    {texto}
-    """
-
-    resposta = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt
-    )
-
-    texto_resposta = resposta.text.strip()
-
-    texto_resposta = (
-        texto_resposta
-        .replace("```json", "")
-        .replace("```", "")
-        .replace("\n", " ")
-        .strip()
-    )
-
     try:
+        colunas = [
+            c for c in df.columns
+            if any(k in c.lower() for k in [
+                "produto", "item", "valor", "total",
+                "pedido", "data", "quantidade",
+                "taxa", "repasse", "canal"
+            ])
+        ]
 
-        dados = json.loads(texto_resposta)
+        if colunas:
+            df = df[colunas]
 
-    except Exception as e:
+        payload = json.dumps({
+            "colunas": list(df.columns),
+            "amostra": df.fillna("").head(50).astype(str).to_dict("records")
+        }, ensure_ascii=False)
 
-        print("ERRO IA:")
-        print(texto_resposta)
+        prompt = f"""
+Você é um sistema de análise de delivery.
 
-        raise Exception(
-            f"IA retornou JSON inválido: {e}"
+Retorne SOMENTE JSON válido em formato de lista.
+
+Campos:
+produto, quantidade, valor_unitario, valor_total, taxa, repasse, data, canal_delivery
+
+Dados:
+{payload}
+"""
+
+        resposta = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
         )
 
-    # =========================
-    # NORMALIZA JSON
-    # =========================
+        texto = (resposta.text or "").replace("```json", "").replace("```", "").strip()
 
-    if isinstance(dados, dict):
+        dados = json.loads(texto)
 
-        if "vendas" in dados:
-            dados = dados["vendas"]
+        if isinstance(dados, dict):
+            return dados.get("vendas", [dados])
 
-        else:
-            dados = [dados]
+        return dados if isinstance(dados, list) else [dados]
 
-    return dados
+    except Exception as e:
+        log_erro(f"Erro IA relatório: {e}")
+        raise
 
+
+# =========================
+# NORMALIZAÇÃO
+# =========================
 
 def normalizar_vendas(dados):
-
     vendas = []
 
     for item in dados:
+        nome = item.get("produto", "")
 
-        nome_produto = item.get("produto", "")
-
-        id_produto = localizar_produto_erp(
-            nome_produto
-        )
+        id_produto = localizar_produto_erp(nome)
 
         vendas.append({
-
-            "id_produto":
-                id_produto,
-
-            "produto":
-                nome_produto,
-
-            "quantidade":
-                limpar_numero(item.get("quantidade")),
-
-            "valor_unitario":
-                limpar_numero(item.get("valor_unitario")),
-
-            "valor_total":
-                limpar_numero(item.get("valor_total")),
-
-            "taxa":
-                limpar_numero(item.get("taxa")),
-
-            "repasse":
-                limpar_numero(item.get("repasse")),
-
-            "data":
-                item.get("data", ""),
-
-            "canal_delivery":
-                item.get("canal_delivery", "delivery")
-
+            "id_produto": id_produto,
+            "produto": nome,
+            "quantidade": limpar_numero(item.get("quantidade")),
+            "valor_unitario": limpar_numero(item.get("valor_unitario")),
+            "valor_total": limpar_numero(item.get("valor_total")),
+            "taxa": limpar_numero(item.get("taxa")),
+            "repasse": limpar_numero(item.get("repasse")),
+            "data": item.get("data", ""),
+            "canal_delivery": item.get("canal_delivery", "delivery")
         })
 
     return vendas
 
 
+# =========================
+# SALVAR
+# =========================
+
 def salvar_vendas(vendas):
-    """
-    Salva vendas importadas no PostgreSQL.
-    """
-
-    conn = conectar()
-
     try:
+        with conectar() as conn:
+            with conn.cursor() as cursor:
 
-        cursor = conn.cursor()
+                for v in vendas:
+                    cursor.execute("""
+                        INSERT INTO vendas_delivery (
+                            id_produto, produto, quantidade,
+                            valor_unitario, valor_total,
+                            taxa, repasse, data_venda, canal_delivery
+                        )
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    """, (
+                        v["id_produto"],
+                        v["produto"],
+                        v["quantidade"],
+                        v["valor_unitario"],
+                        v["valor_total"],
+                        v["taxa"],
+                        v["repasse"],
+                        v["data"],
+                        v["canal_delivery"]
+                    ))
 
-        for venda in vendas:
-
-            cursor.execute("""
-
-                INSERT INTO vendas_delivery (
-
-                    id_produto,
-
-                    produto,
-
-                    quantidade,
-
-                    valor_unitario,
-
-                    valor_total,
-
-                    taxa,
-
-                    repasse,
-
-                    data_venda,
-
-                    canal_delivery
-
-                )
-
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-
-            """, (
-
-                venda["id_produto"],
-
-                venda["produto"],
-
-                venda["quantidade"],
-
-                venda["valor_unitario"],
-
-                venda["valor_total"],
-
-                venda["taxa"],
-
-                venda["repasse"],
-
-                venda["data"],
-
-                venda["canal_delivery"]
-
-            ))
-
-        conn.commit()
+                conn.commit()
 
     except Exception as e:
+        log_erro(f"Erro salvar vendas: {e}")
+        raise
 
-        conn.rollback()
 
-        print(f"Erro ao salvar vendas: {e}")
-
-        raise e
-
-    finally:
-
-        conn.close()
-
+# =========================
+# FINANCEIRO (mais seguro)
+# =========================
 
 def gerar_financeiro(vendas):
-    """
-    Gera resumo financeiro do relatório.
-    """
-
-    total_vendas = sum(
-        v["valor_total"]
-        for v in vendas
-    )
-
-    total_taxas = sum(
-        v["taxa"]
-        for v in vendas
-    )
-
-    total_repasse = sum(
-        v["repasse"]
-        for v in vendas
-    )
-
     return {
-
-        "faturamento":
-            total_vendas,
-
-        "taxas":
-            total_taxas,
-
-        "repasse_liquido":
-            total_repasse
-
+        "faturamento": sum(float(v.get("valor_total", 0) or 0) for v in vendas),
+        "taxas": sum(float(v.get("taxa", 0) or 0) for v in vendas),
+        "repasse_liquido": sum(float(v.get("repasse", 0) or 0) for v in vendas)
     }
 
+
+
+# =========================
+# ORQUESTRAÇÃO
+# =========================
+
 def processar_relatorio_delivery(arquivo):
-
     try:
-
-        # =========================
-        # LER
-        # =========================
+        log_info(f"Iniciando processamento: {arquivo.filename}")
 
         df = ler_arquivo(arquivo)
-
-        # =========================
-        # IA
-        # =========================
-
-        dados_ia = interpretar_relatorio_com_ia(df)
-
-        # =========================
-        # NORMALIZAR
-        # =========================
-
-        vendas = normalizar_vendas(dados_ia)
-
-        # =========================
-        # SALVAR
-        # =========================
-
+        dados = interpretar_relatorio_com_ia(df)
+        vendas = normalizar_vendas(dados)
         salvar_vendas(vendas)
-
-        # =========================
-        # FINANCEIRO
-        # =========================
-
         financeiro = gerar_financeiro(vendas)
 
+        log_info(f"Processo concluído: {len(vendas)} vendas")
+
         return {
-
             "sucesso": True,
-
-            "quantidade_vendas":
-                len(vendas),
-
-            "financeiro":
-                financeiro
-
+            "quantidade_vendas": len(vendas),
+            "financeiro": financeiro
         }
 
     except Exception as e:
-
-        print(f"ERRO IMPORTADOR IA: {e}")
-
+        log_erro(f"Erro pipeline delivery: {e}")
         return {
-
             "sucesso": False,
-
             "erro": str(e)
-
         }
+    
+# =========================
+# LOCALIZAÇÃO ERP (SEM MUDAR LÓGICA)
+# =========================
 
 def localizar_produto_erp(nome_produto):
-
-    conn = conectar()
-
-    try:
-
-        cursor = conn.cursor()
-
-        nome_produto = (
-            nome_produto
-            .lower()
-            .strip()
-        )
-
-        # =====================================
-        # 1. PROCURA ALIAS JÁ APRENDIDO
-        # =====================================
-
-        cursor.execute("""
-
-            SELECT
-                id_produto
-
-            FROM aliases_produtos
-
-            WHERE LOWER(nome_delivery) = %s
-
-        """, (nome_produto,))
-
-        alias = cursor.fetchone()
-
-        if alias:
-            return alias[0]
-
-        # =====================================
-        # 2. PROCURA PRODUTOS ERP
-        # =====================================
-
-        cursor.execute("""
-
-            SELECT
-                id_produto,
-                nome
-
-            FROM produtos
-
-            WHERE ativo = 1
-
-        """)
-
-        produtos = cursor.fetchall()
-
-        melhor_id = None
-        melhor_nome = None
-        melhor_score = 0
-
-        for produto in produtos:
-
-            id_produto = produto[0]
-            nome_erp = produto[1]
-
-            similaridade = SequenceMatcher(
-
-                None,
-
-                nome_produto,
-
-                nome_erp.lower()
-
-            ).ratio()
-
-            if similaridade > melhor_score:
-
-                melhor_score = similaridade
-                melhor_id = id_produto
-                melhor_nome = nome_erp
-
-        # =====================================
-        # 3. APRENDE AUTOMATICAMENTE
-        # =====================================
-
-        if melhor_score >= 0.60:
-
-            cursor.execute("""
-
-                INSERT INTO aliases_produtos (
-
-                    nome_delivery,
-                    id_produto
-
-                )
-
-                VALUES (%s,%s)
-
-                ON CONFLICT (nome_delivery)
-                DO NOTHING
-
-            """, (
-
-                nome_produto,
-                melhor_id
-
-            ))
-
-            conn.commit()
-
-            print(f"""
-IA APRENDEU:
-{nome_produto}
-=
-{melhor_nome}
-""")
-
-            return melhor_id
-
-        # =====================================
-        # 4. NÃO ENCONTROU → CRIA AUTOMÁTICO
-        # =====================================
-
-        print(f"""
-PRODUTO NOVO DETECTADO:
-{nome_produto}
-""")
-
-        cadastrar_produto(
-
-            nome=nome_produto.title(),
-
-            preco_venda=0,
-
-            categoria="Delivery"
-
-        )
-
-        # =====================================
-        # BUSCA O NOVO ID
-        # =====================================
-
-        cursor.execute("""
-
-            SELECT id_produto
-
-            FROM produtos
-
-            WHERE LOWER(nome) = %s
-
-            LIMIT 1
-
-        """, (nome_produto,))
-
-        novo = cursor.fetchone()
-
-        if novo:
-
-            novo_id = novo[0]
-
-            cursor.execute("""
-
-                INSERT INTO aliases_produtos (
-
-                    nome_delivery,
-                    id_produto
-
-                )
-
-                VALUES (%s,%s)
-
-                ON CONFLICT (nome_delivery)
-                DO NOTHING
-
-            """, (
-
-                nome_produto,
-                novo_id
-
-            ))
-
-            conn.commit()
-
-            print(f"""
-PRODUTO CRIADO AUTOMATICAMENTE:
-{nome_produto}
-""")
-
-            return novo_id
-
+    if not nome_produto:
         return None
 
-    finally:
+    nome_produto = nome_produto.lower().strip()
 
-        conn.close()
+    try:
+        with conectar() as conn:
+            with conn.cursor() as cursor:
+
+                cursor.execute("""
+                    SELECT id_produto
+                    FROM aliases_produtos
+                    WHERE LOWER(nome_delivery) = %s
+                    LIMIT 1
+                """, (nome_produto,))
+
+                alias = cursor.fetchone()
+                if alias:
+                    return alias[0]
+
+                cursor.execute("""
+                    SELECT id_produto, nome
+                    FROM produtos
+                    WHERE ativo = 1
+                """)
+
+                produtos = cursor.fetchall()
+
+                melhor_id = None
+                melhor_score = 0.0
+
+                for id_p, nome in produtos:
+
+                    if not nome:
+                        continue
+
+                    score = SequenceMatcher(
+                        None,
+                        nome_produto,
+                        nome.lower()
+                    ).ratio()
+
+                    if score > melhor_score:
+                        melhor_score = score
+                        melhor_id = id_p
+
+                LIMIAR = 0.60
+
+                if melhor_id and melhor_score >= LIMIAR:
+
+                    cursor.execute("""
+                        INSERT INTO aliases_produtos (nome_delivery, id_produto)
+                        VALUES (%s,%s)
+                        ON CONFLICT DO NOTHING
+                    """, (nome_produto, melhor_id))
+
+                    conn.commit()
+
+                    log_info(f"Alias aprendido: {nome_produto} ({melhor_score:.2f})")
+
+                    return melhor_id
+
+                log_erro(f"Produto não encontrado: {nome_produto}")
+                return None
+
+    except Exception as e:
+        log_erro(f"Erro localizar produto: {e}")
+        return None
 
 
 def interpretar_item_delivery(nome):
     """
     IA interpreta nome complexo de item delivery.
+    Retorna estrutura padronizada de produto.
     """
 
-    prompt = f"""
-    Você é um especialista em delivery e ERP gastronômico.
-
-    Analise o item abaixo.
-
-    Descubra:
-
-    - produto_base
-    - tamanho
-    - sabores
-    - adicionais
-    - observacoes
-
-    IMPORTANTE:
-    - Retorne SOMENTE JSON válido
-    - Nunca explique
-    - Nunca use markdown
-    - sabores e adicionais devem ser LISTAS
-
-    ITEM:
-
-    {nome}
-    """
-
-    resposta = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt
-    )
-
-    texto = (
-        resposta.text
-        .replace("```json", "")
-        .replace("```", "")
-        .strip()
-    )
+    if not nome:
+        return {
+            "produto_base": "",
+            "tamanho": "",
+            "sabores": [],
+            "adicionais": [],
+            "observacoes": ""
+        }
 
     try:
+        prompt = f"""
+Você é um especialista em delivery e ERP gastronômico.
+
+Analise o item abaixo e extraia:
+
+- produto_base
+- tamanho
+- sabores (lista)
+- adicionais (lista)
+- observacoes
+
+Regras obrigatórias:
+- Retorne SOMENTE JSON válido
+- Não explique nada
+- Não use markdown
+- Sempre use listas para sabores e adicionais
+
+ITEM:
+{nome}
+"""
+
+        resposta = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+
+        texto = (resposta.text or "").strip()
+
+        # =========================
+        # LIMPEZA SEGURA
+        # =========================
+        texto = (
+            texto
+            .replace("```json", "")
+            .replace("```", "")
+            .strip()
+        )
 
         dados = json.loads(texto)
 
         return {
-
-            "produto_base":
-                dados.get("produto_base", ""),
-
-            "tamanho":
-                dados.get("tamanho", ""),
-
-            "sabores":
-                dados.get("sabores", []),
-
-            "adicionais":
-                dados.get("adicionais", []),
-
-            "observacoes":
-                dados.get("observacoes", "")
-
+            "produto_base": dados.get("produto_base", ""),
+            "tamanho": dados.get("tamanho", ""),
+            "sabores": dados.get("sabores", []) if isinstance(dados.get("sabores"), list) else [],
+            "adicionais": dados.get("adicionais", []) if isinstance(dados.get("adicionais"), list) else [],
+            "observacoes": dados.get("observacoes", "")
         }
 
     except Exception as e:
-
-        print("ERRO IA ITEM DELIVERY:")
-        print(texto)
+        log_erro(f"Erro IA item delivery ({nome}): {e}")
 
         return {
-
             "produto_base": nome,
             "tamanho": "",
             "sabores": [],
             "adicionais": [],
             "observacoes": ""
-
         }

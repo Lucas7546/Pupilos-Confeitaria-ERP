@@ -1,771 +1,219 @@
 from modules.db import conectar
 from werkzeug.security import generate_password_hash, check_password_hash
 from psycopg2.extras import DictCursor
-
+from utils.logger import log_info, log_erro
 
 # =========================
 # BUSCAR USUÁRIO
 # =========================
 def buscar_usuario(username):
-    conn = None
     try:
-        conn = conectar()
-        cursor = conn.cursor(cursor_factory=DictCursor)
-
-        cursor.execute("""
-            SELECT id_usuario, username, senha, nivel, ativo
-            FROM usuarios
-            WHERE username = %s
-        """, (username.strip(),))
-
-        return cursor.fetchone()
-
+        with conectar() as conn:
+            with conn.cursor(cursor_factory=DictCursor) as cursor:
+                cursor.execute("""
+                    SELECT id_usuario, username, senha, nivel, ativo 
+                    FROM usuarios WHERE username = %s
+                """, (username.strip(),))
+                return cursor.fetchone()
     except Exception as e:
-        print(f"Erro ao buscar usuário: {e}")
+        log_erro(f"Erro ao buscar usuário {username}: {e}")
         return None
 
-    finally:
-        if conn:
-            conn.close()
-
-
 # =========================
-# CRIAR USUÁRIO (FORÇADO PADRÃO LIMPO)
+# CRIAR USUÁRIO
 # =========================
 def criar_usuario(username, senha, nivel="colaborador"):
-
-    conn = None
-
-    try:
-
-        conn = conectar()
-        cursor = conn.cursor()
-
-        username = username.strip().lower()
-        nivel = nivel.strip().lower()
-
-        # valida nível
-        if nivel not in [
-            "admin",
-            "socios",
-            "ti",
-            "financeiro",
-            "dono",
-            "colaborador"
-        ]:
-            raise Exception("Nível inválido")
-
-        # checar duplicado
-        cursor.execute("""
-            SELECT id_usuario
-            FROM usuarios
-            WHERE username = %s
-        """, (username,))
-
-        if cursor.fetchone():
-            raise Exception("Usuário já existe")
-
-        senha_hash = generate_password_hash(senha)
-
-        cursor.execute("""
-            INSERT INTO usuarios (
-                username,
-                senha,
-                nivel,
-                ativo
-            )
-            VALUES (%s, %s, %s, 1)
-        """, (
-            username,
-            senha_hash,
-            nivel
-        ))
-
-        conn.commit()
-
-        return True
-
-    except Exception as e:
-
-        print(f"Erro ao criar usuário: {e}")
-
+    username, nivel = username.strip().lower(), nivel.strip().lower()
+    niveis_validos = ["admin", "socios", "ti", "financeiro", "dono", "colaborador"]
+    
+    if nivel not in niveis_validos:
+        log_erro(f"Tentativa de criar usuário com nível inválido: {nivel}")
         return False
 
-    finally:
-
-        if conn:
-            conn.close()
-
-# =========================================================
-# GESTÃO DE LOGS (Auditoria no Postgres)
-# =========================================================
-def registrar_log_db(usuario, acao, modulo, detalhe):
-    conn = None
     try:
-        conn = conectar()
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO logs (usuario, acao, modulo, detalhe)
-            VALUES (%s, %s, %s, %s)
-        """, (usuario, acao, modulo, detalhe))
-        conn.commit()
-        cursor.close()
+        with conectar() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT id_usuario FROM usuarios WHERE username = %s", (username,))
+                if cursor.fetchone():
+                    return False
+                
+                cursor.execute("""
+                    INSERT INTO usuarios (username, senha, nivel, ativo) 
+                    VALUES (%s, %s, %s, 1)
+                """, (username, generate_password_hash(senha), nivel))
+                conn.commit()
+                log_info(f"Usuário {username} criado com sucesso.")
+                return True
     except Exception as e:
-        print(f"Erro ao registrar log no banco: {e}")
-    finally:
-        if conn:
-            conn.close()
+        log_erro(f"Erro ao criar usuário {username}: {e}")
+        return False
+
+# =========================
+# GESTÃO DE LOGS
+# =========================
+def registrar_log_db(usuario, acao, modulo, detalhe):
+    try:
+        with conectar() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO logs (usuario, acao, modulo, detalhe) 
+                    VALUES (%s, %s, %s, %s)
+                """, (usuario, acao, modulo, detalhe))
+                conn.commit()
+    except Exception as e:
+        log_erro(f"Erro ao registrar log: {e}")
 
 # =========================================================
 # AUDITORIA - LISTAGEM PADRÃO
 # =========================================================
-
 def listar_logs_auditoria(limite=100):
-
-    conn = None
-
+    """Lista os logs mais recentes de auditoria."""
     try:
-
-        conn = conectar()
-
-        from psycopg2.extras import DictCursor
-
-        cursor = conn.cursor(cursor_factory=DictCursor)
-
-        cursor.execute("""
-            SELECT
-                usuario,
-                acao,
-                modulo,
-                detalhe,
-                data
-            FROM logs
-            ORDER BY data DESC
-            LIMIT %s
-        """, (limite,))
-
-        logs = cursor.fetchall()
-
-        cursor.close()
-
-        return logs
-
+        with conectar() as conn:
+            with conn.cursor(cursor_factory=DictCursor) as cursor:
+                cursor.execute("""
+                    SELECT usuario, acao, modulo, detalhe, data
+                    FROM logs
+                    ORDER BY data DESC
+                    LIMIT %s
+                """, (limite,))
+                return cursor.fetchall()
     except Exception as e:
-
-        print(f"Erro ao listar auditoria: {e}")
-
+        log_erro(f"Erro ao listar auditoria: {e}")
         return []
-
-    finally:
-
-        if conn:
-            conn.close()
-
 
 # =========================================================
 # AUDITORIA - FILTRO AVANÇADO
 # =========================================================
-
-def listar_logs_auditoria_filtrado(
-    limite=200,
-    usuario=None,
-    acao=None,
-    modulo=None,
-    data_inicio=None,
-    data_fim=None
-):
-
-    conn = None
-
+def listar_logs_auditoria_filtrado(limite=200, usuario=None, acao=None, modulo=None, data_inicio=None, data_fim=None):
+    """Lista logs de auditoria aplicando filtros dinâmicos."""
     try:
+        with conectar() as conn:
+            with conn.cursor(cursor_factory=DictCursor) as cursor:
+                query = """
+                    SELECT usuario, acao, modulo, detalhe, data
+                    FROM logs
+                    WHERE 1=1
+                """
+                parametros = []
 
-        conn = conectar()
+                if usuario:
+                    query += " AND LOWER(usuario) LIKE LOWER(%s)"
+                    parametros.append(f"%{usuario}%")
+                if acao:
+                    query += " AND LOWER(acao) LIKE LOWER(%s)"
+                    parametros.append(f"%{acao}%")
+                if modulo:
+                    query += " AND LOWER(modulo) LIKE LOWER(%s)"
+                    parametros.append(f"%{modulo}%")
+                if data_inicio:
+                    query += " AND DATE(data) >= %s"
+                    parametros.append(data_inicio)
+                if data_fim:
+                    query += " AND DATE(data) <= %s"
+                    parametros.append(data_fim)
 
-        from psycopg2.extras import DictCursor
+                query += " ORDER BY data DESC LIMIT %s"
+                parametros.append(limite)
 
-        cursor = conn.cursor(cursor_factory=DictCursor)
-
-        query = """
-            SELECT
-                usuario,
-                acao,
-                modulo,
-                detalhe,
-                data
-            FROM logs
-            WHERE 1=1
-        """
-
-        parametros = []
-
-        # =====================================================
-        # FILTRO USUÁRIO
-        # =====================================================
-
-        if usuario:
-
-            query += """
-                AND LOWER(usuario) LIKE LOWER(%s)
-            """
-
-            parametros.append(f"%{usuario}%")
-
-        # =====================================================
-        # FILTRO AÇÃO
-        # =====================================================
-
-        if acao:
-
-            query += """
-                AND LOWER(acao) LIKE LOWER(%s)
-            """
-
-            parametros.append(f"%{acao}%")
-
-        # =====================================================
-        # FILTRO MÓDULO
-        # =====================================================
-
-        if modulo:
-
-            query += """
-                AND LOWER(modulo) LIKE LOWER(%s)
-            """
-
-            parametros.append(f"%{modulo}%")
-
-        # =====================================================
-        # DATA INÍCIO
-        # =====================================================
-
-        if data_inicio:
-
-            query += """
-                AND DATE(data) >= %s
-            """
-
-            parametros.append(data_inicio)
-
-        # =====================================================
-        # DATA FINAL
-        # =====================================================
-
-        if data_fim:
-
-            query += """
-                AND DATE(data) <= %s
-            """
-
-            parametros.append(data_fim)
-
-        # =====================================================
-        # ORDENAÇÃO
-        # =====================================================
-
-        query += """
-            ORDER BY data DESC
-            LIMIT %s
-        """
-
-        parametros.append(limite)
-
-        cursor.execute(query, tuple(parametros))
-
-        logs = cursor.fetchall()
-
-        cursor.close()
-
-        return logs
-
+                cursor.execute(query, tuple(parametros))
+                return cursor.fetchall()
     except Exception as e:
-
-        print(f"Erro ao listar auditoria filtrada: {e}")
-
+        log_erro(f"Erro ao listar auditoria filtrada: {e}")
         return []
-
-    finally:
-
-        if conn:
-            conn.close()
 
 # =========================
 # LISTAR USUÁRIOS
 # =========================
 def listar_usuarios():
-    conn = None
+    """Lista todos os usuários cadastrados."""
     try:
-        conn = conectar()
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT id_usuario, username, nivel, ativo, data_cadastro
-            FROM usuarios
-            ORDER BY id_usuario DESC
-        """)
-
-        return cursor.fetchall()
-
-    finally:
-        if conn:
-            conn.close()
+        with conectar() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id_usuario, username, nivel, ativo, data_cadastro
+                    FROM usuarios
+                    ORDER BY id_usuario DESC
+                """)
+                return cursor.fetchall()
+    except Exception as e:
+        log_erro(f"Erro ao listar usuários: {e}")
+        return []
 
 # =========================
-# VALIDAR LOGIN (IMPORTANTE)
+# VALIDAR LOGIN
 # =========================
 def validar_login(username, senha):
     user = buscar_usuario(username)
-
-    if not user:
-        return None
-
-    if not user["ativo"]:
-        return None
-
-    if check_password_hash(user["senha"], senha):
-        return {
-            "id": user["id_usuario"],
-            "username": user["username"],
-            "nivel": user["nivel"]
-        }
-
+    if user and user["ativo"] and check_password_hash(user["senha"], senha):
+        log_info(f"Login efetuado: {username}")
+        return {"id": user["id_usuario"], "username": user["username"], "nivel": user["nivel"]}
     return None
 
 # =========================
-# ALTERAR STATUS
+# ALTERAR STATUS / NÍVEL / EXCLUIR
 # =========================
 def alterar_status(id_usuario, ativo):
-    conn = None
     try:
-        conn = conectar()
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            UPDATE usuarios
-            SET ativo = %s
-            WHERE id_usuario = %s
-        """, (ativo, id_usuario))
-
-        conn.commit()
-        return True
-
-    finally:
-        if conn:
-            conn.close()
+        with conectar() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("UPDATE usuarios SET ativo = %s WHERE id_usuario = %s", (ativo, id_usuario))
+                conn.commit()
+                return True
+    except Exception as e:
+        log_erro(f"Erro ao alterar status usuário {id_usuario}: {e}")
+        return False
             
 
+# =========================
+# BUSCAR USUÁRIO POR ID
+# =========================
 def buscar_usuario_id(id_usuario):
-    conn = None
+    """Busca os dados completos de um usuário pelo seu ID."""
     try:
-        conn = conectar()
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT id_usuario, username, senha, nivel, ativo, data_cadastro
-            FROM usuarios
-            WHERE id_usuario = %s
-        """, (id_usuario,))
-        usuario = cursor.fetchone()
-        cursor.close()
-        return usuario
-    except Exception as e:
-        print(f"Erro ao buscar usuário por ID: {e}")
-        return None
-    finally:
-        if conn:
-            conn.close()
-
-def atualizar_nivel(id_usuario, novo_nivel):
-    conn = None
-    try:
-        conn = conectar()
-        cursor = conn.cursor()
-        cursor.execute("""
-            UPDATE usuarios 
-            SET nivel = %s 
-            WHERE id_usuario = %s
-        """, (novo_nivel.lower(), id_usuario))
-        conn.commit()
-        cursor.close()
-    except Exception as e:
-        print(f"Erro ao atualizar nível: {e}")
-    finally:
-        if conn:
-            conn.close()
-
-
-# =========================
-# EXCLUIR USUÁRIO
-# =========================
-def excluir_usuario(id_usuario):
-    conn = None
-
-    try:
-        conn = conectar()
-        cur = conn.cursor()
-
-        cur.execute("""
-            DELETE FROM usuarios
-            WHERE id_usuario = %s
-        """, (id_usuario,))
-
-        conn.commit()
-
-        return True
-
-    except Exception as e:
-
-        print(f"Erro ao excluir usuário: {e}")
-
-        return False
-
-    finally:
-
-        if conn:
-            conn.close()
-
-
-
-
-# =========================
-# EXCLUIR PRODUTO
-# =========================
-def excluir_produto(id_produto):
-
-    conn = None
-
-    try:
-
-        conn = conectar()
-        cursor = conn.cursor()
-
-        # Remove receitas ligadas ao produto
-        cursor.execute("""
-            DELETE FROM receitas
-            WHERE id_produto = %s
-        """, (id_produto,))
-
-        # Remove itens de venda ligados ao produto
-        cursor.execute("""
-            DELETE FROM itens_venda
-            WHERE id_produto = %s
-        """, (id_produto,))
-
-        # Remove produto
-        cursor.execute("""
-            DELETE FROM produtos
-            WHERE id_produto = %s
-        """, (id_produto,))
-
-        conn.commit()
-
-        return True
-
-    except Exception as e:
-
-        if conn:
-            conn.rollback()
-
-        print(f"ERRO EXCLUIR PRODUTO: {e}")
-
-        return False
-
-    finally:
-
-        if conn:
-            conn.close()
-
-
-# =========================
-# EXCLUIR MATÉRIA PRIMA
-# =========================
-def excluir_materia_prima(id_mp):
-
-    conn = None
-
-    try:
-
-        conn = conectar()
-        cursor = conn.cursor()
-
-        # Remove receitas vinculadas
-        cursor.execute("""
-            DELETE FROM receitas
-            WHERE id_materia_prima = %s
-        """, (id_mp,))
-
-        # Remove movimentações
-        cursor.execute("""
-            DELETE FROM movimentacao_estoque
-            WHERE id_materia_prima = %s
-        """, (id_mp,))
-
-        # Remove matéria-prima
-        cursor.execute("""
-            DELETE FROM materia_prima
-            WHERE id_materia_prima = %s
-        """, (id_mp,))
-
-        conn.commit()
-
-        return True
-
-    except Exception as e:
-
-        if conn:
-            conn.rollback()
-
-        print(f"Erro excluir matéria-prima: {e}")
-
-        return False
-
-    finally:
-
-        if conn:
-            conn.close()
-
-
-# =========================
-# EXCLUIR VENDA + ROLLBACK
-# =========================
-def excluir_venda(id_venda):
-
-    conn = None
-
-    try:
-
-        conn = conectar()
-
-        cursor = conn.cursor()
-
-        # =========================================
-        # VERIFICA SE VENDA EXISTE
-        # =========================================
-
-        cursor.execute("""
-            SELECT id_venda
-            FROM vendas
-            WHERE id_venda = %s
-        """, (id_venda,))
-
-        venda = cursor.fetchone()
-
-        if not venda:
-
-            print(f"Venda {id_venda} não encontrada")
-
-            return False
-
-        # =========================================
-        # BUSCA ITENS DA VENDA
-        # =========================================
-
-        cursor.execute("""
-            SELECT
-                iv.id_produto,
-                iv.quantidade
-            FROM itens_venda iv
-            WHERE iv.id_venda = %s
-        """, (id_venda,))
-
-        itens = cursor.fetchall()
-
-        if not itens:
-
-            print(f"Venda {id_venda} sem itens")
-
-        # =========================================
-        # DEVOLVE ESTOQUE
-        # =========================================
-
-        for id_produto, quantidade_vendida in itens:
-
-            cursor.execute("""
-                SELECT
-                    id_materia_prima,
-                    quantidade_utilizada
-                FROM receitas
-                WHERE id_produto = %s
-            """, (id_produto,))
-
-            ingredientes = cursor.fetchall()
-
-            for id_mp, qtd_receita in ingredientes:
-
-                qtd_retorno = (
-                    float(qtd_receita) *
-                    float(quantidade_vendida)
-                )
-
-                # =========================================
-                # REGISTRA RETORNO NO ESTOQUE
-                # =========================================
-
+        with conectar() as conn:
+            with conn.cursor(cursor_factory=DictCursor) as cursor:
                 cursor.execute("""
-                    INSERT INTO movimentacao_estoque (
-                        id_materia_prima,
-                        tipo_movimento,
-                        quantidade,
-                        observacao
-                    )
-                    VALUES (
-                        %s,
-                        'entrada',
-                        %s,
-                        %s
-                    )
-                """, (
-                    id_mp,
-                    qtd_retorno,
-                    f'ROLLBACK AUTOMÁTICO VENDA ID {id_venda}'
-                ))
-
-        # =========================================
-        # REMOVE ITENS DA VENDA
-        # =========================================
-
-        cursor.execute("""
-            DELETE FROM itens_venda
-            WHERE id_venda = %s
-        """, (id_venda,))
-
-        # =========================================
-        # REMOVE VENDA
-        # =========================================
-
-        cursor.execute("""
-            DELETE FROM vendas
-            WHERE id_venda = %s
-        """, (id_venda,))
-
-        conn.commit()
-
-        print(f"Venda {id_venda} excluída com rollback realizado")
-
-        return True
-
+                    SELECT id_usuario, username, senha, nivel, ativo, data_cadastro
+                    FROM usuarios
+                    WHERE id_usuario = %s
+                """, (id_usuario,))
+                return cursor.fetchone()
     except Exception as e:
-
-        if conn:
-            conn.rollback()
-
-        print(f"Erro excluir venda: {e}")
-
-        return False
-
-    finally:
-
-        if conn:
-            conn.close()
+        log_erro(f"Erro ao buscar usuário por ID {id_usuario}: {e}")
+        return None
 
 # =========================
-# ATUALIZAR PRODUTO
+# ATUALIZAR NÍVEL DO USUÁRIO
 # =========================
-def update_produto(id_produto, nome, preco):
-
-    conn = None
-
+def atualizar_nivel(id_usuario, novo_nivel):
+    """Altera o nível de permissão de um usuário específico."""
     try:
-
-        conn = conectar()
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            UPDATE produtos
-            SET
-                nome = %s,
-                preco_venda = %s
-            WHERE id_produto = %s
-        """, (
-            nome,
-            preco,
-            id_produto
-        ))
-
-        conn.commit()
-
-        return True
-
+        with conectar() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE usuarios 
+                    SET nivel = %s 
+                    WHERE id_usuario = %s
+                """, (novo_nivel.lower(), id_usuario))
+                conn.commit()
+                log_info(f"Nível do usuário ID {id_usuario} atualizado para {novo_nivel}.")
+                return True
     except Exception as e:
-
-        print(f"Erro update produto: {e}")
-
+        log_erro(f"Erro ao atualizar nível do usuário {id_usuario}: {e}")
         return False
 
-    finally:
 
-        if conn:
-            conn.close()
-
-
-# =========================
-# ATUALIZAR MATÉRIA PRIMA
-# =========================
-def atualizar_materia_prima(
-    id_mp,
-    nome,
-    preco,
-    unidade,
-    quantidade
-):
-
-    conn = None
-
+def excluir_usuario(id_usuario):
     try:
-
-        conn = conectar()
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            UPDATE materia_prima
-            SET
-                nome = %s,
-                preco_unitario = %s,
-                unidade_medida = %s
-            WHERE id_materia_prima = %s
-        """, (
-            nome,
-            preco,
-            unidade,
-            id_mp
-        ))
-
-        # =====================================================
-        # AJUSTE DE ESTOQUE
-        # =====================================================
-
-        if quantidade and float(quantidade) > 0:
-
-            cursor.execute("""
-                INSERT INTO movimentacao_estoque (
-                    id_materia_prima,
-                    tipo_movimento,
-                    quantidade,
-                    observacao
-                )
-                VALUES (%s, 'entrada', %s, %s)
-            """, (
-                id_mp,
-                quantidade,
-                'Ajuste manual de estoque'
-            ))
-
-        conn.commit()
-
-        return True
-
+        with conectar() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM usuarios WHERE id_usuario = %s", (id_usuario,))
+                conn.commit()
+                log_info(f"Usuário {id_usuario} excluído.")
+                return True
     except Exception as e:
-
-        print(f"Erro atualizar MP: {e}")
-
+        log_erro(f"Erro ao excluir usuário {id_usuario}: {e}")
         return False
-
-    finally:
-
-        if conn:
-            conn.close()
-
-
-# =========================================================
-# 
-# =========================================================
 
 

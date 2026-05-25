@@ -1,130 +1,119 @@
-from modules.db import conectar
+from modules.db import get_conn
 from utils.logger import log_info, log_erro
 
 # =========================================================
 # CONFIG EMPRESA
 # =========================================================
-def get_config_empresa():
+def get_config_empresa() -> str:
     try:
-        with conectar() as con:
-            with con.cursor() as cur:
-                cur.execute("""
-                    SELECT regime_fiscal
-                    FROM empresa_config
-                    ORDER BY id ASC
-                    LIMIT 1
-                """)
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT regime_fiscal FROM empresa_config ORDER BY id ASC LIMIT 1"
+                )
                 resultado = cur.fetchone()
-                return resultado[0] if resultado else "MEI"
+        return resultado[0] if resultado else "MEI"
     except Exception as e:
-        log_erro(f"❌ Erro ao buscar config empresa: {e}")
+        log_erro(f"Erro ao buscar config empresa: {e}")
         return "MEI"
 
-# =========================================================
-# ATUALIZAR REGIME
-# =========================================================
-def atualizar_regime_fiscal(novo_regime):
+
+def atualizar_regime_fiscal(novo_regime: str) -> None:
     try:
-        with conectar() as con:
-            with con.cursor() as cur:
-                cur.execute("""
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
                     UPDATE empresa_config
                     SET regime_fiscal = %s
                     WHERE id = (SELECT id FROM empresa_config ORDER BY id ASC LIMIT 1)
-                """, (novo_regime,))
-                con.commit()
+                    """,
+                    (novo_regime,),
+                )
+            conn.commit()
         log_info(f"Regime fiscal atualizado para: {novo_regime}")
     except Exception as e:
-        log_erro(f"Erro ao atualizar regime fiscal para {novo_regime}: {e}")
+        log_erro(f"Erro ao atualizar regime fiscal: {e}")
+
+
 # =========================================================
-# IMPOSTO
+# CÁLCULO DE IMPOSTO
 # =========================================================
-def calcular_imposto(faturamento, regime=None):
+_ALIQUOTAS = {"MEI": 0.04, "ME": 0.08, "SN": 0.12}
+
+
+def calcular_imposto(faturamento: float, regime: str | None = None) -> float:
     if not regime:
         regime = get_config_empresa()
-
-    aliquotas = {"MEI": 0.04, "ME": 0.08, "SN": 0.12}
-    aliquota = aliquotas.get(regime, 0.10)
-
+    aliquota = _ALIQUOTAS.get(regime, 0.10)
     return faturamento * aliquota
+
+
 # =========================================================
-# FINANCEIRO OPERACIONAL (DASHBOARD)
+# BASE FINANCEIRA OPERACIONAL
+# Bug corrigido: a query de custo de insumos estava fazendo JOIN
+# em itens_venda.id_produto com materia_prima.id_materia_prima —
+# tipos diferentes que nunca vão cruzar. Corrigido via receitas.
+# calcular_financeiro (duplicata) foi removido — use esta função.
 # =========================================================
-# =========================================================
-# FINANCEIRO OPERACIONAL (DASHBOARD)
-# =========================================================
-def financeiro_operacional(periodo_dias=30):
+def financeiro_operacional(periodo_dias: int = 30) -> dict:
     try:
-        intervalo = f"{periodo_dias} days"
-        with conectar() as con:
-            with con.cursor() as cur:
-                # Faturamento
-                cur.execute("SELECT COALESCE(SUM(valor_total), 0) FROM vendas WHERE data_venda >= CURRENT_DATE - CAST(%s AS INTERVAL)", (intervalo,))
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                # Faturamento do período
+                cur.execute(
+                    """
+                    SELECT COALESCE(SUM(valor_total), 0)
+                    FROM vendas
+                    WHERE data_venda >= CURRENT_DATE - CAST(%s AS INTERVAL)
+                    """,
+                    (f"{periodo_dias} days",),
+                )
                 faturamento = float(cur.fetchone()[0])
 
-                # Custo Insumos
-                cur.execute("SELECT COALESCE(SUM(i.quantidade * mp.preco_unitario), 0) FROM itens_venda i JOIN materia_prima mp ON mp.id_materia_prima = i.id_produto")
+                # Custo de insumos: quantidade vendida × qtd na receita × preço da MP
+                # Corrigido: percorre vendas → itens_venda → receitas → materia_prima
+                cur.execute(
+                    """
+                    SELECT COALESCE(SUM(iv.quantidade * r.quantidade_utilizada * mp.preco_unitario), 0)
+                    FROM vendas v
+                    JOIN itens_venda iv ON iv.id_venda = v.id_venda
+                    JOIN receitas r ON r.id_produto = iv.id_produto
+                    JOIN materia_prima mp ON mp.id_materia_prima = r.id_materia_prima
+                    WHERE v.data_venda >= CURRENT_DATE - CAST(%s AS INTERVAL)
+                    """,
+                    (f"{periodo_dias} days",),
+                )
                 custo_insumos = float(cur.fetchone()[0])
 
-                # Despesas
-                cur.execute("SELECT COALESCE(SUM(valor), 0) FROM despesas WHERE data_despesa >= CURRENT_DATE - CAST(%s AS INTERVAL)", (intervalo,))
+                # Despesas do período
+                cur.execute(
+                    """
+                    SELECT COALESCE(SUM(valor), 0)
+                    FROM despesas
+                    WHERE data_despesa >= CURRENT_DATE - CAST(%s AS INTERVAL)
+                    """,
+                    (f"{periodo_dias} days",),
+                )
                 total_fixas = float(cur.fetchone()[0])
 
         lucro_base = faturamento - custo_insumos - total_fixas
-        return {"faturamento": faturamento, "custo_insumos": custo_insumos, "total_fixas": total_fixas, "lucro_base": lucro_base}
+        return {
+            "faturamento": faturamento,
+            "custo_insumos": custo_insumos,
+            "total_fixas": total_fixas,
+            "lucro_base": lucro_base,
+        }
     except Exception as e:
         log_erro(f"Erro no cálculo financeiro operacional: {e}")
         return {"faturamento": 0.0, "custo_insumos": 0.0, "total_fixas": 0.0, "lucro_base": 0.0}
 
 
 # =========================================================
-# 1. BASE FINANCEIRA OPERACIONAL
+# RELATÓRIO FISCAL COM SIMULAÇÕES DE REGIME
 # =========================================================
-def calcular_financeiro(periodo_dias=30):
-    con = conectar()
-    cur = con.cursor()
-
-    # FATURAMENTO
-    cur.execute("""
-        SELECT COALESCE(SUM(valor_total), 0)
-        FROM vendas
-        WHERE data_venda >= CURRENT_DATE - INTERVAL %s
-    """, (f"{periodo_dias} days",))
-    faturamento = float(cur.fetchone()[0])
-
-    # CUSTO INSUMOS
-    cur.execute("""
-        SELECT COALESCE(SUM(i.quantidade * mp.preco_unitario), 0)
-        FROM itens_venda i
-        JOIN materia_prima mp ON mp.id_materia_prima = i.id_produto
-    """)
-    custo_insumos = float(cur.fetchone()[0])
-
-    # DESPESAS FIXAS
-    cur.execute("""
-        SELECT COALESCE(SUM(valor), 0)
-        FROM despesas
-        WHERE data_despesa >= CURRENT_DATE - INTERVAL %s
-    """, (f"{periodo_dias} days",))
-    total_fixas = float(cur.fetchone()[0])
-
-    con.close()
-
-    lucro_base = faturamento - custo_insumos - total_fixas
-
-    return {
-        "faturamento": faturamento,
-        "custo_insumos": custo_insumos,
-        "total_fixas": total_fixas,
-        "lucro_base": lucro_base
-    }
-
-# =========================================================
-# RELATÓRIO FISCAL
-# =========================================================
-def relatorio_fiscal(periodo_dias=30):
+def relatorio_fiscal(periodo_dias: int = 30) -> dict:
     base = financeiro_operacional(periodo_dias)
-
     regime_atual = get_config_empresa()
     faturamento = base["faturamento"]
     lucro_base = base["lucro_base"]
@@ -132,34 +121,39 @@ def relatorio_fiscal(periodo_dias=30):
     imposto_atual = calcular_imposto(faturamento, regime_atual)
     lucro_atual = lucro_base - imposto_atual
 
-    regimes = ["MEI", "ME", "SN"]
     simulacoes = []
-
-    for r in regimes:
-        imposto_simulado = calcular_imposto(faturamento, r)
-        lucro_simulado = lucro_base - imposto_simulado
-
-        simulacoes.append({
-            "regime": r,
-            "imposto": imposto_simulado,
-            "lucro": lucro_simulado,
-            "diferenca": lucro_simulado - lucro_atual,
-            "aliquota": 0.04 if r == "MEI" else 0.08 if r == "ME" else 0.12
-        })
+    for regime, aliquota in _ALIQUOTAS.items():
+        imposto_sim = faturamento * aliquota
+        lucro_sim = lucro_base - imposto_sim
+        simulacoes.append(
+            {
+                "regime": regime,
+                "aliquota": aliquota,
+                "imposto": imposto_sim,
+                "lucro": lucro_sim,
+                "diferenca": lucro_sim - lucro_atual,
+            }
+        )
 
     return {
         "regime_atual": regime_atual,
         "faturamento": faturamento,
         "lucro_atual": lucro_atual,
         "imposto_atual": imposto_atual,
-        "simulacoes": simulacoes
+        "simulacoes": simulacoes,
     }
 
+
 # =========================================================
-# FINANCEIRO COMPLETO (FINANCEIRO.HTML)
+# FINANCEIRO COMPLETO COM IMPOSTO (USADO EM FINANCEIRO.HTML)
 # =========================================================
-def calcular_financeiro_com_imposto(periodo_dias=30):
+def calcular_financeiro_com_imposto(periodo_dias: int = 30) -> dict:
     base = financeiro_operacional(periodo_dias)
     regime = get_config_empresa()
     imposto = calcular_imposto(base["faturamento"], regime)
-    return {**base, "imposto": imposto, "regime": regime, "lucro_final": base["lucro_base"] - imposto}
+    return {
+        **base,
+        "imposto": imposto,
+        "regime": regime,
+        "lucro_final": base["lucro_base"] - imposto,
+    }

@@ -1,11 +1,14 @@
 from modules.db import conectar
 from datetime import datetime
-from utils.logger import log_info, log_erro # <--- Importando nosso novo logger
+from utils.logger import log_info, log_erro
+
 # =========================================================
 # ENTRADA ESTOQUE
 # =========================================================
 def entrada_estoque(materia_prima_id, quantidade):
     con = None
+    cursor = None
+
     try:
         con = conectar()
         cursor = con.cursor()
@@ -17,11 +20,20 @@ def entrada_estoque(materia_prima_id, quantidade):
         """, (materia_prima_id, float(quantidade)))
 
         con.commit()
-        log_info(f"Entrada de estoque realizada. ID MP: {materia_prima_id}, Qtd: {quantidade}")
+        log_info(f"Entrada estoque MP {materia_prima_id} | Qtd: {quantidade}")
+        return True
+
     except Exception as e:
+        if con:
+            con.rollback()
         log_erro(f"Erro entrada_estoque: {e}")
+        return False
+
     finally:
-        if con: con.close()
+        if cursor:
+            cursor.close()
+        if con:
+            con.close()
 
 
 # =========================================================
@@ -29,6 +41,8 @@ def entrada_estoque(materia_prima_id, quantidade):
 # =========================================================
 def saida_estoque(materia_prima_id, quantidade, observacao='Movimentação manual'):
     con = None
+    cursor = None
+
     try:
         con = conectar()
         cursor = con.cursor()
@@ -40,40 +54,53 @@ def saida_estoque(materia_prima_id, quantidade, observacao='Movimentação manua
         """, (materia_prima_id, float(quantidade), observacao))
 
         con.commit()
-        log_info(f"Saída de estoque realizada. ID MP: {materia_prima_id}, Qtd: {quantidade}")
-    except Exception as e:
-        log_erro(f"Erro saida_estoque: {e}")
-    finally:
+        log_info(f"Saída estoque MP {materia_prima_id} | Qtd: {quantidade}")
+        return True
 
-            
+    except Exception as e:
+        if con:
+            con.rollback()
+        log_erro(f"Erro saida_estoque: {e}")
+        return False
+
+    finally:
+        if cursor:
+            cursor.close()
+        if con:
+            con.close()
 
 
 # =========================================================
-# CALCULAR ESTOQUE ATUAL
+# CALCULAR ESTOQUE
 # =========================================================
 def calcular_estoque(materia_prima_id):
     con = None
+    cursor = None
+
     try:
         con = conectar()
         cursor = con.cursor()
 
         cursor.execute("""
             SELECT 
-                COALESCE(SUM(CASE WHEN tipo_movimento IN ('entrada', 'ajuste') THEN quantidade ELSE 0 END), 0) -
-                COALESCE(SUM(CASE WHEN tipo_movimento = 'saida' THEN quantidade ELSE 0 END), 0)
+                COALESCE(SUM(CASE WHEN tipo_movimento IN ('entrada','ajuste') THEN quantidade ELSE 0 END),0)
+                -
+                COALESCE(SUM(CASE WHEN tipo_movimento = 'saida' THEN quantidade ELSE 0 END),0)
             FROM movimentacao_estoque
             WHERE id_materia_prima = %s
         """, (materia_prima_id,))
 
-        resultado = cursor.fetchone()[0]
-        return float(resultado or 0)
+        return float(cursor.fetchone()[0] or 0)
+
     except Exception as e:
         log_erro(f"Erro calcular_estoque: {e}")
         return 0.0
+
     finally:
-        if con: con.close()
-
-
+        if cursor:
+            cursor.close()
+        if con:
+            con.close()
 # =========================================================
 # LISTAR MATÉRIA PRIMA
 # =========================================================
@@ -168,11 +195,6 @@ def listar_materia_prima():
         if con:
             con.close()
 
-Perfeito, vamos aplicar o padrão de logs nessas funções que faltavam. Notei que em registrar_compra_estoque você tinha um pequeno erro de digitação nas variáveis do log_info (estavam chamando variáveis que não existem nessa função), então eu corrigi para refletir o contexto correto.
-
-Aqui está o código ajustado:
-
-Python
 # =========================================================
 # CADASTRAR MATÉRIA PRIMA
 # =========================================================
@@ -481,27 +503,6 @@ def obter_historico_movimentacoes():
     finally:
         if con:
             con.close()
-
-def excluir_produto(id_produto):
-    """Exclui produto e remove dependências (receitas e itens de venda)."""
-    try:
-        with conectar() as conn:
-            with conn.cursor() as cursor:
-                # Remove receitas ligadas ao produto
-                cursor.execute("DELETE FROM receitas WHERE id_produto = %s", (id_produto,))
-                
-                # Remove itens de venda ligados ao produto
-                cursor.execute("DELETE FROM itens_venda WHERE id_produto = %s", (id_produto,))
-                
-                # Remove produto
-                cursor.execute("DELETE FROM produtos WHERE id_produto = %s", (id_produto,))
-                
-                conn.commit()
-                log_info(f"Produto {id_produto} excluído com sucesso.")
-                return True
-    except Exception as e:
-        log_erro(f"Erro ao excluir produto {id_produto}: {e}")
-        return False
     
 
 # =========================

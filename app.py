@@ -15,6 +15,7 @@ from modules.importador_ia import (
     gerar_financeiro
 )
 from modules.normalizador_ia import encontrar_produto_similar
+from psycopg2.extras import RealDictCursor
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
@@ -1066,7 +1067,6 @@ def deletar_subproduto(id_subproduto):
     return redirect(url_for('estoque_painel'))
 
 # --- ROTA: PRECIFICAÇÃO ---
-from psycopg2.extras import RealDictCursor
 
 @app.route("/precificacao")
 @login_required
@@ -1287,14 +1287,29 @@ def auditoria():
         print(f"❌ ERRO ROTA AUDITORIA: {e}")
         flash(f"Erro ao carregar painel de auditoria: {e}", "danger")
         return redirect(url_for('dashboard'))
+    
 # --- ENGINE DE FILTRAGEM SQL (CORRIGIDA COM AS COLUNAS REAIS) ---
-def listar_logs_auditoria_filtrado(limite=100, usuario=None, acao=None, modulo=None, data_inicio=None, data_fim=None):
-    # Correção Sênior: Alinhado estritamente com as colunas reais: id, usuario, acao, modulo, detalhe, data
+def listar_logs_auditoria_filtrado(
+    limite=100,
+    usuario=None,
+    acao=None,
+    modulo=None,
+    data_inicio=None,
+    data_fim=None
+):
+
     query = """
-        SELECT usuario, acao, modulo, detalhe, data 
-        FROM logs 
+        SELECT 
+            id,
+            usuario,
+            acao,
+            modulo,
+            detalhe,
+            data
+        FROM logs
         WHERE 1=1
     """
+
     params = []
 
     if usuario:
@@ -1321,12 +1336,19 @@ def listar_logs_auditoria_filtrado(limite=100, usuario=None, acao=None, modulo=N
     params.append(limite)
 
     try:
+
         with conectar() as conn:
-            with conn.cursor() as cursor:
+
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+
                 cursor.execute(query, params)
+
                 return cursor.fetchall()
+
     except Exception as e:
+
         print(f"❌ Erro na consulta de logs filtrados: {e}")
+
         return []
 
 

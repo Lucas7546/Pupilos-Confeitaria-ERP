@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta  # timedelta estava faltando
 
+from datetime import datetime, timedelta  # timedelta estava faltando
+ 
 from modules.db import get_conn
 from utils.logger import log_info, log_erro
-
-
+ 
+ 
 # =========================================================
 # ENTRADA DE ESTOQUE
 # =========================================================
@@ -25,8 +26,8 @@ def entrada_estoque(materia_prima_id: int, quantidade: float) -> bool:
     except Exception as e:
         log_erro(f"Erro entrada_estoque: {e}")
         return False
-
-
+ 
+ 
 # =========================================================
 # SAÍDA DE ESTOQUE
 # =========================================================
@@ -52,8 +53,8 @@ def saida_estoque(
     except Exception as e:
         log_erro(f"Erro saida_estoque: {e}")
         return False
-
-
+ 
+ 
 # =========================================================
 # CALCULAR SALDO ATUAL
 # =========================================================
@@ -79,8 +80,8 @@ def calcular_estoque(materia_prima_id: int) -> float:
     except Exception as e:
         log_erro(f"Erro calcular_estoque: {e}")
         return 0.0
-
-
+ 
+ 
 # =========================================================
 # LISTAR MATÉRIAS-PRIMAS
 # =========================================================
@@ -110,7 +111,7 @@ def listar_materia_prima() -> list[tuple]:
                     """
                 )
                 rows = cur.fetchall()
-
+ 
         resultado = []
         for m in rows:
             saldo = float(m[5])
@@ -120,8 +121,8 @@ def listar_materia_prima() -> list[tuple]:
     except Exception as e:
         log_erro(f"Erro listar_materia_prima: {e}")
         return []
-
-
+ 
+ 
 # =========================================================
 # CADASTRAR MATÉRIA-PRIMA
 # =========================================================
@@ -145,7 +146,7 @@ def cadastrar_materia(
                     (nome, unidade, preco, estoque_minimo),
                 )
                 id_mp = cur.fetchone()[0]
-
+ 
                 if estoque_inicial > 0:
                     cur.execute(
                         """
@@ -161,8 +162,8 @@ def cadastrar_materia(
     except Exception as e:
         log_erro(f"Erro ao cadastrar matéria-prima '{nome}': {e}")
         return False
-
-
+ 
+ 
 # =========================================================
 # REGISTRAR COMPRA (ENTRADA + ATUALIZA PREÇO MÉDIO)
 # =========================================================
@@ -176,7 +177,7 @@ def registrar_compra_estoque(
     try:
         novo_preco = float(valor_total_pago) / float(quantidade_comprada)
         data_str = datetime.now().strftime("%d/%m/%Y")
-
+ 
         with get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -197,8 +198,8 @@ def registrar_compra_estoque(
     except Exception as e:
         log_erro(f"Erro ao registrar compra (ID MP: {id_materia_prima}): {e}")
         return False
-
-
+ 
+ 
 # =========================================================
 # AJUSTE MANUAL DE ESTOQUE
 # Bug corrigido: agora retorna bool para o chamador saber se teve sucesso.
@@ -221,8 +222,8 @@ def ajustar_estoque(id_mp: int, novo_valor: float) -> bool:
     except Exception as e:
         log_erro(f"Erro ao ajustar estoque (ID MP: {id_mp}): {e}")
         return False
-
-
+ 
+ 
 # =========================================================
 # ATUALIZAR MATÉRIA-PRIMA
 # =========================================================
@@ -255,8 +256,8 @@ def atualizar_materia_prima(
     except Exception as e:
         log_erro(f"Erro ao atualizar matéria-prima ID {id_mp}: {e}")
         return False
-
-
+ 
+ 
 # =========================================================
 # EXCLUIR MATÉRIA-PRIMA
 # =========================================================
@@ -275,8 +276,8 @@ def excluir_materia_prima(id_mp: int) -> bool:
     except Exception as e:
         log_erro(f"Erro ao excluir matéria-prima ID {id_mp}: {e}")
         return False
-
-
+ 
+ 
 # =========================================================
 # PREVISÃO DE DEMANDA
 # Consolidada aqui — previsao.py será depreciado.
@@ -298,11 +299,11 @@ def previsao_demanda() -> list[dict]:
                     """
                 )
                 materias = cur.fetchall()
-
+ 
                 previsoes: list[dict] = []
                 for id_mp, nome, unidade, estoque_minimo in materias:
                     estoque_minimo = float(estoque_minimo or 0)
-
+ 
                     # Saldo atual
                     cur.execute(
                         """
@@ -317,7 +318,7 @@ def previsao_demanda() -> list[dict]:
                         (id_mp,),
                     )
                     estoque_atual = float(cur.fetchone()[0] or 0)
-
+ 
                     # Consumo últimos 30 dias
                     cur.execute(
                         """
@@ -330,16 +331,16 @@ def previsao_demanda() -> list[dict]:
                         (id_mp,),
                     )
                     total_consumido = float(cur.fetchone()[0] or 0)
-
+ 
                     media_diaria = total_consumido / 30.0
                     fator = 1.15
-
+ 
                     consumo_7d = round(media_diaria * 7 * fator, 2)
                     consumo_15d = round(media_diaria * 15 * fator, 2)
                     dias_restantes = (
                         round(estoque_atual / media_diaria, 1) if media_diaria > 0 else 999.0
                     )
-
+ 
                     if dias_restantes <= 2:
                         risco = "CRÍTICO"
                     elif dias_restantes <= 5:
@@ -348,9 +349,9 @@ def previsao_demanda() -> list[dict]:
                         risco = "MODERADO"
                     else:
                         risco = "BAIXO"
-
+ 
                     sugestao = max(round(consumo_15d - estoque_atual, 2), 0.0)
-
+ 
                     previsoes.append(
                         {
                             "materia_prima": nome,
@@ -364,14 +365,14 @@ def previsao_demanda() -> list[dict]:
                             "sugestao_compra": sugestao,
                         }
                     )
-
+ 
         previsoes.sort(key=lambda x: x["dias_restantes"])
         return previsoes
     except Exception as e:
         log_erro(f"Erro na previsão de demanda: {e}")
         return []
-
-
+ 
+ 
 # =========================================================
 # HISTÓRICO DE MOVIMENTAÇÕES
 # =========================================================
@@ -403,7 +404,7 @@ def obter_historico_movimentacoes() -> list[dict]:
                     """
                 )
                 rows = cur.fetchall()
-
+ 
         return [
             {
                 "id": r[0],
@@ -420,8 +421,8 @@ def obter_historico_movimentacoes() -> list[dict]:
     except Exception as e:
         log_erro(f"Erro ao obter histórico de movimentações: {e}")
         return []
-
-
+ 
+ 
 # =========================================================
 # SUBPRODUTOS — funções que estavam perdidas no app.py
 # =========================================================
@@ -450,7 +451,7 @@ def listar_subprodutos() -> list[tuple]:
                     """
                 )
                 rows = cur.fetchall()
-
+ 
         resultado = []
         for s in rows:
             estoque_min = float(s[3] or 0)
@@ -462,8 +463,8 @@ def listar_subprodutos() -> list[tuple]:
     except Exception as e:
         log_erro(f"Erro ao listar subprodutos: {e}")
         return []
-
-
+ 
+ 
 def cadastrar_subproduto_banco(nome: str, unidade: str, estoque_minimo: float) -> bool:
     if not nome or not str(nome).strip():
         return False
@@ -482,8 +483,8 @@ def cadastrar_subproduto_banco(nome: str, unidade: str, estoque_minimo: float) -
     except Exception as e:
         log_erro(f"Erro ao cadastrar subproduto: {e}")
         return False
-
-
+ 
+ 
 def vincular_insumo_subproduto(
     id_subproduto: int, id_materia_prima: int, quantidade: float
 ) -> bool:
@@ -503,8 +504,8 @@ def vincular_insumo_subproduto(
     except Exception as e:
         log_erro(f"Erro ao vincular insumo ao subproduto: {e}")
         return False
-
-
+ 
+ 
 def excluir_subproduto_banco(id_subproduto: int) -> bool:
     """Soft delete — mantém histórico fiscal."""
     try:
@@ -519,3 +520,124 @@ def excluir_subproduto_banco(id_subproduto: int) -> bool:
     except Exception as e:
         log_erro(f"Erro ao desativar subproduto: {e}")
         return False
+ 
+ 
+# =========================================================
+# ENTRADA DE SUBPRODUTO (chamada em /registrar-producao)
+# =========================================================
+def entrada_subproduto(id_subproduto: int, quantidade: float) -> bool:
+    """Registra entrada de subproduto produzido e baixa os insumos da receita."""
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                # Entrada no estoque do subproduto
+                cur.execute(
+                    """
+                    INSERT INTO movimentacao_estoque
+                        (id_subproduto, tipo_movimento, quantidade, observacao)
+                    VALUES (%s, 'entrada', %s, 'Produção registrada')
+                    """,
+                    (id_subproduto, float(quantidade)),
+                )
+                # Baixa os insumos usados na receita do subproduto
+                cur.execute(
+                    "SELECT id_materia_prima, quantidade_utilizada FROM receitas_subprodutos WHERE id_subproduto = %s",
+                    (id_subproduto,),
+                )
+                for id_mp, qtd_receita in cur.fetchall():
+                    cur.execute(
+                        """
+                        INSERT INTO movimentacao_estoque
+                            (id_materia_prima, tipo_movimento, quantidade, observacao)
+                        VALUES (%s, 'saida', %s, 'Baixa por produção de subproduto')
+                        """,
+                        (id_mp, float(qtd_receita) * float(quantidade)),
+                    )
+            conn.commit()
+        log_info(f"Entrada subproduto ID {id_subproduto} | Qtd {quantidade}")
+        return True
+    except Exception as e:
+        log_erro(f"Erro entrada_subproduto ID {id_subproduto}: {e}")
+        return False
+ 
+ 
+# =========================================================
+# ENTRADA DE PRODUTO FINAL (chamada em /registrar-producao)
+# =========================================================
+def entrada_produto(id_produto: int, quantidade: float) -> bool:
+    """Registra entrada de produto final produzido e baixa os insumos da receita."""
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO movimentacao_estoque
+                        (id_produto, tipo_movimento, quantidade, observacao)
+                    VALUES (%s, 'entrada', %s, 'Produção registrada')
+                    """,
+                    (id_produto, float(quantidade)),
+                )
+                cur.execute(
+                    "SELECT id_materia_prima, quantidade_utilizada FROM receitas WHERE id_produto = %s AND id_materia_prima IS NOT NULL",
+                    (id_produto,),
+                )
+                for id_mp, qtd_receita in cur.fetchall():
+                    cur.execute(
+                        """
+                        INSERT INTO movimentacao_estoque
+                            (id_materia_prima, tipo_movimento, quantidade, observacao)
+                        VALUES (%s, 'saida', %s, 'Baixa por produção de produto')
+                        """,
+                        (id_mp, float(qtd_receita) * float(quantidade)),
+                    )
+            conn.commit()
+        log_info(f"Entrada produto ID {id_produto} | Qtd {quantidade}")
+        return True
+    except Exception as e:
+        log_erro(f"Erro entrada_produto ID {id_produto}: {e}")
+        return False
+ 
+ 
+# =========================================================
+# BALANÇO DIÁRIO (chamada em /estoque/fechamento)
+# =========================================================
+def obter_balanco_diario() -> list[dict]:
+    """Retorna fabricado x vendido x sobra de hoje para cada produto."""
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT
+                        p.id_produto,
+                        p.nome,
+                        COALESCE(SUM(CASE WHEN mov.tipo_movimento = 'entrada'
+                                         THEN mov.quantidade ELSE 0 END), 0) AS fabricado,
+                        COALESCE(SUM(iv.quantidade), 0) AS vendido
+                    FROM produtos p
+                    LEFT JOIN movimentacao_estoque mov
+                        ON mov.id_produto = p.id_produto
+                        AND DATE(mov.data_movimento) = CURRENT_DATE
+                    LEFT JOIN itens_venda iv ON iv.id_produto = p.id_produto
+                        AND iv.id_venda IN (
+                            SELECT id_venda FROM vendas WHERE DATE(data_venda) = CURRENT_DATE
+                        )
+                    GROUP BY p.id_produto, p.nome
+                    ORDER BY p.nome ASC
+                    """
+                )
+                rows = cur.fetchall()
+ 
+        return [
+            {
+                "id": r[0],
+                "nome": r[1],
+                "fabricado": float(r[2]),
+                "vendido": float(r[3]),
+                "sobrou": float(r[2]) - float(r[3]),
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        log_erro(f"Erro ao obter balanço diário: {e}")
+        return []

@@ -1,20 +1,21 @@
 import os
+import time
 from contextlib import contextmanager
-
+ 
 import psycopg2
 from psycopg2 import pool
-
+ 
 from utils.logger import log_erro
-
+ 
 # =========================================================
 # POOL DE CONEXÕES
-# Cria o pool uma única vez na inicialização do processo.
-# Isso elimina o custo de abrir/fechar conexão a cada request
-# e evita esgotar os conexões do Render (limite 25 no free tier).
+# Render free tier: limite de 25 conexões simultâneas no Postgres.
+# Usamos maxconn=5 para guardar margem — o load_user do Flask-Login
+# consome uma conexão por request autenticado.
 # =========================================================
 _pool: pool.ThreadedConnectionPool | None = None
-
-
+ 
+ 
 def _get_pool() -> pool.ThreadedConnectionPool:
     global _pool
     if _pool is None or _pool.closed:
@@ -23,29 +24,40 @@ def _get_pool() -> pool.ThreadedConnectionPool:
             raise RuntimeError("Variável DATABASE_URL não encontrada.")
         _pool = pool.ThreadedConnectionPool(
             minconn=1,
-            maxconn=10,
+            maxconn=5,  # Render free: 25 total; guardamos margem para outros processos
             dsn=database_url,
             sslmode="require",
         )
     return _pool
-
-
+ 
+ 
 @contextmanager
 def get_conn():
     """
     Context manager que pega uma conexão do pool e a devolve ao final.
-    Uso obrigatório em todo o código:
-
+ 
+    Se o pool estiver esgotado, tenta por até 3 segundos antes de
+    lançar RuntimeError — evita que o Render derrube o processo por
+    timeout enquanto espera indefinidamente.
+ 
+    Uso:
         with get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(...)
             conn.commit()
-
-    Em caso de exceção o rollback é feito automaticamente antes de
-    devolver a conexão ao pool, evitando conexões em estado sujo.
     """
     p = _get_pool()
-    conn = p.getconn()
+    conn = None
+    deadline = time.monotonic() + 3.0  # espera no máximo 3s
+    while conn is None:
+        try:
+            conn = p.getconn()
+        except pool.PoolError:
+            if time.monotonic() > deadline:
+                raise RuntimeError(
+                    "Pool de conexões esgotado. Tente novamente em instantes."
+                )
+            time.sleep(0.1)
     try:
         yield conn
     except Exception:
@@ -53,15 +65,9 @@ def get_conn():
         raise
     finally:
         p.putconn(conn)
-
-
-# Alias de compatibilidade para o código antigo que ainda usa `conectar()`.
-# Vai sendo removido à medida que cada módulo migrar para `get_conn()`.
+ 
+ 
+# Alias de compatibilidade — mantido para módulos ainda não migrados.
+# O conn.close() devolve ao pool, não fecha a conexão de verdade.
 def conectar():
-    """
-    DEPRECADO — prefira `get_conn()`.
-    Mantido apenas para não quebrar módulos ainda não migrados.
-    Retorna uma conexão raw do pool; o chamador é responsável por
-    chamar conn.close() (que devolve ao pool, não fecha de verdade).
-    """
     return _get_pool().getconn()

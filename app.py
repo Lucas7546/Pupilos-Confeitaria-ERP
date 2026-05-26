@@ -49,6 +49,11 @@ from modules.financeiro import (
     relatorio_fiscal,
 )
 from utils.logger import log_info, log_erro
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
+from PIL import Image
 
  
 # =============================================================
@@ -64,6 +69,7 @@ app.secret_key = os.getenv("SECRET_KEY", "6ba4d0522eae6dd5b8cab367aefee7e306c0d9
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
+
  
  
 class User(UserMixin):
@@ -71,6 +77,26 @@ class User(UserMixin):
         self.id = id_usuario
         self.username = username
         self.nivel = nivel
+# =============================================================
+# RATE LIMIT
+# =============================================================
+
+def get_rate_limit_key():
+    try:
+        if current_user.is_authenticated:
+            return f"user:{current_user.id}"
+    except Exception:
+        pass
+
+    return get_remote_address()
+
+
+limiter = Limiter(
+    key_func=lambda: current_user.id if current_user.is_authenticated else get_remote_address(),
+    app=app,
+    storage_uri="redis://localhost:6379",
+    default_limits=["200 per day", "50 per hour"]
+)
  
  
 @login_manager.user_loader
@@ -139,6 +165,7 @@ def _parse_float(valor: str, default: float = 0.0) -> float:
 # AUTENTICAÇÃO
 # =============================================================
 @app.route("/login", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
 def login():
     if request.method == "POST":
         username_form = request.form.get("username", "").strip().lower()
@@ -146,7 +173,7 @@ def login():
  
         usuario = usuarios.buscar_usuario(username_form)
         if not usuario:
-            flash("Usuário ou senha incorretos.", "danger")
+            flash("Usuário ou senha inválidos.", "danger")
             return render_template("login.html"), 401
  
         try:
@@ -156,7 +183,7 @@ def login():
             return render_template("login.html"), 500
  
         if int(ativo) == 0:
-            flash("Esta conta foi bloqueada. Contate o administrador.", "danger")
+            flash("Usuário ou senha inválidos.", "danger")
             return render_template("login.html"), 403
  
         if not check_password_hash(senha_db, senha_form):
@@ -164,6 +191,7 @@ def login():
             return render_template("login.html"), 401
  
         user_obj = User(id_user, username_db, nivel_db)
+        session.clear()
         login_user(user_obj)
         session["user_id"] = id_user
         session["nivel"] = nivel_db
@@ -820,6 +848,7 @@ def pagina_vendas():
  
 @app.route("/vender", methods=["POST"])
 @login_required
+@limiter.limit("60 per minute")
 def vender():
     id_p_raw = request.form.get("id_produto", "")
     qtd_raw  = request.form.get("quantidade", "")
@@ -874,6 +903,7 @@ def deletar_venda(id_venda):
 # =============================================================
 @app.route("/estoque/escanear-inteligente", methods=["POST"])
 @login_required
+@limiter.limit("15 per minute")
 def escanear_inteligente():
     try:
         codigo = request.form.get("codigo_barras")
@@ -1396,6 +1426,7 @@ def central_importacoes():
 @app.route("/importar-ifood", methods=["POST"])
 @login_required
 @acesso_requerido("vendas")
+@limiter.limit("5 per minute")
 def importar_ifood():
     arquivo = request.files.get("arquivo")
     if not arquivo or not arquivo.filename:
@@ -1449,6 +1480,7 @@ def compras_inteligentes():
  
 @app.route("/processar-nota", methods=["POST"])
 @login_required
+@limiter.limit("5 per minute")
 def processar_nota():
     """
     Recebe foto da nota fiscal, envia para o Gemini via OCR
@@ -1475,6 +1507,9 @@ def processar_nota():
  
         os.makedirs("temp", exist_ok=True)
         caminho_imagem = os.path.join("temp", f"{uuid.uuid4()}{extensao}")
+        if not validar_imagem_segura(foto):
+            flash("Arquivo de imagem inválido.", "danger")
+            return redirect("/compras-inteligentes")
         foto.save(caminho_imagem)
  
         # Valida tamanho — Gemini rejeita arquivos > 20MB
@@ -1603,6 +1638,7 @@ def confirmar_nota():
 # =============================================================
 @app.route("/api/atualizar-precos", methods=["POST"])
 @login_required
+@limiter.limit("15 per minute")
 def atualizar_precos():
     if current_user.nivel not in ("admin", "socio", "dono"):
         abort(403)
@@ -1638,6 +1674,40 @@ def inject_empresa():
             return {"EMPRESA": config.get("NOME_EMPRESA", "Nome Padrão")}
     return {"EMPRESA": "Nome Padrão"}
  
+
+# =============================================================
+# VALIDAÇÃO DE IMAGEM
+# =============================================================
+
+def validar_imagem_segura(arquivo):
+    try:
+        img = Image.open(arquivo)
+        img.verify()
+        arquivo.seek(0)
+        return True
+    except Exception:
+        return False
+    
+# =============================================================
+# SECURITY HEADERS
+# =============================================================
+@app.after_request
+def aplicar_headers_seguranca(response):
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "img-src 'self' data: https:; "
+        "style-src 'self' 'unsafe-inline' https:; "
+        "script-src 'self' 'unsafe-inline' https:; "
+        "font-src 'self' https: data:;"
+    )
+
+    return response
+
  
 # =============================================================
 # INICIALIZAÇÃO

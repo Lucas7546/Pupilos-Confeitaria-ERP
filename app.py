@@ -1674,19 +1674,7 @@ def inject_empresa():
     return {"EMPRESA": "Nome Padrão"}
  
 
-# =============================================================
-# VALIDAÇÃO DE IMAGEM
-# =============================================================
 
-def validar_imagem_segura(arquivo):
-    try:
-        img = Image.open(arquivo)
-        img.verify()
-        arquivo.seek(0)
-        return True
-    except Exception:
-        return False
-    
 # =============================================================
 # SECURITY HEADERS
 # =============================================================
@@ -1706,6 +1694,20 @@ def aplicar_headers_seguranca(response):
     )
 
     return response
+# =============================================================
+# VALIDAÇÃO DE IMAGEM
+# =============================================================
+
+def validar_imagem_segura(arquivo):
+    try:
+        img = Image.open(arquivo)
+        img.verify()
+        arquivo.seek(0)
+        return True
+    except Exception:
+        return False
+    
+
 
  
 # =============================================================

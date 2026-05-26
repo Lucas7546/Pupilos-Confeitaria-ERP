@@ -49,6 +49,7 @@ from modules.financeiro import (
     relatorio_fiscal,
 )
 from utils.logger import log_info, log_erro
+
  
 # =============================================================
 # APP
@@ -1625,11 +1626,17 @@ def atualizar_precos():
         return jsonify({"status": "erro", "mensagem": str(e)}), 500
 
 
+
+new_cliente = os.getenv("CLIENTE")
 @app.context_processor
 def inject_empresa():
-    return {
-        "EMPRESA": "Pupilos Confeitaria"
-    }
+    # Isso busca um arquivo 'config.json' na raiz ou numa pasta definida
+    config_path = f'clientes/{new_cliente}/config.json'
+    if os.path.exists(config_path):
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+            return {"EMPRESA": config.get("NOME_EMPRESA", "Nome Padrão")}
+    return {"EMPRESA": "Nome Padrão"}
  
  
 # =============================================================

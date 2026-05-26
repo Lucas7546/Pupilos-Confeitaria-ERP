@@ -93,7 +93,6 @@ def get_rate_limit_key():
 limiter = Limiter(
     key_func=lambda: current_user.id if current_user.is_authenticated else get_remote_address(),
     app=app,
-    storage_uri="redis://localhost:6379",
     default_limits=["200 per day", "50 per hour"]
 )
  
@@ -1700,7 +1699,7 @@ def aplicar_headers_seguranca(response):
 
 def validar_imagem_segura(arquivo):
     try:
-        
+
         img = Image.open(arquivo)
         img.verify()
         arquivo.seek(0)

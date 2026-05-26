@@ -60,6 +60,7 @@ from PIL import Image
 # =============================================================
 client = genai.Client()
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 app.secret_key = os.getenv("SECRET_KEY", "6ba4d0522eae6dd5b8cab367aefee7e306c0d9196a9e91507c1591ed615189b2")
  
 # =============================================================

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Pupilos Confeitaria</title>
+    <title>Login | {{ EMPRESA.upper }}</title>
 
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -148,7 +148,7 @@
     <div class="login-box">
         <div class="logo-circle">🧁</div>
 
-        <h2>Pupilos</h2>
+        <h2>{{ EMPRESA.upper }}</h2>
         <p class="sub">Painel Administrativo</p>
 
         {% with messages = get_flashed_messages(with_categories=true) %}

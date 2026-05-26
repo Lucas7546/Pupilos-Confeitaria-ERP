@@ -1700,6 +1700,7 @@ def aplicar_headers_seguranca(response):
 
 def validar_imagem_segura(arquivo):
     try:
+        
         img = Image.open(arquivo)
         img.verify()
         arquivo.seek(0)

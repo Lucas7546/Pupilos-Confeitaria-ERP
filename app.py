@@ -1623,6 +1623,13 @@ def atualizar_precos():
     except Exception as e:
         log_erro(f"Erro ao atualizar preços em lote: {e}")
         return jsonify({"status": "erro", "mensagem": str(e)}), 500
+
+
+@app.context_processor
+def inject_empresa():
+    return {
+        "EMPRESA": "Pupilos Confeitaria"
+    }
  
  
 # =============================================================

@@ -56,7 +56,7 @@ from utils.logger import log_info, log_erro
 # =============================================================
 client = genai.Client()
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "pupilos-confeitaria-senha-segura-2026")
+app.secret_key = os.getenv("SECRET_KEY", "6ba4d0522eae6dd5b8cab367aefee7e306c0d9196a9e91507c1591ed615189b2")
  
 # =============================================================
 # LOGIN MANAGER

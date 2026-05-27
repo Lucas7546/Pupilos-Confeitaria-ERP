@@ -1662,16 +1662,22 @@ def atualizar_precos():
 
 
 
-new_cliente = os.getenv("CLIENTE")
+new_cliente = os.getenv("CLIENTE", "").strip().lower()
 @app.context_processor
 def inject_empresa():
-    # Isso busca um arquivo 'config.json' na raiz ou numa pasta definida
-    config_path = f'clientes/{new_cliente}/config.json'
+    config_path = f"clientes/{new_cliente}/config.json"
+
     if os.path.exists(config_path):
-        with open(config_path, 'r') as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             config = json.load(f)
-            return {"EMPRESA": config.get("NOME_EMPRESA", "Nome Padrão")}
-    return {"EMPRESA": "Nome Padrão"}
+
+        return {
+            "EMPRESA": config.get("NOME_EMPRESA", "Nome Padrão")
+        }
+
+    return {
+        "EMPRESA": "Nome Padrão"
+    }
  
 
 

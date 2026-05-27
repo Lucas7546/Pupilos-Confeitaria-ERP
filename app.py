@@ -61,8 +61,7 @@ from PIL import Image
 client = genai.Client()
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
-app.secret_key = os.getenv("SECRET_KEY", "6ba4d0522eae6dd5b8cab367aefee7e306c0d9196a9e91507c1591ed615189b2")
- 
+app.secret_key = os.getenv("SECRET_KEY")
 # =============================================================
 # LOGIN MANAGER
 # =============================================================
@@ -1662,30 +1661,33 @@ def atualizar_precos():
 
 
 
-import os
-import json
-
 @app.context_processor
 def inject_empresa():
-    # Busca a variável 'CLIENTE' que você acabou de adicionar no Render
-    cliente = os.getenv("CLIENTE", "").strip().lower()
+    # 1. Verifica todas as variáveis de ambiente
+    valor_cliente = os.getenv("CLIENTE")
     
-    # Define o caminho base
+    # Debug no log
+    print(f"--- DEBUG TOTAL ---")
+    print(f"Valor da variável CLIENTE encontrada: '{valor_cliente}'")
+    
+    # 2. Caminho absoluto forçado
     diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    cliente = str(valor_cliente).strip().lower() if valor_cliente else "nenhum"
     config_path = os.path.join(diretorio_atual, "clientes", cliente, "config.json")
     
-    # Verifica se o arquivo existe
+    print(f"Caminho absoluto montado: {config_path}")
+    print(f"Arquivo existe fisicamente no servidor? {os.path.exists(config_path)}")
+    
     if os.path.exists(config_path):
         try:
             with open(config_path, "r", encoding="utf-8") as f:
                 config = json.load(f)
                 return {"EMPRESA": config.get("NOME_EMPRESA", "Nome Padrão")}
-        except Exception:
-            # Se o JSON estiver corrompido, retorna o padrão
-            return {"EMPRESA": "Nome Padrão"}
+        except Exception as e:
+            print(f"Erro ao abrir JSON: {e}")
+            return {"EMPRESA": "Erro ao ler JSON"}
     
-    # Se a pasta ou o arquivo não existirem, retorna o padrão
-    return {"EMPRESA": "Nome Padrão"}
+    return {"EMPRESA": "NOME PADRÃO (debugando...)"}
  
 
 

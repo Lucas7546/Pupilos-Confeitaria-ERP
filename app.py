@@ -1663,24 +1663,27 @@ def atualizar_precos():
 
 @app.context_processor
 def inject_empresa():
+    # Pega o nome do cliente da variável de ambiente
     cliente = os.getenv("CLIENTE", "").strip().lower()
+    
+    # Define o caminho do arquivo de forma segura
     diretorio_atual = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(diretorio_atual, "clientes", cliente, "config.json")
     
+    # Tenta ler o arquivo
     if os.path.exists(config_path):
         try:
             with open(config_path, "r", encoding="utf-8") as f:
-                conteudo = f.read() # Vamos ler o texto puro
-                print(f"DEBUG: Conteúdo bruto do arquivo: {conteudo}")
-                config = json.loads(conteudo) # Tentar transformar em JSON
+                config = json.load(f)
+                # Retorna o nome da empresa ou o padrão se a chave não existir
                 return {"EMPRESA": config.get("NOME_EMPRESA", "Nome Padrão")}
-        except Exception as e:
-            # Em vez de mandar o erro pra tela, vamos retornar o erro 
-            # de forma que você consiga ler no seu log (ou na tela mesmo)
-            print(f"DEBUG: ERRO DETALHADO: {str(e)}")
-            return {"EMPRESA": f"Erro no JSON: {str(e)}"}
+        except (json.JSONDecodeError, Exception):
+            # Se der qualquer erro (arquivo corrompido ou erro de leitura), 
+            # apenas ignora e retorna o padrão para não quebrar o site
+            return {"EMPRESA": "Nome Padrão"}
     
-    return {"EMPRESA": "Arquivo não encontrado"}
+    # Se o arquivo não existir, retorna o padrão
+    return {"EMPRESA": "Nome Padrão"}
  
 
 

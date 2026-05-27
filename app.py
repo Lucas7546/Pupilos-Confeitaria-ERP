@@ -1664,25 +1664,20 @@ def atualizar_precos():
 
 @app.context_processor
 def inject_empresa():
-    # Pegamos o valor DE DENTRO da função
-    cliente = os.getenv("CLIENTE", "").strip().lower()
-    
-    # Construímos o caminho usando o caminho absoluto do diretório do script
-    # Isso evita problemas de "caminho relativo" que falham no Render
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    cliente = os.getenv("CLIENTE", "desconhecido").strip().lower()
+    # Pega o caminho real onde o app está rodando no servidor
+    base_dir = os.path.abspath(os.path.dirname(__file__))
     config_path = os.path.join(base_dir, "clientes", cliente, "config.json")
+    
+    # Isso vai aparecer nos logs do Render, lá no painel!
+    print(f"DEBUG: Procurando config em: {config_path}")
+    print(f"DEBUG: O arquivo existe? {os.path.exists(config_path)}")
 
     if os.path.exists(config_path):
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                config = json.load(f)
-            return {"EMPRESA": config.get("NOME_EMPRESA", "Nome Padrão")}
-        except Exception as e:
-            print(f"Erro ao ler JSON: {e}")
-            return {"EMPRESA": "Nome Padrão"}
-    
-    # Adicione um print aqui para debug se necessário
-    print(f"Arquivo não encontrado em: {config_path}")
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+        return {"EMPRESA": config.get("NOME_EMPRESA", "Nome Padrão")}
+
     return {"EMPRESA": "Nome Padrão"}
  
 

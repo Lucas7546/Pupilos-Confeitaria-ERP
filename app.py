@@ -1663,31 +1663,24 @@ def atualizar_precos():
 
 @app.context_processor
 def inject_empresa():
-    # 1. Verifica todas as variáveis de ambiente
-    valor_cliente = os.getenv("CLIENTE")
-    
-    # Debug no log
-    print(f"--- DEBUG TOTAL ---")
-    print(f"Valor da variável CLIENTE encontrada: '{valor_cliente}'")
-    
-    # 2. Caminho absoluto forçado
+    cliente = os.getenv("CLIENTE", "").strip().lower()
     diretorio_atual = os.path.dirname(os.path.abspath(__file__))
-    cliente = str(valor_cliente).strip().lower() if valor_cliente else "nenhum"
     config_path = os.path.join(diretorio_atual, "clientes", cliente, "config.json")
-    
-    print(f"Caminho absoluto montado: {config_path}")
-    print(f"Arquivo existe fisicamente no servidor? {os.path.exists(config_path)}")
     
     if os.path.exists(config_path):
         try:
             with open(config_path, "r", encoding="utf-8") as f:
-                config = json.load(f)
+                conteudo = f.read() # Vamos ler o texto puro
+                print(f"DEBUG: Conteúdo bruto do arquivo: {conteudo}")
+                config = json.loads(conteudo) # Tentar transformar em JSON
                 return {"EMPRESA": config.get("NOME_EMPRESA", "Nome Padrão")}
         except Exception as e:
-            print(f"Erro ao abrir JSON: {e}")
-            return {"EMPRESA": "Erro ao ler JSON"}
+            # Em vez de mandar o erro pra tela, vamos retornar o erro 
+            # de forma que você consiga ler no seu log (ou na tela mesmo)
+            print(f"DEBUG: ERRO DETALHADO: {str(e)}")
+            return {"EMPRESA": f"Erro no JSON: {str(e)}"}
     
-    return {"EMPRESA": "NOME PADRÃO (debugando...)"}
+    return {"EMPRESA": "Arquivo não encontrado"}
  
 
 

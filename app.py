@@ -1662,22 +1662,28 @@ def atualizar_precos():
 
 
 
-new_cliente = os.getenv("CLIENTE", "").strip().lower()
 @app.context_processor
 def inject_empresa():
-    config_path = f"clientes/{new_cliente}/config.json"
+    # Pegamos o valor DE DENTRO da função
+    cliente = os.getenv("CLIENTE", "").strip().lower()
+    
+    # Construímos o caminho usando o caminho absoluto do diretório do script
+    # Isso evita problemas de "caminho relativo" que falham no Render
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(base_dir, "clientes", cliente, "config.json")
 
     if os.path.exists(config_path):
-        with open(config_path, "r", encoding="utf-8") as f:
-            config = json.load(f)
-
-        return {
-            "EMPRESA": config.get("NOME_EMPRESA", "Nome Padrão")
-        }
-
-    return {
-        "EMPRESA": "Nome Padrão"
-    }
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                config = json.load(f)
+            return {"EMPRESA": config.get("NOME_EMPRESA", "Nome Padrão")}
+        except Exception as e:
+            print(f"Erro ao ler JSON: {e}")
+            return {"EMPRESA": "Nome Padrão"}
+    
+    # Adicione um print aqui para debug se necessário
+    print(f"Arquivo não encontrado em: {config_path}")
+    return {"EMPRESA": "Nome Padrão"}
  
 
 

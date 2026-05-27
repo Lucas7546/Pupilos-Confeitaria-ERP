@@ -1662,32 +1662,30 @@ def atualizar_precos():
 
 
 
+import os
+import json
+
 @app.context_processor
 def inject_empresa():
+    # Busca a variável 'CLIENTE' que você acabou de adicionar no Render
     cliente = os.getenv("CLIENTE", "").strip().lower()
     
-    # Isso garante que o Python olhe a partir da pasta onde o app.py está
-    # independentemente de como o Render inicia o servidor
+    # Define o caminho base
     diretorio_atual = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(diretorio_atual, "clientes", cliente, "config.json")
     
-    # LOGS PARA DEBUG (Vá no painel do Render > Logs para ver isto)
-    print(f"DEBUG: Procurando arquivo em: {config_path}")
-    print(f"DEBUG: O arquivo existe? {os.path.exists(config_path)}")
-
+    # Verifica se o arquivo existe
     if os.path.exists(config_path):
         try:
             with open(config_path, "r", encoding="utf-8") as f:
                 config = json.load(f)
-                nome = config.get("NOME_EMPRESA", "Nome Padrão")
-                print(f"DEBUG: Nome encontrado no JSON: {nome}")
-                return {"EMPRESA": nome}
-        except Exception as e:
-            print(f"DEBUG: Erro ao ler o arquivo JSON: {e}")
-            return {"EMPRESA": "Erro no JSON"}
-    else:
-        print(f"DEBUG: O arquivo NÃO foi encontrado no caminho acima!")
-        return {"EMPRESA": "Arquivo não achado"}
+                return {"EMPRESA": config.get("NOME_EMPRESA", "Nome Padrão")}
+        except Exception:
+            # Se o JSON estiver corrompido, retorna o padrão
+            return {"EMPRESA": "Nome Padrão"}
+    
+    # Se a pasta ou o arquivo não existirem, retorna o padrão
+    return {"EMPRESA": "Nome Padrão"}
  
 
 

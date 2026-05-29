@@ -1,10 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from flask_login import login_user, logout_user, login_required, current_user
-
+from ape.extensions import limiter
 from modules.auth import validar_login, User
-from app.extensions import limiter
 from utils.logger import log_erro
 from services.log_service import registrar_log
+from modules.permissoes import acesso_requerido
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -46,7 +46,7 @@ def login():
             flash(f"Bem-vindo, {user.username}!", "success")
 
             # IMPORTANTE: manter string direta até o blueprint principal existir
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("main.dashboard"))
 
         except Exception as e:
             log_erro(f"Erro crítico no login: {e}")

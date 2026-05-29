@@ -1,10 +1,14 @@
+import sys
+import os
+sys.path.append('/opt/render/project/src')
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from modules.auth import validar_login, User
 from utils.logger import log_erro
-from ape.services.log_service import registrar_log
 from modules.permissoes import acesso_requerido
 from ape.extensions import limiter
+from ape.services.log_service import registrar_log
+
 
 auth_bp = Blueprint("auth", __name__)
 

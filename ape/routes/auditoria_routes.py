@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, request, Response, flash, redirect, url_for
+from flask import Blueprint, render_template, request, Response
 from flask_login import login_required, current_user
 from modules.permissoes import acesso_requerido
-from services.log_service import registrar_log
+from ape.services.log_service import registrar_log
 from modules.db import get_conn
 from utils.logger import log_erro
 import json

@@ -1,9 +1,12 @@
+# Imports do Flask
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from flask_login import login_required
-from modules import usuarios
-from app.services.log_service import registrar_log
+from flask_login import login_required 
+
+# Seus módulos internos
+from modules import usuarios                            
+from modules.permissoes import acesso_requerido
+from ape.services.log_service import registrar_log
 from utils.logger import log_erro
-from modules.permissoes import acesso_requerido # Sua nova fonte da verdade
 from werkzeug.security import generate_password_hash
 from modules.db import get_conn # Importe seu get_conn aqui
 
@@ -66,12 +69,29 @@ def editar_usuario(id_usuario):
 @login_required
 @acesso_requerido("admin")
 def toggle_usuario(id_usuario):
-    # ... (lógica de buscar o status atual) ...
+    usuario = usuarios.buscar_usuario_id(id_usuario)
+    if not usuario:
+        flash("Usuário não encontrado.", "warning")
+        return redirect(url_for("usuarios.listar_usuarios_view"))
 
-    # Usa a sua função que já existe!
+    # Supondo que a coluna 'ativo' esteja no índice 4 do seu fetch
+    ativo_atual = int(usuario[4] if len(usuario) > 4 else 1)
+    novo_status = 0 if ativo_atual == 1 else 1
+
     if usuarios.alterar_status(id_usuario, novo_status):
-        flash("Status alterado com sucesso!", "success")
+        status_txt = "ativado" if novo_status == 1 else "desativado"
+        registrar_log("ALTERAR_STATUS", "USUARIOS", f"ID {id_usuario} {status_txt}")
+        flash(f"Conta {status_txt} com sucesso!", "success")
     else:
-        flash("Erro ao alterar status no banco.", "danger")
+        flash("Falha ao atualizar status.", "danger")
 
     return redirect(url_for("usuarios.listar_usuarios_view"))
+
+
+@usuarios_bp.route("/admin/config")
+@login_required
+@acesso_requerido("usuarios")
+def area_admin():
+    # Continua chamando o módulo, que é a fonte correta dos dados
+    lista = usuarios.listar_usuarios() or []
+    return render_template("admin_panel.html", total_usuarios=len(lista), usuarios=lista)

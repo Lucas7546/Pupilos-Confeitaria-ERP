@@ -1,17 +1,16 @@
-from flask import Blueprint, render_template, request, redirect, flash
+from flask import Blueprint, render_template, request, redirect, flash, url_for
 from flask_login import login_required, current_user
-from app.extensions import limiter
-
+from ape.extensions import limiter
 import os
+from modules.permissoes import acesso_requerido
 import uuid
 import tempfile
-
-from utils.audit import registrar_log
+from services.log_service import registrar_log
 from utils.logger import log_erro
 from modules.db import get_conn
 
-from utils.ocr import analisar_nota, limpar_e_parsear_json
-from utils.validacao import validar_imagem_segura
+from modules.ocr_notas import analisar_nota, limpar_e_parsear_json
+from utils.helpers import validar_imagem_segura
 
 
 compras_bp = Blueprint("compras", __name__)
@@ -22,6 +21,7 @@ compras_bp = Blueprint("compras", __name__)
 # =============================================================
 @compras_bp.route("/compras-inteligentes")
 @login_required
+@acesso_requerido("estoque")
 def compras_inteligentes():
     return render_template("compras_inteligentes.html")
 
@@ -31,6 +31,7 @@ def compras_inteligentes():
 # =============================================================
 @compras_bp.route("/processar-nota", methods=["POST"])
 @login_required
+@acesso_requerido("estoque")
 @limiter.limit("5 per minute")
 def processar_nota():
 
@@ -42,17 +43,17 @@ def processar_nota():
 
         if not foto or not foto.filename:
             flash("Nenhuma imagem enviada.", "danger")
-            return redirect("/compras-inteligentes")
+            return redirect(url_for("compras.compras_inteligentes"))
 
         extensao = os.path.splitext(foto.filename)[1].lower()
 
         if extensao not in (".jpg", ".jpeg", ".png", ".webp"):
             flash("Formato inválido.", "danger")
-            return redirect("/compras-inteligentes")
+            return redirect(url_for("/compras-inteligentes"))
 
         if not validar_imagem_segura(foto):
             flash("Imagem inválida.", "danger")
-            return redirect("/compras-inteligentes")
+            return redirect(url_for("compras.compras_inteligentes"))
 
         # =========================
         # ARQUIVO TEMPORÁRIO SEGURO
@@ -65,7 +66,7 @@ def processar_nota():
 
         if tamanho_mb > 18:
             flash("Imagem muito grande (máx 18MB).", "danger")
-            return redirect("/compras-inteligentes")
+            return redirect(url_for("/compras-inteligentes"))
 
         # =========================
         # IA OCR
@@ -74,7 +75,7 @@ def processar_nota():
 
         if not resposta_raw:
             flash("IA não conseguiu ler a nota.", "danger")
-            return redirect("/compras-inteligentes")
+            return redirect(url_for("/compras-inteligentes"))
 
         itens = limpar_e_parsear_json(resposta_raw)
 
@@ -99,7 +100,7 @@ def processar_nota():
     except Exception as e:
         log_erro(f"Erro OCR nota: {e}")
         flash("Erro interno ao processar nota.", "danger")
-        return redirect("/compras-inteligentes")
+        return redirect(url_for("/compras-inteligentes"))
 
     finally:
         if caminho_imagem and os.path.exists(caminho_imagem):
@@ -111,6 +112,7 @@ def processar_nota():
 # =============================================================
 @compras_bp.route("/confirmar-nota", methods=["POST"])
 @login_required
+@acesso_requerido("estoque")
 def confirmar_nota():
 
     try:
@@ -124,7 +126,7 @@ def confirmar_nota():
 
         if total <= 0:
             flash("Nenhum item para confirmar.", "warning")
-            return redirect("/compras-inteligentes")
+            return redirect(url_for("/compras-inteligentes"))
 
         salvos = 0
         erros = []
@@ -217,9 +219,9 @@ def confirmar_nota():
 
         flash(f"{salvos} itens adicionados com sucesso!", "success")
 
-        return redirect("/estoque")
+        return redirect(url_for("estoque.previsao_estoque"))
 
     except Exception as e:
         log_erro(f"Erro confirmar nota: {e}")
         flash("Erro ao salvar nota.", "danger")
-        return redirect("/compras-inteligentes")
+        return redirect(url_for("/compras-inteligentes"))

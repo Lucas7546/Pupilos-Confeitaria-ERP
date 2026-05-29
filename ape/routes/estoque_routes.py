@@ -4,7 +4,7 @@ from ape.extensions import limiter
 from ape.services import ai_client
 from modules.db import get_conn
 from modules import estoque, produtos
-from utils.logger import log_erro, _parse_float
+from utils import logger, helpers
 from ape.services.log_service import registrar_log
 from modules.permissoes import acesso_requerido
 from datetime import datetime
@@ -198,7 +198,7 @@ def escanear_inteligente():
 
     except Exception as e:
 
-        log_erro(
+        logger.log_erro(
             f"Erro scanner inteligente: {e}"
         )
 
@@ -260,7 +260,7 @@ def estoque_painel():
             produtos=lista_produtos,
         )
     except Exception as e:
-        log_erro(f"Erro no painel de estoque: {e}")
+        logger.log_erro(f"Erro no painel de estoque: {e}")
         flash(f"Não foi possível carregar o painel de estoque: {e}", "danger")
         return redirect("/")
 
@@ -279,7 +279,7 @@ def previsao_estoque():
 
     except Exception as e:
 
-        log_erro(
+        logger.log_erro(
             f"Erro previsão estoque: {e}"
         )
 
@@ -309,7 +309,7 @@ def registrar_producao():
             return redirect(url_for("estoque.estoque_painel"))
 
         id_item = int(id_item_raw)
-        qtd = _parse_float(qtd_raw)
+        qtd = helpers._parse_float(qtd_raw)
 
         if qtd <= 0:
             flash("A quantidade deve ser maior que zero.", "warning")
@@ -327,7 +327,7 @@ def registrar_producao():
 
         flash(f"Produção de {qtd} unidade(s) registrada com sucesso!", "success")
     except Exception as e:
-        log_erro(f"Erro ao registrar produção: {e}")
+        logger.log_erro(f"Erro ao registrar produção: {e}")
         flash(f"Erro ao processar produção: {e}", "danger")
 
     return redirect(url_for("estoque.estoque_painel"))
@@ -387,6 +387,6 @@ def balanco_diario_page():
             balanco=balanco,
         )
     except Exception as e:
-        log_erro(f"Erro no balanço diário: {e}")
+        logger.log_erro(f"Erro no balanço diário: {e}")
         flash(f"Erro ao processar balanço diário: {e}", "danger")
         return redirect(url_for("estoque.estoque_painel"))

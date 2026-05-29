@@ -14,7 +14,7 @@ from utils.logger import log_erro
 from utils.audit import registrar_log
 
 from modules.estoque import previsao_demanda
-from app.extensions import limiter
+from ape.extensions import limiter
 
 
 export_bp = Blueprint("export", __name__)

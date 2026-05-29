@@ -5,7 +5,7 @@ import os
 from modules.permissoes import acesso_requerido
 import uuid
 import tempfile
-from services.log_service import registrar_log
+from ape.services.log_service import registrar_log
 from utils.logger import log_erro
 from modules.db import get_conn
 

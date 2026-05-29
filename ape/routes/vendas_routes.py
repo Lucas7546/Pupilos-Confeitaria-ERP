@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from modules.permissoes import acesso_requerido
-from app.services.log_service import registrar_log
+from ape.services.log_service import registrar_log
 from utils.logger import log_erro
-from app.extensions import limiter
+from ape.extensions import limiter
 import os
 import tempfile
 from modules import importador_ia as ia

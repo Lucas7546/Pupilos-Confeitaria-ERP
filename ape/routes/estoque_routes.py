@@ -1,9 +1,9 @@
 from flask import ( Blueprint, request, jsonify, render_template, flash, redirect, url_for)
 from flask_login import login_required, current_user
-from ape.services import ai_client
 from ape.extensions import limiter
+from ape.services import ai_client
 from modules.db import get_conn
-from modules.estoque import previsao_demanda, estoque, produtos
+from modules import estoque, produtos
 from utils.logger import log_erro, _parse_float
 from ape.services.log_service import registrar_log
 from modules.permissoes import acesso_requerido
@@ -270,7 +270,7 @@ def previsao_estoque():
 
     try:
 
-        previsoes = previsao_demanda()
+        previsoes = estoque.previsao_demanda()
 
         return render_template(
             "previsao.html",

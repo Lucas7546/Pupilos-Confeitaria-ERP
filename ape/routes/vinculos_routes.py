@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
-from app.services.log_service import registrar_log
+from services.log_service import registrar_log
 from utils.helpers import _parse_float
 from modules import produtos, estoque
 

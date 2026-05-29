@@ -157,3 +157,31 @@ def calcular_financeiro_com_imposto(periodo_dias: int = 30) -> dict:
         "regime": regime,
         "lucro_final": base["lucro_base"] - imposto,
     }
+
+
+def registrar_despesa(descricao, valor):
+    try:
+        with get_conn() as con:
+            with con.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO despesas (descricao, valor, data_despesa) VALUES (%s,%s,CURRENT_DATE)",
+                    (descricao, valor)
+                )
+            con.commit()
+        return True
+    except Exception as e:
+        log_erro(f"Erro ao salvar despesa: {e}")
+        return False
+
+def listar_despesas():
+    try:
+        with get_conn() as con:
+            with con.cursor() as cur:
+                cur.execute("""
+                    SELECT id_despesa, descricao, valor, TO_CHAR(data_despesa,'DD/MM/YYYY')
+                    FROM despesas ORDER BY data_despesa DESC
+                """)
+                return cur.fetchall() or []
+    except Exception as e:
+        log_erro(f"Erro ao listar despesas: {e}")
+        return []

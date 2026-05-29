@@ -134,3 +134,34 @@ def validar_login(username: str, senha: str):
         return {"id": user["id_usuario"], "username": user["username"], "nivel": user["nivel"]}
     return None
 
+def atualizar_usuario(id_usuario, nivel, nova_senha=None):
+    try:
+        with get_conn() as con:
+            with con.cursor() as cur:
+                if nova_senha:
+                    query = "UPDATE usuarios SET nivel=%s, senha=%s WHERE id_usuario=%s"
+                    params = (nivel, generate_password_hash(nova_senha), id_usuario)
+                else:
+                    query = "UPDATE usuarios SET nivel=%s WHERE id_usuario=%s"
+                    params = (nivel, id_usuario)
+                
+                cur.execute(query, params)
+            con.commit()
+            return True
+    except Exception as e:
+        print(f"Erro ao atualizar usuário no banco: {e}")
+        return False
+
+def alterar_status(id_usuario, novo_status):
+    try:
+        with get_conn() as con:
+            with con.cursor() as cur:
+                cur.execute(
+                    "UPDATE usuarios SET ativo = %s WHERE id_usuario = %s",
+                    (novo_status, id_usuario)
+                )
+            con.commit()
+            return True
+    except Exception as e:
+        print(f"Erro ao alterar status no Postgres: {e}")
+        return False

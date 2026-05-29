@@ -1,0 +1,225 @@
+from flask import Blueprint, render_template, request, redirect, flash
+from flask_login import login_required, current_user
+from app.extensions import limiter
+
+import os
+import uuid
+import tempfile
+
+from utils.audit import registrar_log
+from utils.logger import log_erro
+from modules.db import get_conn
+
+from utils.ocr import analisar_nota, limpar_e_parsear_json
+from utils.validacao import validar_imagem_segura
+
+
+compras_bp = Blueprint("compras", __name__)
+
+
+# =============================================================
+# VIEW
+# =============================================================
+@compras_bp.route("/compras-inteligentes")
+@login_required
+def compras_inteligentes():
+    return render_template("compras_inteligentes.html")
+
+
+# =============================================================
+# OCR NOTA FISCAL
+# =============================================================
+@compras_bp.route("/processar-nota", methods=["POST"])
+@login_required
+@limiter.limit("5 per minute")
+def processar_nota():
+
+    caminho_imagem = None
+
+    try:
+
+        foto = request.files.get("foto_nota")
+
+        if not foto or not foto.filename:
+            flash("Nenhuma imagem enviada.", "danger")
+            return redirect("/compras-inteligentes")
+
+        extensao = os.path.splitext(foto.filename)[1].lower()
+
+        if extensao not in (".jpg", ".jpeg", ".png", ".webp"):
+            flash("Formato inválido.", "danger")
+            return redirect("/compras-inteligentes")
+
+        if not validar_imagem_segura(foto):
+            flash("Imagem inválida.", "danger")
+            return redirect("/compras-inteligentes")
+
+        # =========================
+        # ARQUIVO TEMPORÁRIO SEGURO
+        # =========================
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=extensao)
+        caminho_imagem = tmp.name
+        foto.save(caminho_imagem)
+
+        tamanho_mb = os.path.getsize(caminho_imagem) / (1024 * 1024)
+
+        if tamanho_mb > 18:
+            flash("Imagem muito grande (máx 18MB).", "danger")
+            return redirect("/compras-inteligentes")
+
+        # =========================
+        # IA OCR
+        # =========================
+        resposta_raw = analisar_nota(caminho_imagem)
+
+        if not resposta_raw:
+            flash("IA não conseguiu ler a nota.", "danger")
+            return redirect("/compras-inteligentes")
+
+        itens = limpar_e_parsear_json(resposta_raw)
+
+        if not itens:
+            log_erro(f"OCR inválido: {resposta_raw[:300]}")
+            flash("Erro ao interpretar nota fiscal.", "danger")
+            return redirect("/compras-inteligentes")
+
+        registrar_log(
+            "OCR_NOTA",
+            "COMPRAS",
+            f"{len(itens)} itens extraídos",
+            current_user.username
+        )
+
+        return render_template(
+            "resultado_nota.html",
+            itens=itens,
+            total_itens=len(itens)
+        )
+
+    except Exception as e:
+        log_erro(f"Erro OCR nota: {e}")
+        flash("Erro interno ao processar nota.", "danger")
+        return redirect("/compras-inteligentes")
+
+    finally:
+        if caminho_imagem and os.path.exists(caminho_imagem):
+            os.remove(caminho_imagem)
+
+
+# =============================================================
+# CONFIRMAÇÃO (GRAVAÇÃO NO BANCO)
+# =============================================================
+@compras_bp.route("/confirmar-nota", methods=["POST"])
+@login_required
+def confirmar_nota():
+
+    try:
+
+        total = request.form.get("total_itens", "0")
+
+        try:
+            total = int(total)
+        except:
+            total = 0
+
+        if total <= 0:
+            flash("Nenhum item para confirmar.", "warning")
+            return redirect("/compras-inteligentes")
+
+        salvos = 0
+        erros = []
+
+        with get_conn() as conn:
+
+            with conn.cursor() as cur:
+
+                for i in range(min(total, 100)):  # LIMITAÇÃO DE SEGURANÇA
+
+                    nome = request.form.get(f"nome_{i}", "").strip()
+
+                    try:
+                        qtd = float(request.form.get(f"qtd_{i}", 0) or 0)
+                        preco = float(request.form.get(f"preco_{i}", 0) or 0)
+                    except:
+                        continue
+
+                    unidade = request.form.get(f"unidade_{i}", "UN").upper()
+
+                    if not nome or qtd <= 0:
+                        continue
+
+                    # =========================
+                    # BUSCA MATÉRIA PRIMA
+                    # =========================
+                    cur.execute(
+                        """
+                        SELECT id_materia_prima
+                        FROM materia_prima
+                        WHERE LOWER(nome) = LOWER(%s)
+                        LIMIT 1
+                        """,
+                        (nome,)
+                    )
+
+                    materia = cur.fetchone()
+
+                    if materia:
+
+                        id_materia = materia[0]
+
+                        if preco > 0:
+                            cur.execute(
+                                """
+                                UPDATE materia_prima
+                                SET preco_unitario = %s,
+                                    unidade_medida = %s
+                                WHERE id_materia_prima = %s
+                                """,
+                                (preco, unidade, id_materia)
+                            )
+
+                    else:
+
+                        cur.execute(
+                            """
+                            INSERT INTO materia_prima
+                            (nome, unidade_medida, preco_unitario, estoque_minimo)
+                            VALUES (%s, %s, %s, 0)
+                            RETURNING id_materia_prima
+                            """,
+                            (nome, unidade, preco)
+                        )
+
+                        id_materia = cur.fetchone()[0]
+
+                    # =========================
+                    # MOVIMENTAÇÃO ESTOQUE
+                    # =========================
+                    cur.execute(
+                        """
+                        INSERT INTO movimentacao_estoque
+                        (id_materia_prima, tipo_movimento, quantidade, observacao, usuario)
+                        VALUES (%s, 'entrada', %s, 'OCR nota fiscal', %s)
+                        """,
+                        (id_materia, qtd, current_user.username)
+                    )
+
+                    salvos += 1
+
+            conn.commit()
+
+        registrar_log(
+            "CONFIRMAR_NOTA",
+            "COMPRAS",
+            f"{salvos} itens importados via OCR",
+            current_user.username
+        )
+
+        flash(f"{salvos} itens adicionados com sucesso!", "success")
+
+        return redirect("/estoque")
+
+    except Exception as e:
+        log_erro(f"Erro confirmar nota: {e}")
+        flash("Erro ao salvar nota.", "danger")
+        return redirect("/compras-inteligentes")

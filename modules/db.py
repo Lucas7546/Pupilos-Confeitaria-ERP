@@ -1,8 +1,6 @@
 import os
 import time
 from contextlib import contextmanager
- 
-import psycopg2
 from psycopg2 import pool
  
 from utils.logger import log_erro

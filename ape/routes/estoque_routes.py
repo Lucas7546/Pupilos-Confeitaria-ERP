@@ -1,11 +1,11 @@
 from flask import ( Blueprint, request, jsonify, render_template, flash, redirect, url_for)
 from flask_login import login_required, current_user
-from app.extensions import limiter
-from services import ai_client
+from ape.services import ai_client
+from ape.extensions import limiter
 from modules.db import get_conn
 from modules.estoque import previsao_demanda, estoque, produtos
 from utils.logger import log_erro, _parse_float
-from services.log_service import registrar_log
+from ape.services.log_service import registrar_log
 from modules.permissoes import acesso_requerido
 from datetime import datetime
 

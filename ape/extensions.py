@@ -10,12 +10,6 @@ login_manager = LoginManager()
 login_manager.login_view = "auth.login"
 
 
-limiter = Limiter(
-    key_func=rate_limit_key,
-    default_limits=["200 per day", "50 per hour"]
-)
-
-
 
 def rate_limit_key():
     """
@@ -26,7 +20,10 @@ def rate_limit_key():
 
     return get_remote_address()
 
-
+limiter = Limiter(
+    key_func=rate_limit_key,
+    default_limits=["200 per day", "50 per hour"]
+)
 # =============================================================
 # INIT APP
 # =============================================================

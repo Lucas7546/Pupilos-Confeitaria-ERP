@@ -1,11 +1,10 @@
 import json
 import mimetypes
  
-from google import genai
+from ape.services.ai_client import client
  
 from utils.logger import log_info, log_erro
  
-client = genai.Client()
  
 # Prompt detalhado — quanto mais específico, mais consistente o JSON retornado
 _PROMPT_NOTA = """Você é um sistema especializado em leitura de notas fiscais brasileiras.

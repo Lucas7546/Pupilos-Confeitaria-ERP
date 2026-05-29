@@ -17,7 +17,7 @@ ALLOWED_MIME = {
     "image/webp"
 }
 
-estoque_bp = Blueprint("estoque", __name__, url_prefix="/estoque")
+estoque_bp = Blueprint("estoque", __name__)
 
 
 @estoque_bp.route("/escanear-inteligente", methods=["POST"])

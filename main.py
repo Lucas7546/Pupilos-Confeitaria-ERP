@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 import os
-from modules.menu import iniciar_menu
+from menu import iniciar_menu
 
 if __name__ == "__main__":
 

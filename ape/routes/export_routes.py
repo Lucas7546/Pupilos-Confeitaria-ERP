@@ -11,7 +11,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 from utils.logger import log_erro
-from utils.audit import registrar_log
+from ape.services.log_service import registrar_log
 
 from modules.estoque import previsao_demanda
 from ape.extensions import limiter

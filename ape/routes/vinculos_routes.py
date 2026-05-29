@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
-from services.log_service import registrar_log
 from modules import produtos, estoque
 from utils.helpers import _parse_float
+from ape.services.log_service import registrar_log
 
 
 vinculos_bp = Blueprint('vinculos', __name__)

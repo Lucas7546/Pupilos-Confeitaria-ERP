@@ -16,7 +16,7 @@
             </small>
 
             <span class="text-white fs-5 fw-bold">
-                {{ usuarios_lista|length }}
+                {{ equipe|length }}
             </span>
         </div>
     </div>
@@ -31,7 +31,7 @@
 
         <div class="card-body p-4">
 
-            <form action="/criar-usuario" method="POST">
+            <form action="{{ url_for('usuarios.criar_usuario') }}" method="POST">
 
                 <div class="row g-3 align-items-end">
 
@@ -133,7 +133,7 @@
 
                 <tbody>
 
-                    {% for u in usuarios_lista %}
+                    {% for u in equipe %}
 
                     <tr class="border-bottom border-secondary border-opacity-10 transition-all">
 
@@ -228,20 +228,25 @@
                                     title="Você não pode bloquear sua própria conta">
 
                                     <i class="bi bi-lock"></i>
-
+                                    
+                                
                                 </button>
 
                                 {% else %}
 
-                                <a href="/toggle-usuario/{{ u[0] }}"
+                                <a href="{{ url_for('usuarios.editar_usuario_page', id_usuario=u[0]) }}"
                                     class="btn {% if u[3] == 1 %}btn-outline-danger{% else %}btn-success{% endif %} btn-sm px-3 border-opacity-10">
 
-                                    <i class="bi {% if u[3] == 1 %}bi-lock{% else %}bi-unlock{% endif %}"></i>
+                                    <i class="bi {% if u[3] == 1 %}bi-person-lock{% else %}bi-person-check{% endif %}"></i>
 
                                 </a>
 
                                 {% endif %}
-
+                                <form method="POST" action="{{ url_for('usuarios.deletar_user', id=u[0]) }}" class="d-inline">
+                                     <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Excluir usuário?')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
                             </div>
 
                         </td>
@@ -259,111 +264,6 @@
     </div>
 
 </div>
-
-{% for u in usuarios_lista %}
-<div class="modal fade" id="editModal{{ u[0] }}" tabindex="-1" aria-hidden="true">
-
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
-
-        <div class="modal-content bg-dark-card border border-secondary border-opacity-25 rounded-4 shadow-2xl">
-
-            <div class="modal-header border-0 pt-4 px-4">
-
-                <h5 class="modal-title fw-bold text-white">
-                    Editar: {{ u[1] }}
-                </h5>
-
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal">
-                </button>
-
-            </div>
-
-            <form action="/usuarios/editar/{{ u[0] }}" method="POST">
-
-                <div class="modal-body px-4">
-
-                    <div class="mb-4">
-
-                        <label class="form-label text-white-50 small fw-bold">
-                            NÍVEL DE PERMISSÃO
-                        </label>
-
-                        <select name="nivel"
-                            class="form-select bg-dark border-secondary text-white py-2">
-
-                            <option value="colaborador" {% if u[2]=='colaborador' %}selected{% endif %}>
-                                🍰 colaborador
-                            </option>
-
-                            <option value="financeiro" {% if u[2]=='financeiro' %}selected{% endif %}>
-                                💰 financeiro
-                            </option>
-
-                            <option value="ti" {% if u[2]=='ti' %}selected{% endif %}>
-                                💻 ti
-                            </option>
-
-                            <option value="dono" {% if u[2]=='dono' %}selected{% endif %}>
-                                👑 dono
-                            </option>
-
-                            {% if current_user.nivel == "admin" %}
-
-                            <option value="socios" {% if u[2]=='socios' %}selected{% endif %}>
-                                💼 socios
-                            </option>
-
-                            <option value="admin" {% if u[2]=='admin' %}selected{% endif %}>
-                                🛡️ admin
-                            </option>
-
-                            {% endif %}
-
-                        </select>
-
-                    </div>
-
-                    <div class="mb-2">
-
-                        <label class="form-label text-white-50 small fw-bold">
-                            DEFINIR NOVA SENHA
-                        </label>
-
-                        <input type="password" name="nova_senha"
-                            class="form-control bg-dark border-secondary text-white py-2"
-                            placeholder="Deixe vazio para manter">
-
-                        <small class="text-white-50 italic mt-1 d-block" style="font-size: 0.7rem;">
-
-                            Só preencha se o usuário esqueceu a senha.
-
-                        </small>
-
-                    </div>
-
-                </div>
-
-                <div class="modal-footer border-0 p-4">
-
-                    <button type="button" class="btn btn-link text-white-50 text-decoration-none fw-bold"
-                        data-bs-dismiss="modal">
-                        Cancelar
-                    </button>
-
-                    <button type="submit" class="btn btn-warning px-4 fw-bold rounded-3 shadow">
-                        ATUALIZAR DADOS
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
-
-    </div>
-
-</div>
-{% endfor %}
 
 <style>
     .bg-dark-card {

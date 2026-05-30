@@ -262,7 +262,7 @@ def estoque_painel():
     except Exception as e:
         logger.log_erro(f"Erro no painel de estoque: {e}")
         flash(f"Não foi possível carregar o painel de estoque: {e}", "danger")
-        return redirect("/")
+        return redirect(url_for("main.dashboard"))
 
 @estoque_bp.route("/previsao-estoque")
 @login_required

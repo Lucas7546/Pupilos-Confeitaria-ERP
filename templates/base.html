@@ -369,12 +369,12 @@
 
             <div class="menu-title">Principal</div>
 
-            <a href="{{ url_for('dashboard') }}" class="nav-link-custom">
+            <a href="{{ url_for('main.dashboard') }}" class="nav-link-custom">
                 <i class="bi bi-grid-1x2-fill"></i>
                 <span>Dashboard</span>
             </a>
 
-            <a href="{{ url_for('vendas.vendas_view') }}" class="nav-link-custom">
+            <a href="{{ url_for('vendas.pagina_vendas') }}" class="nav-link-custom">
                 <i class="bi bi-cart-check-fill"></i>
                 <span>Vendas</span>
             </a>
@@ -405,7 +405,7 @@
 
             <div class="menu-title">Configurações</div>
 
-            <a href="/cadastro" class="nav-link-custom">
+            <a href="{{ url_for('insumos.render_cadastro') }}" class="nav-link-custom">
                 <i class="bi bi-pencil-square"></i>
                 <span>Central Cadastros</span>
             </a>
@@ -415,7 +415,7 @@
                 <span>Precificação</span>
             </a>
 
-            <a href="{{ url_for('vendas.importacoes') }}" class="nav-link-custom">
+            <a href="{{ url_for('vendas.central_importacoes') }}" class="nav-link-custom">
                 <i class="bi bi-cloud-arrow-down-fill"></i>
                 <span>Importações</span>
             </a>
@@ -438,7 +438,7 @@
                 <span>Painel Admin</span>
             </a>
 
-            <a href="{{ url_for('usuarios.auditoria_view') }}" class="nav-link-custom">
+            <a href="{{ url_for('auditoria.auditoria') }}" class="nav-link-custom">
                 <i class="bi bi-eye-fill"></i>
                 <span>Auditoria</span>
             </a>
@@ -452,12 +452,12 @@
                 <span>Fluxo de Caixa</span>
             </a>
 
-            <a href="{{ url_for('financeiro.financeiro_view') }}" class="nav-link-custom">
+            <a href="{{ url_for('financeiro.pagina_financeiro') }}" class="nav-link-custom">
                 <i class="bi bi-bank"></i>
                 <span>Financeiro</span>
             </a>
 
-            <a href="{{ url_for('financeiro.relatorio_financeiro_view') }}" class="nav-link-custom">
+            <a href="{{ url_for('financeiro.relatorio_financeiro') }}" class="nav-link-custom">
                 <i class="bi bi-bar-chart-line-fill"></i>
                 <span>Relatórios</span>
             </a>

@@ -1,5 +1,5 @@
 # Imports do Flask
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required 
 
 # Seus módulos internos
@@ -8,7 +8,7 @@ from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
 from utils.logger import log_erro
 from werkzeug.security import generate_password_hash
-from modules.db import get_conn # Importe seu get_conn aqui
+from modules.db import get_conn
 
 usuarios_bp = Blueprint('usuarios', __name__)
 
@@ -51,7 +51,7 @@ def criar_usuario():
 
 @usuarios_bp.route("/editar/<int:id_usuario>", methods=["POST"])
 @login_required
-@acesso_requerido("admin") # Garante que só admin faz isso
+@acesso_requerido("admin")
 def editar_usuario(id_usuario):
     nivel = request.form.get("nivel", "").strip().lower()
     nova_senha = request.form.get("nova_senha", "").strip()
@@ -74,7 +74,6 @@ def toggle_usuario(id_usuario):
         flash("Usuário não encontrado.", "warning")
         return redirect(url_for("usuarios.listar_usuarios_view"))
 
-    # Supondo que a coluna 'ativo' esteja no índice 4 do seu fetch
     ativo_atual = int(usuario[4] if len(usuario) > 4 else 1)
     novo_status = 0 if ativo_atual == 1 else 1
 
@@ -92,6 +91,28 @@ def toggle_usuario(id_usuario):
 @login_required
 @acesso_requerido("usuarios")
 def area_admin():
-    # Continua chamando o módulo, que é a fonte correta dos dados
     lista = usuarios.listar_usuarios() or []
     return render_template("admin_panel.html", total_usuarios=len(lista), usuarios=lista)
+
+@usuarios_bp.route("/editar/<int:id_usuario>")
+@login_required
+@acesso_requerido("admin")
+def editar_usuario_page(id_usuario):
+
+    usuario = usuarios.buscar_usuario_id(id_usuario)
+
+    if not usuario:
+        flash("Usuário não encontrado.", "warning")
+        return redirect(url_for("usuarios.area_admin"))
+
+    return render_template(
+        "editar_usuario.html",
+        usuario=usuario
+    )
+
+@usuarios_bp.route("/novo")
+@login_required
+@acesso_requerido("admin")
+def novo_usuario():
+    return render_template("novo_usuario.html")
+

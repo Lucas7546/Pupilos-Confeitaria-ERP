@@ -67,30 +67,115 @@ def listar_itens_receita(id_produto: int) -> list[tuple]:
 # o import é feito dentro da função para evitar circular import
 # (estoque → receitas → estoque).
 # =========================================================
-def validar_estoque_suficiente(id_produto: int, quantidade_venda: int) -> bool:
+def validar_estoque_suficiente(
+    id_produto: int,
+    quantidade_venda: int
+) -> bool:
+
     try:
+
         with get_conn() as conn:
+
             with conn.cursor() as cur:
+
                 cur.execute(
-                    "SELECT id_materia_prima, quantidade_utilizada FROM receitas WHERE id_produto = %s",
-                    (id_produto,),
+                    """
+                    SELECT
+                        id_materia_prima,
+                        id_subproduto,
+                        quantidade_utilizada
+                    FROM receitas
+                    WHERE id_produto = %s
+                    """,
+                    (id_produto,)
                 )
+
                 ingredientes = cur.fetchall()
 
         if not ingredientes:
             return True
 
-        # Import local para quebrar o ciclo receitas ↔ estoque
         from modules.estoque import calcular_estoque
 
-        for id_mp, qtd_necessaria in ingredientes:
-            estoque_atual = calcular_estoque(id_mp)
-            if estoque_atual < float(qtd_necessaria) * float(quantidade_venda):
-                return False
+        for (
+            id_materia_prima,
+            id_subproduto,
+            quantidade_utilizada
+        ) in ingredientes:
+
+            quantidade_necessaria = (
+                float(quantidade_utilizada)
+                * float(quantidade_venda)
+            )
+
+            # ==========================
+            # MATÉRIA-PRIMA
+            # ==========================
+
+            if id_materia_prima:
+
+                estoque_atual = calcular_estoque(
+                    id_materia_prima
+                )
+
+                if estoque_atual < quantidade_necessaria:
+                    return False
+
+            # ==========================
+            # SUBPRODUTO
+            # ==========================
+
+            if id_subproduto:
+
+                with get_conn() as conn:
+
+                    with conn.cursor() as cur:
+
+                        cur.execute(
+                            """
+                            SELECT
+                                COALESCE(
+                                    SUM(
+                                        CASE
+                                            WHEN tipo_movimento IN ('entrada','ajuste')
+                                            THEN quantidade
+                                            ELSE 0
+                                        END
+                                    ),
+                                    0
+                                )
+                                -
+                                COALESCE(
+                                    SUM(
+                                        CASE
+                                            WHEN tipo_movimento = 'saida'
+                                            THEN quantidade
+                                            ELSE 0
+                                        END
+                                    ),
+                                    0
+                                )
+                            FROM movimentacao_estoque
+                            WHERE id_subproduto = %s
+                            """,
+                            (id_subproduto,)
+                        )
+
+                        saldo = float(
+                            cur.fetchone()[0] or 0
+                        )
+
+                if saldo < quantidade_necessaria:
+                    return False
 
         return True
+
     except Exception as e:
-        log_erro(f"Erro ao validar estoque (Prod: {id_produto}): {e}")
+
+        log_erro(
+            f"Erro ao validar estoque (Prod: {id_produto}): {e}"
+        )
+
         return False
 
 

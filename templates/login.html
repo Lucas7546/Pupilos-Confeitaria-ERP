@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | {{ EMPRESA.upper() }}</title>
+    <title>Login | {{ EMPRESA|upper }}</title>
 
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -141,20 +141,45 @@
             border-radius: 12px;
             font-size: 0.85rem;
         }
+
+        .alert-success {
+            background: rgba(34,197,94,.15);
+            border: 1px solid rgba(34,197,94,.25);
+            color: #4ade80;
+        }
+
+        .alert-danger,
+        .alert-error {
+            background: rgba(239,68,68,.15);
+            border: 1px solid rgba(239,68,68,.25);
+            color: #f87171;
+        }
+
+        .alert-warning {
+            background: rgba(245,158,11,.15);
+            border: 1px solid rgba(245,158,11,.25);
+            color: #fbbf24;
+        }
+        .input-group .input-group-text:last-child {
+            border-radius: 0 12px 12px 0;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
     <div class="login-box">
-        <div class="logo-circle">🧁</div>
+        <div class="logo-circle">
+            <i class="bi bi-shield-lock-fill"></i>
+        </div>
 
-        <h2>{{ EMPRESA.upper() }}</h2>
+        <h2>{{ EMPRESA|upper }}</h2>
         <p class="sub">Painel Administrativo</p>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
-              <div class="alert d-flex align-items-center mb-4 bounce-in" role="alert">
+              <div class="alert alert-{{ category }} d-flex align-items-center mb-4">
                 <i class="bi bi-exclamation-circle-fill me-2"></i>
                 <div>{{ message }}</div>
               </div>
@@ -162,12 +187,12 @@
           {% endif %}
         {% endwith %}
 
-        <form method="POST">
+        <form method="POST" action="{{ url_for('auth.login') }}">
             <div class="mb-3">
                 <label class="form-label mb-2">Usuário</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-person"></i></span>
-                    <input type="text" name="username" class="form-control" placeholder="admin_pupilos" required autocomplete="username">
+                    <input type="text" autofocus name="username" class="form-control" placeholder="admin_pupilos" required autocomplete="username">
                 </div>
             </div>
 
@@ -178,22 +203,58 @@
                 </div>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                    <input type="password" name="senha" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                    <input type="password" id="senha" name="senha" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                    <button type="button" class="input-group-text" onclick="toggleSenha()">
+                        <i class="bi bi-eye" id="iconeSenha"></i>
+                    </button>
                 </div>
             </div>
 
-            <button type="submit" class="btn-login">
+            <button type="submit" class="btn-login" id="btnLogin">
                 Acessar Painel <i class="bi bi-chevron-right ms-1"></i>
             </button>
         </form>
 
         <footer class="mt-5 text-center">
             <p class="text-white-50 m-0" style="font-size: 0.65rem; opacity: 0.5;">
-                &copy; 2026 Pupilos Confeitaria • São Paulo<br>
+                &copy; <span id="ano"></span> {{ EMPRESA }}<br>
                 Ambiente Seguro para Gestão de Insumos
             </p>
         </footer>
     </div>
 
+    <script>
+function toggleSenha() {
+
+    const senha = document.getElementById("senha");
+    const icone = document.getElementById("iconeSenha");
+
+    if (senha.type === "password") {
+        senha.type = "text";
+        icone.classList.remove("bi-eye");
+        icone.classList.add("bi-eye-slash");
+    } else {
+        senha.type = "password";
+        icone.classList.remove("bi-eye-slash");
+        icone.classList.add("bi-eye");
+    }
+}
+</script>
+<script>
+document.querySelector("form").addEventListener("submit", function() {
+
+    const btn = document.getElementById("btnLogin");
+
+    btn.disabled = true;
+    btn.style.pointerEvents = "none";
+
+    btn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2"></span>Entrando...';
+});
+</script>
+<script>
+document.getElementById("ano").innerText =
+    new Date().getFullYear();
+</script>
 </body>
 </html>

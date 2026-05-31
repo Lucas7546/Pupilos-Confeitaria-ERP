@@ -56,7 +56,7 @@
             >
 
             <!-- EXPORTAR -->
-            <a href="{{ url_for('usuarios.exportar_logs') }}" class="btn btn-outline-light rounded-pill px-4 transition-btn border-opacity-25">
+            <a href="{{ url_for('auditoria.exportar_logs') }}" class="btn btn-outline-light rounded-pill px-4 transition-btn border-opacity-25">
 
                 <i class="bi bi-download me-2"></i>
                 Exportar Backup
@@ -92,14 +92,22 @@
 
                 <h3 class="text-white mb-0">
 
-                    {{ logs|length }}
+                       {{ logs|length }} / {{ limite }}
 
                     <span class="fs-6 text-white-50">
-                        Registros
+                        Registros encontrados
                     </span>
 
                 </h3>
+                <h3 class="text-white mb-0">
 
+                    {{ logs[0][4] if logs else '-' }}
+
+                    <span class="fs-6 text-white-50">
+                        Última atividade
+                    </span>
+
+                </h3>
             </div>
 
         </div>
@@ -112,7 +120,7 @@
 
         <div class="card-body">
 
-            <form method="GET" action="{{ url_for('usuarios.auditoria_view') }}">
+            <form method="GET" action="{{ url_for('auditoria.auditoria') }}">
 
                 <div class="row g-3 align-items-end">
 
@@ -151,40 +159,26 @@
 
                             <option value="">Todas</option>
 
-                            <option value="LOGIN"
-                                {% if acao_filtro == 'LOGIN' %}selected{% endif %}>
+                            <option value="LOGIN" {% if acao_filtro == 'LOGIN' %}selected{% endif %}>LOGIN</option>
+                            <option value="LOGOUT" {% if acao_filtro == 'LOGOUT' %}selected{% endif %}>LOGOUT</option>
+                            <option value="CRIAR_USUARIO" {% if acao_filtro == 'CRIAR_USUARIO' %}selected{% endif %}>CRIAR_USUARIO</option>
+                            <option value="EDIÇÃO" {% if acao_filtro == 'EDIÇÃO' %}selected{% endif %}>EDIÇÃO</option>
+                            <option value="ALTERAR_STATUS" {% if acao_filtro == 'ALTERAR_STATUS' %}selected{% endif %}>ALTERAR_STATUS</option>
+                            <option value="VENDA" {% if acao_filtro == 'VENDA' %}selected{% endif %}>VENDA</option>
+                            <option value="EXCLUIR" {% if acao_filtro == 'EXCLUIR' %}selected{% endif %}>EXCLUIR</option>
+                            <option value="AJUSTE" {% if acao_filtro == 'AJUSTE' %}selected{% endif %}>AJUSTE</option>
+                            <option value="EXPORT_LOGS" {% if acao_filtro == 'EXPORT_LOGS' %}selected{% endif %}>EXPORTAÇÃO</option>
+                            <option value="CADASTRO" {% if acao_filtro == 'CADASTRO' %}selected{% endif %}>CADASTRO</option>
+                            <option value="ALTERAR" {% if acao_filtro == 'ALTERAR' %}selected{% endif %}>ALTERAR</option>
+                            <option value="DELETAR" {% if acao_filtro == 'DELETAR' %}selected{% endif %}>DELETAR</option>
+                            <option value="ESTORNO" {% if acao_filtro == 'ESTORNO' %}selected{% endif %}>ESTORNO</option>
+                            <option value="ESTOQUE" {% if acao_filtro == 'ESTOQUE' %}selected{% endif %}>ESTOQUE</option>
+                            <option value="OCR_NOTA" {% if acao_filtro == 'OCR_NOTA' %}selected{% endif %}>OCR_NOTA</option>
+                            <option value="CONFIRMAR_NOTA" {% if acao_filtro == 'CONFIRMAR_NOTA' %}selected{% endif %}>CONFIRMAR_NOTA</option>
+                            <option value="EXPORT_CSV" {% if acao_filtro == 'EXPORT_CSV' %}selected{% endif %}>EXPORT_CSV</option>
+                            <option value="EXPORT_PDF" {% if acao_filtro == 'EXPORT_PDF' %}selected{% endif %}>EXPORT_PDF</option>
+                            <option value="CADASTRAR" {% if acao_filtro == 'CADASTRAR' %}selected{% endif %}>CADASTRAR</option>
 
-                                LOGIN
-
-                            </option>
-
-                            <option value="VENDA"
-                                {% if acao_filtro == 'VENDA' %}selected{% endif %}>
-
-                                VENDA
-
-                            </option>
-
-                            <option value="EXCLUIR"
-                                {% if acao_filtro == 'EXCLUIR' %}selected{% endif %}>
-
-                                EXCLUIR
-
-                            </option>
-
-                            <option value="AJUSTE"
-                                {% if acao_filtro == 'AJUSTE' %}selected{% endif %}>
-
-                                AJUSTE
-
-                            </option>
-
-                            <option value="EXPORT_LOGS"
-                                {% if acao_filtro == 'EXPORT_LOGS' %}selected{% endif %}>
-
-                                EXPORTAÇÃO
-
-                            </option>
 
                         </select>
 
@@ -280,7 +274,7 @@
                             </button>
 
                             <a
-                                href="{{ url_for('usuarios.auditoria_view') }}"
+                                href="{{ url_for('auditoria.auditoria') }}"
                                 class="btn btn-outline-light rounded-3 border-opacity-25"
                             >
 
@@ -316,7 +310,7 @@
                         <tr>
 
                             <th class="ps-4 py-4 border-0 text-muted small fw-bold">
-                                HORÁRIO (UTC)
+                                DATA/HORA
                             </th>
 
                             <th class="py-4 border-0 text-muted small fw-bold">
@@ -383,14 +377,35 @@
 
                                 <span class="badge rounded-2 px-2 py-1
 
-                                    {% if 'venda' in acao or 'sucesso' in acao or 'criar' in acao %}
-                                        bg-success bg-opacity-10 text-success
-                                    {% elif 'erro' in acao or 'excluir' in acao or 'falha' in acao %}
-                                        bg-danger bg-opacity-10 text-danger
-                                    {% elif 'editar' in acao or 'ajuste' in acao %}
-                                        bg-info bg-opacity-10 text-info
+                                    {% if 'login' in acao 
+                                        or 'criar' in acao
+                                        or 'cadastro' in acao
+                                        or 'venda' in acao
+                                        or 'confirmar' in acao %}
+
+                                            bg-success bg-opacity-10 text-success
+
+                                    {% elif 'erro' in acao
+                                        or 'falha' in acao
+                                        or 'deletar' in acao
+                                        or 'excluir' in acao
+                                        or 'estorno' in acao %}
+
+                                            bg-danger bg-opacity-10 text-danger
+
+                                    {% elif 'editar' in acao
+                                        or 'alterar' in acao
+                                        or 'ajuste' in acao
+                                        or 'export' in acao
+                                        or 'estoque' in acao
+                                        or 'ocr' in acao %}
+
+                                            bg-info bg-opacity-10 text-info
+
                                     {% else %}
-                                        bg-secondary bg-opacity-10 text-white
+
+                                            bg-secondary bg-opacity-10 text-white
+
                                     {% endif %}
 
                                 "

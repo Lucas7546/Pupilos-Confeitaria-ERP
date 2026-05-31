@@ -343,50 +343,184 @@ def fechamento_diario():
 @login_required
 @acesso_requerido("estoque")
 def balanco_diario_page():
+
     try:
+
         data_param = request.args.get("data", "").strip()
+
         if data_param:
+
             hoje_str = data_param
+
             try:
+
                 ano, mes, dia = hoje_str.split("-")
                 data_exibicao = f"{dia}/{mes}/{ano}"
+
             except ValueError:
+
                 data_exibicao = hoje_str
+
         else:
+
             hoje_str = datetime.now().strftime("%Y-%m-%d")
             data_exibicao = datetime.now().strftime("%d/%m/%Y")
 
-        lista_produtos = produtos.listar_todos() or []
-
         with get_conn() as con:
+
             with con.cursor() as cur:
+
+                # =====================================
+                # VENDAS DO DIA
+                # =====================================
+
                 cur.execute("""
-                    SELECT iv.id_produto, DATE(v.data_venda), SUM(iv.quantidade)
+                    SELECT
+                        iv.id_produto,
+                        COALESCE(SUM(iv.quantidade),0)
                     FROM itens_venda iv
-                    JOIN vendas v ON v.id_venda = iv.id_venda
+                    JOIN vendas v
+                        ON v.id_venda = iv.id_venda
                     WHERE DATE(v.data_venda) = %s
-                    GROUP BY iv.id_produto, DATE(v.data_venda)
+                    GROUP BY iv.id_produto
                 """, (hoje_str,))
-                vendas_do_dia = {str(r[0]): int(r[2]) for r in cur.fetchall()}
+
+                vendas_dia = {
+                    int(r[0]): int(r[1])
+                    for r in cur.fetchall()
+                }
+
+                # =====================================
+                # PRODUÇÃO DO DIA
+                # =====================================
+
+                cur.execute("""
+                    SELECT
+                        id_produto,
+                        COALESCE(SUM(quantidade),0)
+                    FROM movimentacao_produtos
+                    WHERE tipo_movimento = 'entrada'
+                    AND DATE(data_movimento) = %s
+                    GROUP BY id_produto
+                """, (hoje_str,))
+
+                producao_dia = {
+                    int(r[0]): int(r[1])
+                    for r in cur.fetchall()
+                }
+
+                # =====================================
+                # SALDO ATUAL
+                # =====================================
+
+                cur.execute("""
+                    SELECT
+                        p.id_produto,
+                        p.nome,
+
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN mp.tipo_movimento = 'entrada'
+                                        THEN mp.quantidade
+                                    ELSE 0
+                                END
+                            ),0
+                        )
+                        -
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN mp.tipo_movimento = 'saida'
+                                        THEN mp.quantidade
+                                    ELSE 0
+                                END
+                            ),0
+                        ) AS saldo
+
+                    FROM produtos p
+
+                    LEFT JOIN movimentacao_produtos mp
+                        ON p.id_produto = mp.id_produto
+
+                    GROUP BY
+                        p.id_produto,
+                        p.nome
+
+                    ORDER BY p.nome
+                """)
+
+                produtos_saldo = cur.fetchall()
 
         balanco = []
-        for p in lista_produtos:
-            id_produto, nome_produto = p[0], p[1]
-            vendido_hoje = vendas_do_dia.get(str(id_produto), 0)
+
+        total_vendido = 0
+        total_produzido = 0
+        total_saldo = 0
+
+        for produto in produtos_saldo:
+
+            id_produto = produto[0]
+            nome_produto = produto[1]
+            saldo_atual = int(produto[2] or 0)
+
+            produzido = producao_dia.get(id_produto, 0)
+            vendido = vendas_dia.get(id_produto, 0)
+
+            total_vendido += vendido
+            total_produzido += produzido
+            total_saldo += saldo_atual
+
             balanco.append({
+
                 "id": id_produto,
                 "nome": nome_produto,
-                "vendido": vendido_hoje,
+
+                "produzido": produzido,
+                "vendido": vendido,
+                "saldo": saldo_atual,
+
+                "status":
+                    "baixo"
+                    if saldo_atual <= 5
+                    else "ok"
+
             })
 
+        registrar_log(
+            "BALANCO_DIARIO",
+            "ESTOQUE",
+            f"Balanço consultado para {hoje_str}"
+        )
+
         return render_template(
+
             "balanco_diario.html",
+
             data_hoje=data_exibicao,
             data_busca_atual=hoje_str,
             datetime_hoje=datetime.now().strftime("%Y-%m-%d"),
+
             balanco=balanco,
+
+            total_produtos=len(balanco),
+            total_vendido=total_vendido,
+            total_produzido=total_produzido,
+            total_saldo=total_saldo
+
         )
+
     except Exception as e:
-        logger.log_erro(f"Erro no balanço diário: {e}")
-        flash(f"Erro ao processar balanço diário: {e}", "danger")
-        return redirect(url_for("estoque.estoque_painel"))
+
+        logger.log_erro(
+            f"Erro no balanço diário: {e}"
+        )
+
+        flash(
+            f"Erro ao processar balanço diário: {e}",
+            "danger"
+        )
+
+        return redirect(
+            url_for("estoque.estoque_painel")
+        )

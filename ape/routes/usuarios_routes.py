@@ -25,6 +25,7 @@ def listar_usuarios_view():
 @acesso_requerido("admin")
 def deletar_user(id):
     if usuarios.excluir_usuario(id):
+        registrar_log("EXCLUIR_USUARIO", "USUARIOS", f"ID {id} removido")
         flash("Usuário removido!", "success")
     else:
         flash("Erro ao remover usuário.", "danger")

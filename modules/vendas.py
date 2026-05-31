@@ -67,72 +67,239 @@ def registrar_venda(
     valor_total: float,
     usuario: str = "Sistema",
 ) -> bool:
-    from modules.receitas import calcular_custo_receita  # import local evita circular
+
+    from modules.receitas import calcular_custo_receita
 
     try:
+
         custo_unitario = calcular_custo_receita(id_produto)
-        lucro_total = float(valor_total) - (float(custo_unitario) * float(quantidade))
+
+        lucro_total = (
+            float(valor_total)
+            - (float(custo_unitario) * float(quantidade))
+        )
 
         with get_conn() as conn:
+
             with conn.cursor() as cur:
-                # 1. Registra a venda
+
+                # =====================================
+                # REGISTRA VENDA
+                # =====================================
+
                 cur.execute(
                     """
-                    INSERT INTO vendas (valor_total, lucro, canal_venda, usuario)
-                    VALUES (%s, %s, 'Sistema', %s)
+                    INSERT INTO vendas
+                    (
+                        valor_total,
+                        lucro,
+                        canal_venda,
+                        usuario
+                    )
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        'Sistema',
+                        %s
+                    )
                     RETURNING id_venda
                     """,
-                    (valor_total, lucro_total, usuario),
+                    (
+                        valor_total,
+                        lucro_total,
+                        usuario
+                    )
                 )
+
                 id_venda = cur.fetchone()[0]
 
-                # 2. Busca preço unitário
-                cur.execute(
-                    "SELECT preco_venda FROM produtos WHERE id_produto = %s",
-                    (id_produto,),
-                )
-                row = cur.fetchone()
-                if not row:
-                    raise ValueError(f"Produto ID {id_produto} não encontrado.")
-                preco_unitario = float(row[0])
+                # =====================================
+                # BUSCA PREÇO UNITÁRIO
+                # =====================================
 
-                # 3. Insere item da venda
                 cur.execute(
                     """
-                    INSERT INTO itens_venda (id_venda, id_produto, quantidade, valor_unitario)
-                    VALUES (%s, %s, %s, %s)
+                    SELECT preco_venda
+                    FROM produtos
+                    WHERE id_produto = %s
                     """,
-                    (id_venda, id_produto, quantidade, preco_unitario),
+                    (id_produto,)
                 )
 
-                # 4. Baixa estoque via receita
-                # Usamos uma query separada (sem reusar o cursor após fetchone acima)
+                row = cur.fetchone()
+
+                if not row:
+                    raise ValueError(
+                        f"Produto ID {id_produto} não encontrado."
+                    )
+
+                preco_unitario = float(row[0])
+
+                # =====================================
+                # ITEM DA VENDA
+                # =====================================
+
                 cur.execute(
-                    "SELECT id_materia_prima, quantidade_utilizada FROM receitas WHERE id_produto = %s",
-                    (id_produto,),
+                    """
+                    INSERT INTO itens_venda
+                    (
+                        id_venda,
+                        id_produto,
+                        quantidade,
+                        valor_unitario
+                    )
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        %s,
+                        %s
+                    )
+                    """,
+                    (
+                        id_venda,
+                        id_produto,
+                        quantidade,
+                        preco_unitario
+                    )
                 )
+
+                # =====================================
+                # SAÍDA DO PRODUTO FINAL
+                # =====================================
+
+                cur.execute(
+                    """
+                    INSERT INTO movimentacao_estoque
+                    (
+                        id_produto,
+                        tipo_movimento,
+                        quantidade,
+                        observacao
+                    )
+                    VALUES
+                    (
+                        %s,
+                        'saida',
+                        %s,
+                        %s
+                    )
+                    """,
+                    (
+                        id_produto,
+                        quantidade,
+                        f"Venda ID {id_venda}"
+                    )
+                )
+
+                # =====================================
+                # BUSCA RECEITA
+                # =====================================
+
+                cur.execute(
+                    """
+                    SELECT
+                        id_materia_prima,
+                        id_subproduto,
+                        quantidade_utilizada
+                    FROM receitas
+                    WHERE id_produto = %s
+                    """,
+                    (id_produto,)
+                )
+
                 ingredientes = cur.fetchall()
 
-                for id_mp, qtd_receita in ingredientes:
-                    cur.execute(
-                        """
-                        INSERT INTO movimentacao_estoque
-                            (id_materia_prima, tipo_movimento, quantidade, observacao)
-                        VALUES (%s, 'saida', %s, %s)
-                        """,
-                        (
-                            id_mp,
-                            float(qtd_receita) * float(quantidade),
-                            f"Venda ID {id_venda}",
-                        ),
+                # =====================================
+                # BAIXA INSUMOS
+                # =====================================
+
+                for (
+                    id_materia_prima,
+                    id_subproduto,
+                    quantidade_utilizada
+                ) in ingredientes:
+
+                    qtd_baixa = (
+                        float(quantidade_utilizada)
+                        * float(quantidade)
                     )
+
+                    # -----------------------------
+                    # MATÉRIA-PRIMA
+                    # -----------------------------
+
+                    if id_materia_prima:
+
+                        cur.execute(
+                            """
+                            INSERT INTO movimentacao_estoque
+                            (
+                                id_materia_prima,
+                                tipo_movimento,
+                                quantidade,
+                                observacao
+                            )
+                            VALUES
+                            (
+                                %s,
+                                'saida',
+                                %s,
+                                %s
+                            )
+                            """,
+                            (
+                                id_materia_prima,
+                                qtd_baixa,
+                                f"Venda ID {id_venda}"
+                            )
+                        )
+
+                    # -----------------------------
+                    # SUBPRODUTO
+                    # -----------------------------
+
+                    if id_subproduto:
+
+                        cur.execute(
+                            """
+                            INSERT INTO movimentacao_estoque
+                            (
+                                id_subproduto,
+                                tipo_movimento,
+                                quantidade,
+                                observacao
+                            )
+                            VALUES
+                            (
+                                %s,
+                                'saida',
+                                %s,
+                                %s
+                            )
+                            """,
+                            (
+                                id_subproduto,
+                                qtd_baixa,
+                                f"Venda ID {id_venda}"
+                            )
+                        )
 
             conn.commit()
 
-        log_info(f"Venda {id_venda} registrada — produto {id_produto}.")
+        log_info(
+            f"Venda {id_venda} registrada - Produto {id_produto}"
+        )
+
         return True
+
     except Exception as e:
-        log_erro(f"Erro ao registrar venda (Prod: {id_produto}): {e}")
+
+        log_erro(
+            f"Erro ao registrar venda (Prod {id_produto}): {e}"
+        )
+
         return False
 
 

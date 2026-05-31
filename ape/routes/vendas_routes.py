@@ -5,7 +5,6 @@ from ape.services.log_service import registrar_log
 from utils.logger import log_erro
 from ape.extensions import limiter
 import os
-import tempfile
 from modules import importador_ia as ia
 from modules import produtos, vendas, receitas
 
@@ -30,6 +29,7 @@ def importar_ifood():
     resultado = ia.processar_relatorio_delivery(arquivo)
 
     if resultado["sucesso"]:
+        registrar_log("IMPORTAR_IFOOD","VENDAS", f"{resultado['quantidade_vendas']} vendas importadas")
         flash(f"Importação concluída! {resultado['quantidade_vendas']} vendas processadas.", "success")
     else:
         flash(f"Erro na importação: {resultado['erro']}", "danger")
@@ -49,7 +49,7 @@ def pagina_vendas():
     except Exception as e:
         log_erro(f"Erro na página de vendas: {e}")
         flash("Erro ao carregar vendas.", "danger")
-        return redirect(url_for("dashboard")) # Redireciona para o dashboard ou home
+        return redirect(url_for("main.dashboard"))
 
 @vendas_bp.route("/vender", methods=["POST"])
 @login_required

@@ -565,36 +565,95 @@ def entrada_subproduto(id_subproduto: int, quantidade: float) -> bool:
 # ENTRADA DE PRODUTO FINAL (chamada em /registrar-producao)
 # =========================================================
 def entrada_produto(id_produto: int, quantidade: float) -> bool:
-    """Registra entrada de produto final produzido e baixa os insumos da receita."""
+    """
+    Registra produção de produto final
+    e baixa automaticamente os insumos da receita.
+    """
+
     try:
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
+                # Entrada do produto final
                 cur.execute(
                     """
                     INSERT INTO movimentacao_estoque
-                        (id_produto, tipo_movimento, quantidade, observacao)
-                    VALUES (%s, 'entrada', %s, 'Produção registrada')
+                    (
+                        id_produto,
+                        tipo_movimento,
+                        quantidade,
+                        observacao
+                    )
+                    VALUES
+                    (
+                        %s,
+                        'entrada',
+                        %s,
+                        'Produção registrada'
+                    )
                     """,
-                    (id_produto, float(quantidade)),
+                    (
+                        id_produto,
+                        float(quantidade)
+                    )
                 )
+
+                # Busca ingredientes da receita
                 cur.execute(
-                    "SELECT id_materia_prima, quantidade_utilizada FROM receitas WHERE id_produto = %s AND id_materia_prima IS NOT NULL",
-                    (id_produto,),
+                    """
+                    SELECT
+                        id_materia_prima,
+                        quantidade_utilizada
+                    FROM receitas
+                    WHERE id_produto = %s
+                    AND id_materia_prima IS NOT NULL
+                    """,
+                    (id_produto,)
                 )
-                for id_mp, qtd_receita in cur.fetchall():
+
+                ingredientes = cur.fetchall()
+
+                # Baixa matéria-prima
+                for id_mp, qtd_receita in ingredientes:
+
                     cur.execute(
                         """
                         INSERT INTO movimentacao_estoque
-                            (id_materia_prima, tipo_movimento, quantidade, observacao)
-                        VALUES (%s, 'saida', %s, 'Baixa por produção de produto')
+                        (
+                            id_materia_prima,
+                            tipo_movimento,
+                            quantidade,
+                            observacao
+                        )
+                        VALUES
+                        (
+                            %s,
+                            'saida',
+                            %s,
+                            'Baixa por produção'
+                        )
                         """,
-                        (id_mp, float(qtd_receita) * float(quantidade)),
+                        (
+                            id_mp,
+                            float(qtd_receita) * float(quantidade)
+                        )
                     )
+
             conn.commit()
-        log_info(f"Entrada produto ID {id_produto} | Qtd {quantidade}")
+
+        log_info(
+            f"Produto produzido ID {id_produto} | Qtd {quantidade}"
+        )
+
         return True
+
     except Exception as e:
-        log_erro(f"Erro entrada_produto ID {id_produto}: {e}")
+
+        log_erro(
+            f"Erro entrada_produto: {e}"
+        )
+
         return False
  
  

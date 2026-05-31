@@ -47,7 +47,7 @@ def create_app():
     app.register_blueprint(auditoria_bp)
     app.register_blueprint(equipe_bp)
     app.register_blueprint(insumos_bp)
-    app.register_blueprint(produtos_bp)
+    app.register_blueprint(produtos_bp, url_prefix='/produtos')
     app.register_blueprint(vinculos_bp)
     app.register_blueprint(subprodutos_bp)
     

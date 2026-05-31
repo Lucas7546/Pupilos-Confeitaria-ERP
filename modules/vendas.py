@@ -300,6 +300,7 @@ def registrar_venda(
             f"Erro ao registrar venda (Prod {id_produto}): {e}"
         )
 
+        
         return False
 
 

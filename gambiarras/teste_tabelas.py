@@ -1,11 +1,7 @@
 from dotenv import load_dotenv
-import os
+from modules.db import conectar
 
 load_dotenv()
-
-print("DATABASE_URL:", os.getenv("DATABASE_URL"))
-
-from modules.db import conectar
 
 try:
 
@@ -15,14 +11,20 @@ try:
     cursor.execute("""
         SELECT table_name
         FROM information_schema.tables
-        WHERE table_schema='public'
+        WHERE table_schema = 'public'
         ORDER BY table_name
     """)
 
-    print("\n===== TABELAS =====\n")
+    tabelas = cursor.fetchall()
 
-    for tabela in cursor.fetchall():
+    print("\n===== TABELAS DO BANCO =====\n")
+
+    for tabela in tabelas:
         print(tabela[0])
 
+    print("\n===== TOTAL =====")
+    print(len(tabelas), "tabelas encontradas.")
+
 except Exception as e:
+    print("ERRO:")
     print(e)

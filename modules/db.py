@@ -3,7 +3,7 @@ import time
 from contextlib import contextmanager
 from psycopg2 import pool
  
-from utils.logger import log_erro
+import logging
  
 # =========================================================
 # POOL DE CONEXÕES
@@ -70,30 +70,21 @@ def get_conn():
 def conectar():
     return _get_pool().getconn()
 
-
 def init_db():
-    """
-    Inicializa estruturas mínimas usadas pelo app no PostgreSQL.
-
-    As tabelas principais podem ser mantidas por migrações/scripts externos;
-    aqui garantimos a tabela de logs para não derrubar o deploy no startup.
-    """
-    if not os.getenv("DATABASE_URL"):
-        log_erro("Variável DATABASE_URL não encontrada. init_db ignorado.")
-        return
-
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS logs (
-                    id_log SERIAL PRIMARY KEY,
-                    usuario TEXT,
-                    acao TEXT,
-                    modulo TEXT,
-                    detalhe TEXT,
-                    data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-                """
-            )
-        conn.commit()
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS logs (
+                        id SERIAL PRIMARY KEY,
+                        usuario TEXT,
+                        acao TEXT,
+                        modulo TEXT,
+                        detalhe TEXT,
+                        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+            conn.commit()
+        print("✔ Tabela de logs verificada.")
+    except Exception as e:
+        print(f"❌ Erro ao inicializar tabela de logs: {e}")

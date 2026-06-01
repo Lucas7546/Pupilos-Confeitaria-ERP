@@ -47,7 +47,7 @@
                                             <h4 class="text-white fw-bold mb-3">Conciliação iFood</h4>
                                             <p class="text-white-50 mb-4">Carregue o relatório detalhado do Portal do Parceiro. O sistema processará cada item vendido e atualizará o estoque em tempo real.</p>
                                             
-                                            <form action="/importar-ifood" method="POST" enctype="multipart/form-data" id="formIfood">
+                                            <form action="{{ url_for('insumos.importar_ifood') }}" method="POST" enctype="multipart/form-data" id="formIfood">
                                                 <div class="upload-zone mb-4" id="dropZoneIfood">
                                                     <input type="file" name="arquivo" id="fileIfood" class="file-input" accept=".csv, .xlsx, .xls" required>
                                                     <label for="fileIfood" class="w-100 text-center py-5 cursor-pointer">

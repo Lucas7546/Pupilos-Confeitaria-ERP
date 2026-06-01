@@ -17,3 +17,9 @@ with get_conn() as conn:
 
         for l in linhas:
             print(l)
+
+
+    <div class="card">
+        <h1>Dashboard</h1>
+        </div>
+{% endblock %}

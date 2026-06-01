@@ -151,17 +151,3 @@ def atualizar_usuario(id_usuario, nivel, nova_senha=None):
     except Exception as e:
         print(f"Erro ao atualizar usuário no banco: {e}")
         return False
-
-def alterar_status(id_usuario, novo_status):
-    try:
-        with get_conn() as con:
-            with con.cursor() as cur:
-                cur.execute(
-                    "UPDATE usuarios SET ativo = %s WHERE id_usuario = %s",
-                    (novo_status, id_usuario)
-                )
-            con.commit()
-            return True
-    except Exception as e:
-        print(f"Erro ao alterar status no Postgres: {e}")
-        return False

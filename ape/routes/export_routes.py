@@ -9,13 +9,12 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-
+from modules.permissoes import acesso_requerido
 from utils.logger import log_erro
 from ape.services.log_service import registrar_log
-
 from modules.estoque import previsao_demanda
 from ape.extensions import limiter
-
+from ape.services.log_service import registrar_log
 
 export_bp = Blueprint("export", __name__)
 
@@ -25,6 +24,7 @@ export_bp = Blueprint("export", __name__)
 # =====================================================
 @export_bp.route("/exportar-previsao/csv")
 @login_required
+@acesso_requerido("estoque")
 @limiter.limit("10 per minute")
 def exportar_previsao_csv():
 
@@ -35,7 +35,7 @@ def exportar_previsao_csv():
         if not previsoes:
 
             flash("Nenhum dado disponível.", "warning")
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("main.dashboard"))
 
         output = io.StringIO()
         output.write("\ufeff")
@@ -72,11 +72,7 @@ def exportar_previsao_csv():
                 round(float(item.get("sugestao_compra") or 0), 2),
             ])
 
-        registrar_log(
-            usuario=current_user.id,
-            acao="EXPORT_CSV",
-            detalhes=f"{len(previsoes)} itens exportados"
-        )
+        registrar_log("EXPORT_CSV", "EXPORT", f"{len(previsoes)} itens exportados")
 
         response = make_response(output.getvalue())
         response.headers["Content-Disposition"] = "attachment; filename=previsao.csv"
@@ -91,7 +87,7 @@ def exportar_previsao_csv():
 
         flash("Erro ao gerar CSV.", "danger")
 
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("main.dashboard"))
 
 
 # =====================================================
@@ -99,6 +95,7 @@ def exportar_previsao_csv():
 # =====================================================
 @export_bp.route("/exportar-previsao/excel")
 @login_required
+@acesso_requerido("estoque")
 @limiter.limit("10 per minute")
 def exportar_previsao_excel():
 
@@ -109,7 +106,7 @@ def exportar_previsao_excel():
         if not previsoes:
 
             flash("Dados indisponíveis.", "info")
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("main.dashboard"))
 
         df = pd.DataFrame(previsoes)
 
@@ -132,11 +129,7 @@ def exportar_previsao_excel():
 
         buffer.seek(0)
 
-        registrar_log(
-            usuario=current_user.id,
-            acao="EXPORT_EXCEL",
-            detalhes=f"{len(previsoes)} itens exportados"
-        )
+        registrar_log("EXPORT_CSV", "EXPORT", f"{len(previsoes)} itens exportados")
 
         return send_file(
             buffer,
@@ -152,7 +145,7 @@ def exportar_previsao_excel():
 
         flash("Erro ao gerar Excel.", "danger")
 
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("main.dashboard"))
 
 
 # =====================================================
@@ -160,6 +153,7 @@ def exportar_previsao_excel():
 # =====================================================
 @export_bp.route("/exportar-previsao/pdf")
 @login_required
+@acesso_requerido("estoque")
 @limiter.limit("10 per minute")
 def exportar_previsao_pdf():
 
@@ -170,7 +164,7 @@ def exportar_previsao_pdf():
         if not previsoes:
 
             flash("Sem dados.", "info")
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("main.dashboard"))
 
         buffer = io.BytesIO()
 
@@ -235,4 +229,4 @@ def exportar_previsao_pdf():
 
         flash("Erro ao gerar PDF.", "danger")
 
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("main.dashboard"))

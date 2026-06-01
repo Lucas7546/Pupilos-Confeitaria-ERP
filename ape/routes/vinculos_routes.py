@@ -36,6 +36,8 @@ def vincular_subproduto_produto():
         return redirect(url_for("insumos.render_cadastro"))
 
     if produtos.vincular_subproduto_ao_produto(id_p, id_sub, qtd):
+        registrar_log("VINCULAR","FICHA_TECNICA",f"Subproduto {id_sub} -> Produto {id_p} | Qtd {qtd}")
+
         flash("Subproduto vinculado ao produto!", "success")
     return redirect(url_for("insumos.render_cadastro"))
 
@@ -51,6 +53,7 @@ def vincular_receita_subproduto():
         return redirect(url_for("insumos.render_cadastro"))
  
     if estoque.vincular_insumo_subproduto(id_sub, id_m, qtd):
+        registrar_log( "VINCULAR", "SUBPRODUTO",f"MP {id_m} -> Subproduto {id_sub} | Qtd {qtd}")
         flash("Ingrediente vinculado ao subproduto!", "success")
     else:
         flash("Erro ao vincular.", "danger")

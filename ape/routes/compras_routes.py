@@ -49,7 +49,7 @@ def processar_nota():
 
         if extensao not in (".jpg", ".jpeg", ".png", ".webp"):
             flash("Formato inválido.", "danger")
-            return redirect(url_for("/compras-inteligentes"))
+            return redirect(url_for("compras.compras_inteligentes"))
 
         if not validar_imagem_segura(foto):
             flash("Imagem inválida.", "danger")
@@ -66,7 +66,7 @@ def processar_nota():
 
         if tamanho_mb > 18:
             flash("Imagem muito grande (máx 18MB).", "danger")
-            return redirect(url_for("/compras-inteligentes"))
+            return redirect(url_for("compras.compras_inteligentes"))
 
         # =========================
         # IA OCR
@@ -75,14 +75,14 @@ def processar_nota():
 
         if not resposta_raw:
             flash("IA não conseguiu ler a nota.", "danger")
-            return redirect(url_for("/compras-inteligentes"))
+            return redirect(url_for("compras.compras_inteligentes"))
 
         itens = limpar_e_parsear_json(resposta_raw)
 
         if not itens:
             log_erro(f"OCR inválido: {resposta_raw[:300]}")
             flash("Erro ao interpretar nota fiscal.", "danger")
-            return redirect("/compras-inteligentes")
+            return redirect(url_for("compras.compras_inteligentes"))
 
         registrar_log(
             "OCR_NOTA",
@@ -100,7 +100,7 @@ def processar_nota():
     except Exception as e:
         log_erro(f"Erro OCR nota: {e}")
         flash("Erro interno ao processar nota.", "danger")
-        return redirect(url_for("/compras-inteligentes"))
+        return redirect(url_for("compras.compras_inteligentes"))
 
     finally:
         if caminho_imagem and os.path.exists(caminho_imagem):
@@ -126,7 +126,7 @@ def confirmar_nota():
 
         if total <= 0:
             flash("Nenhum item para confirmar.", "warning")
-            return redirect(url_for("/compras-inteligentes"))
+            return redirect(url_for("compras.compras_inteligentes"))
 
         salvos = 0
         erros = []
@@ -224,4 +224,4 @@ def confirmar_nota():
     except Exception as e:
         log_erro(f"Erro confirmar nota: {e}")
         flash("Erro ao salvar nota.", "danger")
-        return redirect(url_for("/compras-inteligentes"))
+        return redirect(url_for("compras.compras_inteligentes"))

@@ -82,22 +82,15 @@ def deletar_mp(id_mp):
 @insumos_bp.route('/registrar-compra', methods=['POST'])
 @login_required
 def rota_registrar_compra():
-    try:
-        id_mp = request.form.get('id_materia_prima')
-        qtd = request.form.get('quantidade')
-        valor = request.form.get('preco_total')
+    id_mp = request.form.get('id_materia_prima')
+    qtd = request.form.get('quantidade')
+    valor = request.form.get('preco_total')
 
-        sucesso = estoque.registrar_compra_estoque(
-            int(id_mp),
-            float(qtd),
-            float(valor)
-        )
-
-        if sucesso:
-            return jsonify({"status": "success"}), 200
-
-        return jsonify({"status": "error"}), 400
-
-    except Exception as e:
-        log_erro(f"Erro registrar compra: {e}")
-        return jsonify({"status": "error", "message": "erro interno"}), 500
+    sucesso = estoque.registrar_compra_estoque(int(id_mp), float(qtd), float(valor))
+    
+    if sucesso:
+        flash("Compra registrada com sucesso!", "success")
+    else:
+        flash("Erro ao registrar compra.", "danger")
+        
+    return redirect(url_for('estoque.pagina_compras'))

@@ -489,37 +489,7 @@
          MAIN CONTENT
     ========================================================= -->
 
-    <main class="main-content animate-page">
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-
-            {% if messages %}
-
-                {% for category, message in messages %}
-
-                    <div class="alert alert-{{ category }} alert-dismissible fade show alert-custom mb-4 px-4 py-3">
-
-                        <div class="d-flex align-items-center">
-
-                            <i class="bi bi-info-circle-fill me-3 text-warning"></i>
-
-                            <span>{{ message }}</span>
-
-                        </div>
-
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
-
-                    </div>
-
-                {% endfor %}
-
-            {% endif %}
-
-        {% endwith %}
-
-        {% block content %}{% endblock %}
-
-    </main>
+    
 
     <!-- =========================================================
          SCRIPTS

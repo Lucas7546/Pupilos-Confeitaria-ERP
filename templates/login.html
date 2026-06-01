@@ -152,7 +152,7 @@
             <div class="mb-3">
                 <label class="form-label mb-2">Usuário</label>
                 <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <span class="input-group-text"></span>
                     <input type="text" autofocus name="username" class="form-control" placeholder="admin" required>
                 </div>
             </div>
@@ -183,17 +183,20 @@
     </div>
 
     <script>
-        // Força a execução imediata e garante a troca da cor
+        // Esta parte vai trocar as cores assim que a página carregar
         (function() {
             const temas = ['tema-azul', 'tema-laranja', 'tema-verde', 'tema-roxo', 'tema-vermelho'];
-            const corAleatoria = temas[Math.floor(Math.random() * temas.length)];
-            document.body.classList.add(corAleatoria);
+            const corEscolhida = temas[Math.floor(Math.random() * temas.length)];
             
-            // Define o ano
-            document.getElementById("ano").innerText = new Date().getFullYear();
-            
-            console.log("Tema carregado:", corAleatoria); // Isso ajuda a ver no console do navegador se trocou
-        })();
+            document.body.classList.add(corEscolhida);
+            console.log("Cor aplicada:", corEscolhida);
+        
+            // Define o ano (verifique se existe um elemento com id="ano" no seu HTML)
+            const elementoAno = document.getElementById("ano");
+            if (elementoAno) {
+                elementoAno.innerText = new Date().getFullYear();
+            }
+        })(); // <--- Estes dois parênteses aqui no final são OBRIGATÓRIOS para a função rodar!
 
         function toggleSenha() {
             const senha = document.getElementById("senha");
@@ -207,6 +210,8 @@
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Entrando...';
         });
+
+        
     </script>
 </body>
 </html>

@@ -167,36 +167,35 @@ def cadastrar_materia(
 # =========================================================
 # REGISTRAR COMPRA (ENTRADA + ATUALIZA PREÇO MÉDIO)
 # =========================================================
-def registrar_compra_estoque(
-    id_materia_prima: int,
-    quantidade_comprada: float,
-    valor_total_pago: float,
-) -> bool:
-    if quantidade_comprada <= 0:
-        return False
+def registrar_compra_estoque(id_materia_prima, quantidade_comprada, valor_total_pago):
     try:
-        novo_preco = float(valor_total_pago) / float(quantidade_comprada)
-        data_str = datetime.now().strftime("%d/%m/%Y")
- 
+        # CONVERSÕES SEGURAS
+        qtd = float(quantidade_comprada)
+        total = float(valor_total_pago)
+        
+        if qtd <= 0 or total <= 0:
+            log_erro("Tentativa de registro com valor ou qtd zerados/negativos")
+            return False
+            
+        novo_preco = total / qtd
+        
         with get_conn() as conn:
             with conn.cursor() as cur:
+                # 1. Atualiza preço unitário
                 cur.execute(
                     "UPDATE materia_prima SET preco_unitario = %s WHERE id_materia_prima = %s",
-                    (novo_preco, id_materia_prima),
+                    (novo_preco, id_materia_prima)
                 )
+                # 2. Insere movimentação
                 cur.execute(
-                    """
-                    INSERT INTO movimentacao_estoque
-                        (id_materia_prima, tipo_movimento, quantidade, observacao)
-                    VALUES (%s, 'entrada', %s, %s)
-                    """,
-                    (id_materia_prima, float(quantidade_comprada), f"Compra em {data_str}"),
+                    """INSERT INTO movimentacao_estoque (id_materia_prima, tipo_movimento, quantidade, observacao) 
+                       VALUES (%s, 'entrada', %s, 'Compra registrada')""",
+                    (id_materia_prima, qtd)
                 )
             conn.commit()
-        log_info(f"Compra registrada. ID MP: {id_materia_prima}, Qtd: {quantidade_comprada}")
         return True
     except Exception as e:
-        log_erro(f"Erro ao registrar compra (ID MP: {id_materia_prima}): {e}")
+        log_erro(f"Erro crítico ao processar compra: {e}")
         return False
  
  

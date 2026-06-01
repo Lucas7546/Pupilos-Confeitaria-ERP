@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
@@ -78,3 +78,26 @@ def deletar_mp(id_mp):
     else:
         flash("Não foi possível remover o insumo.", "warning")
     return redirect(url_for("estoque.estoque_painel"))
+
+@insumos_bp.route('/registrar-compra', methods=['POST'])
+@login_required
+def rota_registrar_compra():
+    try:
+        id_mp = request.form.get('id_materia_prima')
+        qtd = request.form.get('quantidade')
+        valor = request.form.get('preco_total')
+
+        sucesso = estoque.registrar_compra_estoque(
+            int(id_mp),
+            float(qtd),
+            float(valor)
+        )
+
+        if sucesso:
+            return jsonify({"status": "success"}), 200
+
+        return jsonify({"status": "error"}), 400
+
+    except Exception as e:
+        log_erro(f"Erro registrar compra: {e}")
+        return jsonify({"status": "error", "message": "erro interno"}), 500

@@ -1,157 +1,102 @@
 {% extends "base.html" %}
-
 {% block content %}
 <div class="container py-5 animate-in">
     <div class="row justify-content-center">
         <div class="col-lg-7 col-xl-6">
-            <!-- Cabeçalho com Ícone -->
             <div class="text-center mb-4">
-                <div class="display-6 text-warning mb-2">
-                    <i class="bi bi-cart-check-fill"></i>
-                </div>
                 <h2 class="fw-bold text-white">Entrada de Mercadorias</h2>
-                <p class="text-white-50">Atualize o saldo e o custo médio dos seus insumos</p>
             </div>
 
-            <div class="card bg-dark-card border-0 shadow-lg rounded-4 overflow-hidden">
-                <div class="card-body p-4 p-md-5">
-                    <form action="/registrar-compra" method="POST" id="formCompra">
-                        <!-- Seleção do Ingrediente -->
-                        <div class="mb-4">
-                            <label class="form-label text-white-50 fw-bold small text-uppercase">O que você comprou?</label>
-                            <select name="id_materia_prima" id="selectInsumo" class="form-select form-select-lg bg-dark text-white border-secondary border-opacity-25" required>
-                                <option value="" disabled selected>Selecione o ingrediente...</option>
-                                {% for m in materias %}
-                                    <option value="{{ m[0] }}" data-unidade="{{ m[2] }}" data-saldo="{{ m[4] }}">
-                                        {{ m[1] }} (Atual: {{ m[4] }}{{ m[2] }})
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
+            <div class="card bg-dark border-0 shadow-lg rounded-4 p-4 p-md-5">
+                <form action="{{ url_for('insumos.rota_registrar_compra') }}" method="POST" id="formCompra">
+                    <div class="mb-4">
+                        <label class="text-secondary fw-bold small text-uppercase">Ingrediente</label>
+                        <select name="id_materia_prima" id="selectInsumo" class="form-select bg-dark text-white border-secondary" required>
+                            <option value="" disabled selected>Selecione...</option>
+                            {% for m in materias %}
+                                <option value="{{ m[0] }}" data-unidade="{{ m[2] }}" data-custo="{{ m[6] }}">
+                                    {{ m[1] }} (Atual: {{ m[4] }}{{ m[2] }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-                        <div class="row g-3">
-                            <!-- Quantidade -->
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label text-white-50 fw-bold small text-uppercase">Quantidade:</label>
-                                <div class="input-group input-group-lg">
-                                    <input type="number" step="0.001" name="quantidade" id="inputQtd" class="form-control bg-dark text-white border-secondary border-opacity-25" placeholder="0.000" required>
-                                    <span class="input-group-text bg-secondary bg-opacity-10 text-white-50 border-secondary border-opacity-25" id="unitLabel">un</span>
-                                </div>
-                            </div>
-
-                            <!-- Preço Total -->
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label text-white-50 fw-bold small text-uppercase">Valor Total Pago:</label>
-                                <div class="input-group input-group-lg">
-                                    <span class="input-group-text bg-dark text-success border-secondary border-opacity-25 fw-bold">R$</span>
-                                    <input type="number" step="0.01" name="preco_total" id="inputPreco" class="form-control bg-dark text-white border-secondary border-opacity-25" placeholder="0,00" required>
-                                </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="text-secondary fw-bold small text-uppercase">Quantidade</label>
+                            <div class="input-group">
+                                <input type="number" step="0.001" name="quantidade" id="inputQtd" class="form-control bg-dark text-white" required>
+                                <span class="input-group-text bg-secondary text-white border-0" id="unitLabel">un</span>
                             </div>
                         </div>
-
-                        <!-- Card de Preview de Custo -->
-                        <div class="bg-black bg-opacity-25 rounded-3 p-3 mb-4 border border-secondary border-opacity-10">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-white-50 small">Novo Custo Unitário Estimado:</span>
-                                <span class="text-success fw-bold fs-5" id="previewCusto">R$ 0,00</span>
-                            </div>
+                        <div class="col-6">
+                            <label class="text-secondary fw-bold small text-uppercase">Valor Total (R$)</label>
+                            <input type="number" step="0.01" name="preco_total" id="inputPreco" class="form-control bg-dark text-white" required>
                         </div>
+                    </div>
 
-                        <!-- Botão de Envio -->
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-success btn-lg fw-bold py-3 shadow-sm hover-lift">
-                                <i class="bi bi-arrow-repeat me-2"></i>PROCESSAR ENTRADA
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            
-            <div class="text-center mt-4">
-                <a href="/estoque" class="text-white-50 text-decoration-none small">
-                    <i class="bi bi-chevron-left me-1"></i> Painel de Inventário
-                </a>
+                    <div class="mt-4 p-3 bg-black bg-opacity-25 rounded text-center">
+                        <div class="text-white-50 small">Novo Custo Unitário:</div>
+                        <div class="fs-4 fw-bold text-success" id="previewCusto">R$ 0,00</div>
+                        <div id="avisoPreco" class="mt-2 text-warning fw-bold small"></div>
+                    </div>
+
+                    <button type="submit" id="btnSubmit" class="btn btn-success w-100 mt-4 py-3 fw-bold">PROCESSAR ENTRADA</button>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
-<style>
-    .bg-dark-card { background: #1e293b !important; }
-    
-    .form-control, .form-select {
-        transition: all 0.2s ease;
-    }
-
-    .form-control:focus, .form-select:focus {
-        background-color: #0f172a !important;
-        border-color: #198754 !important;
-        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.15);
-    }
-
-    .hover-lift {
-        transition: transform 0.2s ease;
-    }
-    
-    .hover-lift:hover {
-        transform: translateY(-2px);
-    }
-
-
-    .form-control, .form-select {
-        background-color: #26364d !important; /* Um pouco mais claro que o fundo do card */
-        border: 1px solid #334155 !important;
-        color: #f8fafc !important;
-        padding: 0.75rem 1rem;
-    }
-
-    /* Quando focado, ele "acende" */
-    .form-control:focus, .form-select:focus {
-        background-color: #1e293b !important;
-        border-color: #f59e0b !important; /* Cor de destaque (Amarelo/Laranja) */
-        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2) !important;
-    }
-
-    .animate-in { 
-        animation: fadeInScale 0.4s ease-out; 
-    }
-
-    @keyframes fadeInScale {
-        from { opacity: 0; transform: scale(0.98); }
-        to { opacity: 1; transform: scale(1); }
-    }
-</style>
-
 <script>
-    const selectInsumo = document.getElementById('selectInsumo');
+    const select = document.getElementById('selectInsumo');
     const inputQtd = document.getElementById('inputQtd');
     const inputPreco = document.getElementById('inputPreco');
-    const unitLabel = document.getElementById('unitLabel');
     const previewCusto = document.getElementById('previewCusto');
+    const avisoPreco = document.getElementById('avisoPreco');
 
-    // Atualiza a unidade de medida dinamicamente
-    selectInsumo.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        unitLabel.textContent = selectedOption.getAttribute('data-unidade');
-        calcularPreview();
-    });
-
-    // Calcula o custo unitário em tempo real
-    function calcularPreview() {
+    function calcular() {
         const qtd = parseFloat(inputQtd.value) || 0;
         const preco = parseFloat(inputPreco.value) || 0;
-        
+        const opt = select.options[select.selectedIndex];
+        const custoAnterior = parseFloat(opt.dataset.custo) || 0;
+
         if (qtd > 0 && preco > 0) {
-            const unitario = preco / qtd;
-            previewCusto.textContent = `R$ ${unitario.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 4})}`;
+            const unit = preco / qtd;
+            previewCusto.textContent = `R$ ${unit.toFixed(2).replace('.', ',')}`;
+            
+            // Lógica do Alerta (30% de variação)
+            if (custoAnterior > 0) {
+                const variacao = ((unit - custoAnterior) / custoAnterior) * 100;
+                avisoPreco.textContent = Math.abs(variacao) > 30 
+                    ? `⚠️ Atenção: Preço ${variacao > 0 ? 'acima' : 'abaixo'} ${Math.abs(variacao).toFixed(0)}% do normal!` 
+                    : "";
+            }
         } else {
             previewCusto.textContent = "R$ 0,00";
-            previewCusto.classList.remove('text-warning');
-            previewCusto.classList.add('text-success');
+            avisoPreco.textContent = "";
         }
     }
 
-    inputQtd.addEventListener('input', calcularPreview);
-    inputPreco.addEventListener('input', calcularPreview);
+    [inputQtd, inputPreco].forEach(el => el.addEventListener('input', calcular));
+    select.addEventListener('change', (e) => {
+        document.getElementById('unitLabel').textContent = e.target.options[e.target.selectedIndex].dataset.unidade;
+        calcular();
+    });
+
+    document.getElementById('formCompra').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const response = await fetch("{{ url_for('insumos.rota_registrar_compra') }}", { 
+            method: 'POST', 
+            body: new FormData(e.target) 
+        });
+        if (response.ok) {
+            alert("Sucesso!");
+            e.target.reset();
+            previewCusto.textContent = "R$ 0,00";
+        } else {
+            alert("Erro ao registrar.");
+        }
+    });
 </script>
 {% endblock %}

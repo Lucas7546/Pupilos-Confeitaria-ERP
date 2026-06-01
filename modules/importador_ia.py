@@ -3,9 +3,9 @@ from difflib import SequenceMatcher
 
 import pandas as pd
 from google import genai
-
 from modules.db import get_conn
 from utils.logger import log_info, log_erro
+from modules import vendas
 
 client = genai.Client()
 
@@ -123,28 +123,37 @@ def normalizar_vendas(dados: list[dict]) -> list[dict]:
 # =========================================================
 # SALVAR VENDAS DELIVERY
 # =========================================================
-def salvar_vendas(vendas: list[dict]) -> None:
-    try:
-        with get_conn() as conn:
-            with conn.cursor() as cur:
-                for v in vendas:
-                    cur.execute(
-                        """
-                        INSERT INTO vendas_delivery
-                            (id_produto, produto, quantidade, valor_unitario,
-                             valor_total, taxa, repasse, data_venda, canal_delivery)
-                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                        """,
-                        (
-                            v["id_produto"], v["produto"], v["quantidade"],
-                            v["valor_unitario"], v["valor_total"], v["taxa"],
-                            v["repasse"], v["data"], v["canal_delivery"],
-                        ),
-                    )
-            conn.commit()
-    except Exception as e:
-        log_erro(f"Erro salvar vendas: {e}")
-        raise
+def registrar_vendas_importadas(vendas_importadas):
+    
+    processadas = 0
+
+    for venda in vendas_importadas:
+
+        id_produto = venda.get("id_produto")
+
+        if not id_produto:
+            continue
+
+        quantidade = int(venda.get("quantidade", 0))
+
+        if quantidade <= 0:
+            continue
+
+        valor_total = float(
+            venda.get("valor_total") or 0
+        )
+
+        sucesso = vendas.registrar_venda(
+            id_produto=id_produto,
+            quantidade=quantidade,
+            valor_total=valor_total,
+            usuario="IMPORTADOR_IA"
+        )
+
+        if sucesso:
+            processadas += 1
+
+    return processadas
 
 
 # =========================================================
@@ -161,19 +170,48 @@ def gerar_financeiro(vendas: list[dict]) -> dict:
 # =========================================================
 # ORQUESTRAÇÃO DO PIPELINE COMPLETO
 # =========================================================
-def processar_relatorio_delivery(arquivo) -> dict:
+def processar_relatorio_delivery(arquivo):
+
     try:
-        log_info(f"Iniciando processamento de relatório de delivery.")
+
+        log_info(
+            "Iniciando processamento de relatório delivery."
+        )
+
         df = ler_arquivo(arquivo)
+
         dados = interpretar_relatorio_com_ia(df)
-        vendas = normalizar_vendas(dados)
-        salvar_vendas(vendas)
-        financeiro = gerar_financeiro(vendas)
-        log_info(f"Pipeline concluído: {len(vendas)} vendas processadas.")
-        return {"sucesso": True, "quantidade_vendas": len(vendas), "financeiro": financeiro}
+
+        vendas_normalizadas = normalizar_vendas(dados)
+
+        quantidade_processadas = registrar_vendas_importadas(
+            vendas_normalizadas
+        )
+
+        financeiro = gerar_financeiro(
+            vendas_normalizadas
+        )
+
+        log_info(
+            f"{quantidade_processadas} vendas importadas."
+        )
+
+        return {
+            "sucesso": True,
+            "quantidade_vendas": quantidade_processadas,
+            "financeiro": financeiro
+        }
+
     except Exception as e:
-        log_erro(f"Erro pipeline delivery: {e}")
-        return {"sucesso": False, "erro": str(e)}
+
+        log_erro(
+            f"Erro pipeline delivery: {e}"
+        )
+
+        return {
+            "sucesso": False,
+            "erro": str(e)
+        }
 
 
 # =========================================================
@@ -233,34 +271,3 @@ def localizar_produto_erp(nome_produto: str) -> int | None:
         log_erro(f"Erro ao localizar produto no ERP: {e}")
         return None
 
-
-# =========================================================
-# BAIXA DE ESTOQUE PARA VENDAS DELIVERY
-# =========================================================
-def baixar_estoque_delivery(vendas: list[dict]) -> None:
-    """Desconta do estoque os insumos usados nas vendas de delivery."""
-    try:
-        with get_conn() as conn:
-            with conn.cursor() as cur:
-                for v in vendas:
-                    id_produto = v.get("id_produto")
-                    quantidade = float(v.get("quantidade") or 0)
-                    if not id_produto or quantidade <= 0:
-                        continue
-
-                    cur.execute(
-                        "SELECT id_materia_prima, quantidade_utilizada FROM receitas WHERE id_produto = %s",
-                        (id_produto,),
-                    )
-                    for id_mp, qtd_receita in cur.fetchall():
-                        cur.execute(
-                            """
-                            INSERT INTO movimentacao_estoque
-                                (id_materia_prima, tipo_movimento, quantidade, observacao)
-                            VALUES (%s, 'saida', %s, 'Venda delivery importada')
-                            """,
-                            (id_mp, float(qtd_receita) * quantidade),
-                        )
-            conn.commit()
-    except Exception as e:
-        log_erro(f"Erro ao baixar estoque delivery: {e}")

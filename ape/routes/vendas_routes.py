@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
+import uuid
 from utils.logger import log_erro
 from ape.extensions import limiter
 import os
@@ -22,56 +23,116 @@ def central_importacoes():
 @acesso_requerido("vendas")
 @limiter.limit("5 per minute")
 def importar_ifood():
+
     arquivo = request.files.get("arquivo")
+
     if not arquivo or not arquivo.filename:
-        flash("Nenhum arquivo selecionado.", "warning")
-        return redirect(url_for("vendas.central_importacoes"))
+        flash(
+            "Nenhum arquivo selecionado.",
+            "warning"
+        )
+        return redirect(
+            url_for("vendas.central_importacoes")
+        )
 
-    resultado = ia.processar_relatorio_delivery(arquivo)
+    try:
 
-    if resultado["sucesso"]:
-        registrar_log("IMPORTAR_IFOOD","VENDAS", f"{resultado['quantidade_vendas']} vendas importadas")
-        flash(f"Importação concluída! {resultado['quantidade_vendas']} vendas processadas.", "success")
-    else:
-        flash(f"Erro na importação: {resultado['erro']}", "danger")
+        resultado = ia.processar_relatorio_delivery(
+            arquivo
+        )
 
-    return redirect(url_for("vendas.central_importacoes"))
+        if resultado["sucesso"]:
 
+            registrar_log(
+                "IMPORTACAO",
+                "VENDAS",
+                f"{resultado['quantidade_vendas']} vendas importadas"
+            )
+
+            flash(
+                f"{resultado['quantidade_vendas']} vendas importadas com sucesso.",
+                "success"
+            )
+
+        else:
+
+            flash(
+                resultado.get(
+                    "erro",
+                    "Erro ao importar."
+                ),
+                "danger"
+            )
+
+    except Exception as e:
+
+        log_erro(
+            f"Erro rota importação: {e}"
+        )
+
+        flash(
+            "Erro ao processar importação.",
+            "danger"
+        )
+
+    return redirect(
+        url_for("vendas.central_importacoes")
+    )
 
 @vendas_bp.route("/vendas")
 @login_required
+@acesso_requerido("vendas")
+@limiter.limit("60 per minute")
 def pagina_vendas():
+
     try:
+
         return render_template(
             "vendas.html",
             produtos=produtos.buscar_produto_por_nome("") or [],
             historico_vendas=vendas.listar_vendas_recentes() or [],
         )
+
     except Exception as e:
+
         log_erro(f"Erro na página de vendas: {e}")
-        flash("Erro ao carregar vendas.", "danger")
-        return redirect(url_for("main.dashboard"))
+
+        flash(
+            "Erro ao carregar vendas.",
+            "danger"
+        )
+
+        return redirect(
+            url_for("main.dashboard")
+        )
 
 @vendas_bp.route("/vender", methods=["POST"])
 @login_required
+@acesso_requerido("vendas")
 @limiter.limit("60 per minute")
 def vender():
+
     id_p_raw = request.form.get("id_produto", "")
-    qtd_raw  = request.form.get("quantidade", "")
+    qtd_raw = request.form.get("quantidade", "")
 
     if not id_p_raw.isdigit() or not qtd_raw.isdigit():
         flash("Dados inválidos.", "danger")
         return redirect(url_for("vendas.pagina_vendas"))
 
-    id_p, qtd = int(id_p_raw), int(qtd_raw)
+    id_p = int(id_p_raw)
+    qtd = int(qtd_raw)
+
     if qtd <= 0:
         flash("Quantidade deve ser maior que zero.", "warning")
         return redirect(url_for("vendas.pagina_vendas"))
 
-    # Lógica de validação
     prods = produtos.buscar_produto_por_nome("") or []
-    produto = next((p for p in prods if p[0] == id_p), None)
-    
+
+    produto = next(
+        (p for p in prods if p[0] == id_p),
+        None
+    )
+
     if not produto:
         flash("Produto não encontrado.", "danger")
         return redirect(url_for("vendas.pagina_vendas"))
@@ -81,15 +142,41 @@ def vender():
         return redirect(url_for("vendas.pagina_vendas"))
 
     valor_total = float(produto[2]) * qtd
-    usuario_atual = getattr(current_user, "username", "Sistema")
-    
-    if vendas.registrar_venda(id_produto=id_p, quantidade=qtd, valor_total=valor_total, usuario=usuario_atual):
-        registrar_log("VENDA", "VENDAS", f"Prod {id_p} | Qtd {qtd} | R$ {valor_total:.2f}")
-        flash("Venda registrada!", "success")
-    else:
-        flash("Erro ao registrar venda.", "danger")
 
-    return redirect(url_for("vendas.pagina_vendas"))
+    usuario_atual = getattr(
+        current_user,
+        "username",
+        "Sistema"
+    )
+
+    if vendas.registrar_venda(
+        id_produto=id_p,
+        quantidade=qtd,
+        valor_total=valor_total,
+        usuario=usuario_atual
+    ):
+
+        registrar_log(
+            "VENDA",
+            "VENDAS",
+            f"Prod {id_p} | Qtd {qtd} | R$ {valor_total:.2f}"
+        )
+
+        flash(
+            "Venda registrada!",
+            "success"
+        )
+
+    else:
+
+        flash(
+            "Erro ao registrar venda.",
+            "danger"
+        )
+
+    return redirect(
+        url_for("vendas.pagina_vendas")
+    )
 
 @vendas_bp.route("/deletar-venda/<int:id_venda>")
 @login_required
@@ -187,3 +274,6 @@ def confirmar_importacao():
         log_erro(f"Erro importação vendas: {e}")
         flash("Erro ao importar dados.", "danger")
         return redirect(url_for("vendas.central_importacoes"))
+    
+
+

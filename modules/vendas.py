@@ -343,50 +343,156 @@ def listar_vendas_recentes(limite: int = 10) -> list[dict]:
 # EXCLUIR / ESTORNAR VENDA
 # =========================================================
 def excluir_venda(id_venda: int) -> bool:
+
     try:
+
         with get_conn() as conn:
+
             with conn.cursor() as cur:
+
+                # Verifica se existe
                 cur.execute(
-                    "SELECT 1 FROM vendas WHERE id_venda = %s", (id_venda,)
+                    "SELECT 1 FROM vendas WHERE id_venda = %s",
+                    (id_venda,)
                 )
+
                 if not cur.fetchone():
                     log_info(f"Venda {id_venda} não encontrada.")
                     return False
 
+                # Busca itens vendidos
                 cur.execute(
-                    "SELECT id_produto, quantidade FROM itens_venda WHERE id_venda = %s",
-                    (id_venda,),
+                    """
+                    SELECT
+                        id_produto,
+                        quantidade
+                    FROM itens_venda
+                    WHERE id_venda = %s
+                    """,
+                    (id_venda,)
                 )
+
                 itens = cur.fetchall()
 
+                # =====================================
+                # DEVOLVE INSUMOS AO ESTOQUE
+                # =====================================
+
                 for id_produto, quantidade_vendida in itens:
+
                     cur.execute(
-                        "SELECT id_materia_prima, quantidade_utilizada FROM receitas WHERE id_produto = %s",
-                        (id_produto,),
+                        """
+                        SELECT
+                            id_materia_prima,
+                            id_subproduto,
+                            quantidade_utilizada
+                        FROM receitas
+                        WHERE id_produto = %s
+                        """,
+                        (id_produto,)
                     )
-                    for id_mp, qtd_receita in cur.fetchall():
-                        cur.execute(
-                            """
-                            INSERT INTO movimentacao_estoque
-                                (id_materia_prima, tipo_movimento, quantidade, observacao)
-                            VALUES (%s, 'entrada', %s, %s)
-                            """,
-                            (
-                                id_mp,
-                                float(qtd_receita) * float(quantidade_vendida),
-                                f"ROLLBACK AUTOMÁTICO VENDA ID {id_venda}",
-                            ),
+
+                    ingredientes = cur.fetchall()
+
+                    for (
+                        id_mp,
+                        id_subproduto,
+                        qtd_receita
+                    ) in ingredientes:
+
+                        quantidade_estorno = (
+                            float(qtd_receita)
+                            * float(quantidade_vendida)
                         )
 
-                cur.execute("DELETE FROM itens_venda WHERE id_venda = %s", (id_venda,))
-                cur.execute("DELETE FROM vendas WHERE id_venda = %s", (id_venda,))
+                        # -------------------------
+                        # DEVOLVE MATÉRIA-PRIMA
+                        # -------------------------
+
+                        if id_mp:
+
+                            cur.execute(
+                                """
+                                INSERT INTO movimentacao_estoque
+                                (
+                                    id_materia_prima,
+                                    tipo_movimento,
+                                    quantidade,
+                                    observacao
+                                )
+                                VALUES
+                                (
+                                    %s,
+                                    'entrada',
+                                    %s,
+                                    %s
+                                )
+                                """,
+                                (
+                                    id_mp,
+                                    quantidade_estorno,
+                                    f"ESTORNO VENDA {id_venda}"
+                                )
+                            )
+
+                        # -------------------------
+                        # DEVOLVE SUBPRODUTO
+                        # -------------------------
+
+                        if id_subproduto:
+
+                            cur.execute(
+                                """
+                                INSERT INTO movimentacao_estoque
+                                (
+                                    id_subproduto,
+                                    tipo_movimento,
+                                    quantidade,
+                                    observacao
+                                )
+                                VALUES
+                                (
+                                    %s,
+                                    'entrada',
+                                    %s,
+                                    %s
+                                )
+                                """,
+                                (
+                                    id_subproduto,
+                                    quantidade_estorno,
+                                    f"ESTORNO VENDA {id_venda}"
+                                )
+                            )
+
+                # =====================================
+                # REMOVE VENDA
+                # =====================================
+
+                cur.execute(
+                    "DELETE FROM itens_venda WHERE id_venda = %s",
+                    (id_venda,)
+                )
+
+                cur.execute(
+                    "DELETE FROM vendas WHERE id_venda = %s",
+                    (id_venda,)
+                )
 
             conn.commit()
 
-        log_info(f"Venda {id_venda} excluída com rollback de estoque.")
+        log_info(
+            f"Venda {id_venda} excluída com estorno de estoque."
+        )
+
         return True
+
     except Exception as e:
-        log_erro(f"Erro ao excluir venda {id_venda}: {e}")
+
+        log_erro(
+            f"Erro ao excluir venda {id_venda}: {e}"
+        )
+
         return False
 
 

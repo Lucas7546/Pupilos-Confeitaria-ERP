@@ -45,9 +45,26 @@
                                     <div class="row">
                                         <div class="col-md-8">
                                             <h4 class="text-white fw-bold mb-3">Conciliação iFood</h4>
+                                            <div class="alert alert-warning border-0 rounded-4 mb-4">
+    <strong>Fluxo Automático:</strong><br>
+
+    Relatório → Venda → Produto → Receita → Estoque
+
+    <hr>
+
+    Ao importar o relatório o sistema:
+    <ul class="mb-0 mt-2">
+        <li>Registra as vendas automaticamente</li>
+        <li>Cria os itens da venda</li>
+        <li>Baixa o produto vendido</li>
+        <li>Baixa matérias-primas da ficha técnica</li>
+        <li>Baixa subprodutos vinculados</li>
+        <li>Calcula faturamento e lucro</li>
+    </ul>
+</div>
                                             <p class="text-white-50 mb-4">Carregue o relatório detalhado do Portal do Parceiro. O sistema processará cada item vendido e atualizará o estoque em tempo real.</p>
                                             
-                                            <form action="{{ url_for('insumos.importar_ifood') }}" method="POST" enctype="multipart/form-data" id="formIfood">
+                                            <form action="{{ url_for('vendas.importar_ifood') }}" method="POST" enctype="multipart/form-data" id="formIfood">
                                                 <div class="upload-zone mb-4" id="dropZoneIfood">
                                                     <input type="file" name="arquivo" id="fileIfood" class="file-input" accept=".csv, .xlsx, .xls" required>
                                                     <label for="fileIfood" class="w-100 text-center py-5 cursor-pointer">

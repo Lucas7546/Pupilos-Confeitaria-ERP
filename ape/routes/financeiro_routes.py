@@ -46,8 +46,18 @@ def despesas():
 @login_required
 @acesso_requerido("financeiro")
 def fluxo_caixa():
-    try:
-        return render_template("fluxo_caixa.html")
-    except Exception as e:
-        flash("Fluxo de caixa em desenvolvimento.", "warning")
-        return redirect(url_for("main.dashboard"))
+
+    dados = financeiro.get_fluxo_caixa()
+
+    movs = dados["movimentacoes"]
+
+    entradas = sum(m["valor"] for m in movs if m["tipo"] == "ENTRADA")
+    saidas = sum(m["valor"] for m in movs if m["tipo"] == "SAIDA")
+
+    return render_template(
+        "fluxo_caixa.html",
+        movimentacoes=movs,
+        total_entradas=entradas,
+        total_saidas=saidas,
+        saldo_caixa=entradas - saidas
+    )

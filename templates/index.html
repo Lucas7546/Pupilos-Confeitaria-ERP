@@ -1,154 +1,212 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    
-    <!-- TÍTULO DA PÁGINA -->
-    <div class="mb-5 animate-in">
-        <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.5rem; letter-spacing: -1.5px;">
+<div class="container-fluid py-4 animate-in">
+
+    <!-- HEADER -->
+    <div class="mb-4">
+        <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.6rem; letter-spacing: -1.4px;">
             🚀 Operações <span class="text-warning">Rápidas</span>
         </h1>
-        <p class="text-white-50 fs-5 fw-light">Gerencie entradas e saídas de forma simplificada.</p>
+        <p class="text-white-50 fs-5 mb-0">
+            Controle operacional de insumos e vendas em tempo real
+        </p>
     </div>
 
+    <!-- GRID PRINCIPAL -->
     <div class="row g-4">
-        <!-- CARD: CADASTRO DE MATÉRIA PRIMA -->
+
+        <!-- INSUMOS -->
         <div class="col-lg-6">
-            <div class="card h-100 bg-dark-card border-secondary border-opacity-10 shadow-lg p-4">
-                <div class="d-flex align-items-center gap-3 mb-4">
-                    <div class="bg-warning p-2 rounded-3 text-dark">
-                        <i class="bi bi-box-seam-fill fs-4"></i>
+
+            <div class="card bg-dark-card border-0 shadow-lg h-100 overflow-hidden">
+
+                <!-- HEADER CARD -->
+                <div class="card-header bg-black bg-opacity-25 border-0 py-3 px-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="icon-badge bg-warning text-dark">
+                            <i class="bi bi-box-seam-fill"></i>
+                        </div>
+                        <div>
+                            <h5 class="text-white fw-bold mb-0">Cadastro de Insumos</h5>
+                            <small class="text-white-50">Matéria-prima e controle de estoque</small>
+                        </div>
                     </div>
-                    <h3 class="fw-bold text-white mb-0">Cadastro de Insumos</h3>
                 </div>
 
-                <form action="/cadastrar-mp" method="POST" class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label text-white-50 small fw-bold text-uppercase">Nome do Insumo</label>
-                        <input name="nome" type="text" class="form-control form-control-lg custom-input" placeholder="Ex: Farinha de Trigo" required>
-                    </div>
+                <div class="card-body p-4">
 
-                    <div class="col-md-6">
-                        <label class="form-label text-white-50 small fw-bold text-uppercase">Unidade</label>
-                        <select name="unidade" class="form-select form-control-lg custom-input">
-                            <option value="kg">Quilograma (kg)</option>
-                            <option value="un">Unidade (un)</option>
-                            <option value="l">Litro (l)</option>
-                            <option value="g">Grama (g)</option>
-                        </select>
-                    </div>
+                    <form action="/cadastrar-mp" method="POST" class="row g-3">
 
-                    <div class="col-md-6">
-                        <label class="form-label text-white-50 small fw-bold text-uppercase">Preço de Custo</label>
-                        <div class="input-group">
-                            <span class="input-group-text custom-input border-end-0 text-white-50">R$</span>
-                            <input name="preco" type="number" step="0.01" class="form-control form-control-lg custom-input border-start-0" placeholder="0,00" required>
+                        <div class="col-12">
+                            <label class="form-label text-white-50 small fw-bold">Nome do Insumo</label>
+                            <input name="nome" class="form-control custom-input" placeholder="Ex: Farinha de Trigo" required>
                         </div>
-                    </div>
 
-                    <div class="col-12">
-                        <label class="form-label text-white-50 small fw-bold text-uppercase">Estoque Mínimo (Alerta)</label>
-                        <input name="minimo" type="number" class="form-control form-control-lg custom-input" placeholder="Quantidade para aviso de falta" required>
-                    </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-white-50 small fw-bold">Unidade</label>
+                            <select name="unidade" class="form-select custom-input">
+                                <option value="kg">kg</option>
+                                <option value="un">un</option>
+                                <option value="l">l</option>
+                                <option value="g">g</option>
+                            </select>
+                        </div>
 
-                    <div class="col-12 mt-4">
-                        <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold shadow-sm py-3 transition-btn">
-                            <i class="bi bi-plus-circle-fill me-2"></i> Cadastrar no Sistema
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-white-50 small fw-bold">Preço</label>
+                            <div class="input-group">
+                                <span class="input-group-text custom-input border-end-0">R$</span>
+                                <input name="preco" type="number" step="0.01"
+                                       class="form-control custom-input border-start-0"
+                                       placeholder="0,00" required>
+                            </div>
+                        </div>
 
-        <!-- CARD: VENDER PRODUTO -->
-        <div class="col-lg-6">
-            <div class="card h-100 bg-dark-card border-secondary border-opacity-10 shadow-lg p-4">
-                <div class="d-flex align-items-center gap-3 mb-4">
-                    <div class="bg-success p-2 rounded-3 text-white">
-                        <i class="bi bi-cart-check-fill fs-4"></i>
-                    </div>
-                    <h3 class="fw-bold text-white mb-0">Registrar Venda</h3>
+                        <div class="col-12">
+                            <label class="form-label text-white-50 small fw-bold">Estoque mínimo</label>
+                            <input name="minimo" type="number" class="form-control custom-input"
+                                   placeholder="Alerta de estoque baixo" required>
+                        </div>
+
+                        <div class="col-12 mt-3">
+                            <button class="btn btn-warning w-100 fw-bold py-3 btn-animate">
+                                <i class="bi bi-plus-circle me-2"></i> Cadastrar Insumo
+                            </button>
+                        </div>
+
+                    </form>
+
                 </div>
 
-                <form action="/vender" method="POST" class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label text-white-50 small fw-bold text-uppercase">Produto Final</label>
-                        <input name="nome_produto" type="text" class="form-control form-control-lg custom-input" placeholder="Ex: Bolo de Pote - Chocolate" required>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label text-white-50 small fw-bold text-uppercase">Quantidade</label>
-                        <input name="quantidade" type="number" class="form-control form-control-lg custom-input" placeholder="0" required>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label text-white-50 small fw-bold text-uppercase">Preço de Venda</label>
-                        <div class="input-group">
-                            <span class="input-group-text custom-input border-end-0 text-white-50">R$</span>
-                            <input name="preco" type="number" step="0.01" class="form-control form-control-lg custom-input border-start-0" placeholder="0,00" required>
-                        </div>
-                    </div>
-
-                    <div class="col-12 mt-auto">
-                        <div class="p-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-20 mb-4 mt-2">
-                            <small class="text-success fw-bold"><i class="bi bi-info-circle-fill me-1"></i> Dica:</small>
-                            <small class="text-white-50 d-block">O sistema dará baixa automática nos insumos vinculados a este produto.</small>
-                        </div>
-                        <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow-sm py-3 transition-btn">
-                            <i class="bi bi-currency-dollar me-2"></i> Finalizar Venda
-                        </button>
-                    </div>
-                </form>
             </div>
+
         </div>
+
+        <!-- VENDAS -->
+        <div class="col-lg-6">
+
+            <div class="card bg-dark-card border-0 shadow-lg h-100 overflow-hidden">
+
+                <!-- HEADER CARD -->
+                <div class="card-header bg-black bg-opacity-25 border-0 py-3 px-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="icon-badge bg-success text-white">
+                            <i class="bi bi-cart-check-fill"></i>
+                        </div>
+                        <div>
+                            <h5 class="text-white fw-bold mb-0">Registrar Venda</h5>
+                            <small class="text-white-50">Baixa automática de insumos</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+
+                    <form action="/vender" method="POST" class="row g-3">
+
+                        <div class="col-12">
+                            <label class="form-label text-white-50 small fw-bold">Produto</label>
+                            <input name="nome_produto" class="form-control custom-input"
+                                   placeholder="Ex: Bolo de Pote" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label text-white-50 small fw-bold">Quantidade</label>
+                            <input name="quantidade" type="number" class="form-control custom-input" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label text-white-50 small fw-bold">Preço</label>
+                            <div class="input-group">
+                                <span class="input-group-text custom-input border-end-0">R$</span>
+                                <input name="preco" type="number" step="0.01"
+                                       class="form-control custom-input border-start-0"
+                                       required>
+                            </div>
+                        </div>
+
+                        <div class="col-12 mt-3">
+
+                            <div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25 text-white-50 small">
+                                <i class="bi bi-lightning-charge-fill me-1 text-success"></i>
+                                O sistema irá dar baixa automática nos insumos vinculados
+                            </div>
+
+                            <button class="btn btn-success w-100 fw-bold py-3 btn-animate">
+                                <i class="bi bi-currency-dollar me-2"></i> Finalizar Venda
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
     </div>
+
 </div>
 
+<!-- STYLE -->
 <style>
-    .bg-dark-card { background: #1e293b !important; border-radius: 24px; }
-    
-    .custom-input {
-        background-color: #0f172a !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        color: white !important;
-        border-radius: 12px !important;
-    }
 
-    .custom-input:focus {
-        border-color: var(--accent) !important;
-        box-shadow: 0 0 0 0.25rem rgba(245, 158, 11, 0.15) !important;
-    }
+.bg-dark-card {
+    background: #1e293b !important;
+    border-radius: 20px;
+}
 
-    .custom-input::placeholder {
-        color: #475569 !important;
-        font-size: 0.9rem;
-    }
+.custom-input {
+    background: #0f172a !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    color: white !important;
+    border-radius: 12px !important;
+}
 
-    .transition-btn {
-        transition: all 0.3s ease;
-        border-radius: 14px;
-    }
+.custom-input:focus {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 0 0.2rem rgba(245,158,11,0.15) !important;
+}
 
-    .transition-btn:hover {
-        transform: translateY(-3px);
-        filter: brightness(1.1);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-    }
+.icon-badge {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-size: 18px;
+}
 
-    .animate-in {
-        animation: fadeIn 0.8s ease;
-    }
+.btn-animate {
+    transition: all .25s ease;
+    border-radius: 14px;
+}
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    /* Remove setas de input number no Chrome/Safari */
-    input::-webkit-outer-spin-button,
-    input::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
+.btn-animate:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.08);
+}
+
+.animate-in {
+    animation: fadeIn .5s ease;
+}
+
+@keyframes fadeIn {
+    from {opacity:0; transform: translateY(10px);}
+    to {opacity:1; transform: translateY(0);}
+}
+
+/* remove number arrows */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
 </style>
+
 {% endblock %}

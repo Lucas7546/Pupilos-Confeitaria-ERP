@@ -185,3 +185,61 @@ def listar_despesas():
     except Exception as e:
         log_erro(f"Erro ao listar despesas: {e}")
         return []
+    
+
+
+def get_fluxo_caixa(periodo_dias: int = 30) -> dict:
+    base = financeiro_operacional(periodo_dias)
+
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+
+                # movimentações reais (vendas + despesas)
+                cur.execute("""
+                    SELECT data_venda as data,
+                           'Venda' as descricao,
+                           'ENTRADA' as tipo,
+                           valor_total as valor,
+                           'VENDAS' as categoria,
+                           'PIX' as metodo,
+                           'CONFIRMADO' as status
+                    FROM vendas
+                    WHERE data_venda >= CURRENT_DATE - INTERVAL '%s days'
+
+                    UNION ALL
+
+                    SELECT data_despesa,
+                           descricao,
+                           'SAIDA',
+                           valor,
+                           'DESPESA',
+                           'BOLETO',
+                           'CONFIRMADO'
+                    FROM despesas
+                    WHERE data_despesa >= CURRENT_DATE - INTERVAL '%s days'
+
+                    ORDER BY data DESC
+                """, (periodo_dias, periodo_dias))
+
+                movimentacoes = cur.fetchall()
+
+        return {
+            **base,
+            "movimentacoes": [
+                {
+                    "data": m[0],
+                    "descricao": m[1],
+                    "tipo": m[2],
+                    "valor": float(m[3]),
+                    "categoria": m[4],
+                    "metodo": m[5],
+                    "status": m[6],
+                }
+                for m in movimentacoes
+            ]
+        }
+
+    except Exception as e:
+        log_erro(f"Erro fluxo caixa: {e}")
+        return {**base, "movimentacoes": []}

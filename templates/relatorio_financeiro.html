@@ -1,87 +1,160 @@
+🚀 VERSÃO MELHORADA (SEM MEXER NO BACKEND)
 {% extends "base.html" %}
 
 {% block content %}
 <div class="container-fluid py-4 px-md-5 animate-in">
 
     <!-- HEADER -->
-    <div class="mb-4">
-        <h1 class="fw-bold text-white">📊 Relatório Fiscal</h1>
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
+
+        <div>
+            <h1 class="fw-bold text-white mb-1">
+                📊 Painel Financeiro
+            </h1>
+
+            <div class="text-white-50">
+                Visão consolidada de faturamento, lucro e carga tributária
+            </div>
+        </div>
+
     </div>
 
-    <!-- RESUMO -->
+    <!-- RESUMO CARDS -->
     <div class="row g-4 mb-4">
 
         <div class="col-md-4">
-            <div class="card bg-dark-card p-3">
-                <small class="text-white-50">Faturamento</small>
-                <h3 class="text-success">
+            <div class="card bg-dark-card border-0 p-4 metric-card">
+                <small class="text-white-50">Faturamento Total</small>
+                <h2 class="text-success fw-bold mt-2">
                     R$ {{ "%.2f"|format(faturamento or 0) }}
-                </h3>
+                </h2>
+                <div class="text-white-50 small">Entradas brutas do período</div>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card bg-dark-card p-3">
-                <small class="text-white-50">Imposto Atual</small>
-                <h3 class="text-danger">
-
-                    {# 🔥 ACEITA OS 2 NOMES #}
-                    R$ {{ "%.2f"|format(imposto_atual if imposto_atual is defined else imposto or 0) }}
-
-                </h3>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card bg-dark-card p-3">
-                <small class="text-white-50">Lucro Atual</small>
-                <h3 class="text-info">
+            <div class="card bg-dark-card border-0 p-4 metric-card">
+                <small class="text-white-50">Lucro Líquido</small>
+                <h2 class="text-info fw-bold mt-2">
                     R$ {{ "%.2f"|format(lucro_atual or 0) }}
-                </h3>
+                </h2>
+                <div class="text-white-50 small">Resultado após custos</div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-dark-card border-0 p-4 metric-card">
+                <small class="text-white-50">Impostos</small>
+
+                <h2 class="text-danger fw-bold mt-2">
+                    R$ {{ "%.2f"|format(imposto_atual if imposto_atual is defined else imposto or 0) }}
+                </h2>
+
+                <div class="text-white-50 small">Carga tributária estimada</div>
             </div>
         </div>
 
     </div>
 
     <!-- SIMULAÇÕES -->
-    <div class="card bg-dark-card p-4">
+    <div class="card bg-dark-card border-0 p-4 metric-card">
 
-        <table class="table table-dark">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
 
-            <thead>
-                <tr>
-                    <th>Regime</th>
-                    <th>Imposto</th>
-                    <th>Lucro</th>
-                    <th>Diferença</th>
-                </tr>
-            </thead>
+            <h5 class="text-white mb-0">
+                📊 Simulação de Regimes Tributários
+            </h5>
 
-            <tbody>
-            {% for s in simulacoes or [] %}
-                <tr>
-                    <td>{{ s.regime }}</td>
-                    <td class="text-danger">R$ {{ "%.2f"|format(s.imposto or 0) }}</td>
-                    <td class="text-success">R$ {{ "%.2f"|format(s.lucro or 0) }}</td>
-                    <td class="{{ 'text-success' if (s.diferenca or 0) > 0 else 'text-danger' }}">
-                        R$ {{ "%.2f"|format(s.diferenca or 0) }}
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
+            <span class="text-white-50 small">
+                Comparação automática de impacto fiscal
+            </span>
 
-        </table>
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table table-dark table-hover align-middle">
+
+                <thead class="bg-black bg-opacity-50">
+                    <tr>
+                        <th>Regime</th>
+                        <th>Imposto</th>
+                        <th>Lucro</th>
+                        <th>Diferença</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                {% for s in simulacoes or [] %}
+                    <tr class="transition-row">
+
+                        <td class="text-warning fw-bold">
+                            {{ s.regime }}
+                        </td>
+
+                        <td class="text-danger fw-semibold">
+                            R$ {{ "%.2f"|format(s.imposto or 0) }}
+                        </td>
+
+                        <td class="text-success fw-semibold">
+                            R$ {{ "%.2f"|format(s.lucro or 0) }}
+                        </td>
+
+                        <td>
+                            <span class="badge px-3 py-2
+                                {% if (s.diferenca or 0) > 0 %}
+                                    bg-success bg-opacity-10 text-success
+                                {% else %}
+                                    bg-danger bg-opacity-10 text-danger
+                                {% endif %}
+                            ">
+                                R$ {{ "%.2f"|format(s.diferenca or 0) }}
+                            </span>
+                        </td>
+
+                    </tr>
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
 
     </div>
 
 </div>
 
 <style>
-.bg-dark-card { background:#1e293b; }
-.animate-in { animation: fadeUp .3s ease; }
+.bg-dark-card {
+    background:#1e293b;
+    border-radius:18px;
+}
+
+.animate-in {
+    animation: fadeUp .35s ease;
+}
+
 @keyframes fadeUp {
     from { opacity:0; transform:translateY(10px); }
     to { opacity:1; transform:translateY(0); }
+}
+
+.transition-row {
+    transition: all .2s ease;
+}
+
+.transition-row:hover {
+    background: rgba(255,255,255,0.03);
+}
+
+.metric-card {
+    transition: transform .25s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-3px);
 }
 </style>
 

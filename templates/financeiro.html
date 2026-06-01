@@ -4,116 +4,159 @@
 <div class="container-fluid py-4 px-md-5 animate-in">
 
     <!-- HEADER -->
-    <div class="mb-4">
-        <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.2rem;">
-            💰 Painel <span class="text-warning">Financeiro</span>
-        </h1>
-        <p class="text-white-50">
-            Visão operacional completa do negócio
-        </p>
+    <div class="d-flex justify-content-between align-items-end mb-4">
+
+        <div>
+            <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.4rem;">
+                💰 Painel <span class="text-warning">Financeiro</span>
+            </h1>
+            <p class="text-white-50 mb-0">
+                Visão operacional + fiscal do sistema
+            </p>
+        </div>
+
+        <span class="badge bg-dark-card text-white-50 border border-secondary border-opacity-25 px-3 py-2">
+            🔐 ACESSO CONTROLADO
+        </span>
+
     </div>
 
-    <!-- 🔥 AÇÕES (NÃO REMOVIDAS — SÓ RESTAURADAS DO ORIGINAL) -->
+    <!-- ACTION BAR -->
     <div class="d-flex flex-wrap gap-2 mb-4">
 
-        <a href="/despesas" class="btn btn-warning fw-bold">
-            <i class="bi bi-plus-circle me-1"></i>
-            Adicionar Despesa
+        <a href="{{ url_for('financeiro.despesas') }}"
+           class="btn btn-warning fw-bold btn-anim">
+            <i class="bi bi-plus-circle me-1"></i> Despesa
         </a>
 
-        <a href="/fluxo-caixa" class="btn btn-outline-light">
-            <i class="bi bi-cash-coin me-1"></i>
-            Fluxo de Caixa
+        <a href="{{ url_for('financeiro.fluxo_caixa') }}"
+           class="btn btn-outline-light btn-anim">
+            <i class="bi bi-cash-coin me-1"></i> Fluxo
         </a>
 
-        <a href="/relatorio-financeiro" class="btn btn-info text-white">
-            <i class="bi bi-bar-chart-line me-1"></i>
-            Relatórios
+        <a href="{{ url_for('financeiro.relatorio_financeiro') }}"
+           class="btn btn-info text-white btn-anim">
+            <i class="bi bi-bar-chart-line me-1"></i> Relatório Fiscal
         </a>
 
-        <a href="/financeiro" class="btn btn-outline-light">
-            <i class="bi bi-arrow-clockwise me-1"></i>
-            Atualizar
+        <a href="{{ url_for('financeiro.pagina_financeiro') }}"
+           class="btn btn-outline-light btn-anim">
+            <i class="bi bi-arrow-clockwise me-1"></i> Atualizar
         </a>
 
     </div>
 
-    <!-- CARDS PRINCIPAIS (SEU CÓDIGO ORIGINAL MANTIDO) -->
+    {% if faturamento is not defined %}
+    <div class="alert alert-dark border border-secondary text-white-50">
+        <i class="bi bi-info-circle me-2"></i>
+        Dados financeiros indisponíveis no momento.
+    </div>
+    {% endif %}
+
+    <!-- KPI CARDS -->
     <div class="row g-4 mb-4">
 
         <div class="col-md-4">
-            <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100">
+            <div class="card kpi-card p-4 h-100">
                 <small class="text-white-50 fw-bold">FATURAMENTO</small>
                 <h2 class="text-success fw-extrabold mt-2">
-                    R$ {{ "%.2f"|format(faturamento) }}
+                    R$ {{ "%.2f"|format(faturamento or 0) }}
                 </h2>
+                <small class="text-white-50">Entradas totais</small>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100">
+            <div class="card kpi-card p-4 h-100">
                 <small class="text-white-50 fw-bold">CUSTO INSUMOS</small>
                 <h2 class="text-danger fw-extrabold mt-2">
-                    R$ {{ "%.2f"|format(custo_insumos) }}
+                    R$ {{ "%.2f"|format(custo_insumos or 0) }}
                 </h2>
+                <small class="text-white-50">Produção e estoque</small>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100">
+            <div class="card kpi-card p-4 h-100">
                 <small class="text-white-50 fw-bold">DESPESAS FIXAS</small>
                 <h2 class="text-warning fw-extrabold mt-2">
-                    R$ {{ "%.2f"|format(total_fixas) }}
+                    R$ {{ "%.2f"|format(total_fixas or 0) }}
                 </h2>
+                <small class="text-white-50">Custos recorrentes</small>
             </div>
         </div>
 
     </div>
 
-    <!-- LUCRO BASE -->
-    <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-5 text-center">
+    <!-- RESULTADO -->
+    <div class="card result-card text-center p-5">
 
         <small class="text-white-50 fw-bold text-uppercase">
-            Lucro Base Operacional
+            Lucro Operacional
         </small>
 
-        <h1 class="display-5 fw-extrabold mt-2
-            {% if lucro_base >= 0 %}
+        <h1 class="display-5 fw-extrabold mt-3
+            {% if lucro_base and lucro_base >= 0 %}
                 text-success
             {% else %}
                 text-danger
             {% endif %}
         ">
-            R$ {{ "%.2f"|format(lucro_base) }}
+            R$ {{ "%.2f"|format(lucro_base or 0) }}
         </h1>
 
         <p class="text-white-50 mb-0">
-            Resultado antes de impostos e simulações fiscais
+            Resultado antes de impostos e ajustes fiscais
         </p>
 
     </div>
 
 </div>
 
+<!-- STYLE -->
 <style>
+
 .bg-dark-card {
     background: #1e293b;
-    border: 1px solid rgba(255,255,255,0.05);
-    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.06);
 }
 
-.fw-extrabold {
-    font-weight: 800;
+.kpi-card {
+    background: #1e293b;
+    border-radius: 18px;
+    transition: all .2s ease;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.kpi-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255,255,255,0.2);
+}
+
+.result-card {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.btn-anim {
+    transition: .2s ease;
+    border-radius: 12px;
+}
+
+.btn-anim:hover {
+    transform: translateY(-2px);
 }
 
 .animate-in {
-    animation: fadeUp 0.4s ease;
+    animation: fadeUp .4s ease;
 }
 
 @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {opacity:0; transform: translateY(10px);}
+    to {opacity:1; transform: translateY(0);}
 }
+
 </style>
 
 {% endblock %}

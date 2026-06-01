@@ -1,50 +1,177 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container py-5">
+
+<div class="container py-5 animate-in">
+
+    <!-- HEADER -->
+    <div class="text-center mb-4">
+        <h2 class="fw-bold text-warning">🧠 Conferência Inteligente</h2>
+        <p class="text-white-50">
+            Revise os itens detectados pela IA antes de confirmar a entrada no estoque
+        </p>
+    </div>
+
     <div class="card bg-dark text-white border-0 shadow-lg rounded-4">
+
         <div class="card-body p-4">
-            <h2 class="fw-bold text-warning mb-4">🧠 Conferir Itens Detectados</h2>
-            <p class="text-white-50 mb-4">Confira se os dados da nota estão corretos antes de confirmar a entrada no estoque.</p>
-            
-            <form action="/confirmar-nota" method="POST">
+
+            <form id="formConfirmacao"
+                  action="{{ url_for('compras.confirmar_nota') }}"
+                  method="POST">
+
+                <!-- RESUMO -->
+                <div class="row mb-4 text-center">
+
+                    <div class="col-md-6">
+                        <div class="p-3 bg-black bg-opacity-25 rounded-3">
+                            <h4 class="text-success mb-0">{{ itens|length }}</h4>
+                            <small class="text-white-50">Itens detectados</small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="p-3 bg-black bg-opacity-25 rounded-3">
+                            <h4 class="text-warning mb-0">IA OCR</h4>
+                            <small class="text-white-50">Processamento automático</small>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- TABELA -->
                 <div class="table-responsive">
+
                     <table class="table table-dark table-hover align-middle">
-                        <thead>
+
+                        <thead class="table-head">
                             <tr>
                                 <th>Produto</th>
-                                <th>Quantidade</th>
+                                <th>Qtd</th>
                                 <th>Valor Unit.</th>
                             </tr>
                         </thead>
+
                         <tbody>
+
                             {% for item in itens %}
-                            <tr>
+
+                            <tr class="item-row"
+                                style="animation-delay: {{ loop.index0 * 0.05 }}s">
+
                                 <td>
-                                    <input type="text" name="nome_{{ loop.index0 }}" value="{{ item.produto }}" class="form-control bg-secondary text-white border-0" required>
+                                    <input type="text"
+                                           name="nome_{{ loop.index0 }}"
+                                           value="{{ item.produto }}"
+                                           class="form-control bg-dark text-white border-secondary"
+                                           required>
                                 </td>
+
                                 <td>
-                                    <input type="number" step="0.01" name="qtd_{{ loop.index0 }}" value="{{ item.quantidade }}" class="form-control bg-secondary text-white border-0" required>
+                                    <input type="number"
+                                           step="0.01"
+                                           name="qtd_{{ loop.index0 }}"
+                                           value="{{ item.quantidade }}"
+                                           class="form-control bg-dark text-white border-secondary"
+                                           required>
                                 </td>
+
                                 <td>
-                                    <input type="number" step="0.01" name="preco_{{ loop.index0 }}" value="{{ item.valor_unitario }}" class="form-control bg-secondary text-white border-0" required>
+                                    <input type="number"
+                                           step="0.01"
+                                           name="preco_{{ loop.index0 }}"
+                                           value="{{ item.valor_unitario }}"
+                                           class="form-control bg-dark text-white border-secondary"
+                                           required>
                                 </td>
+
                             </tr>
+
                             {% endfor %}
+
                         </tbody>
+
                     </table>
+
                 </div>
-                
+
                 <input type="hidden" name="total_itens" value="{{ itens|length }}">
-                
+
+                <!-- AÇÕES -->
                 <div class="mt-4">
-                    <button type="submit" class="btn btn-success w-100 py-3 fw-bold shadow">
-                        ✅ Confirmar e Adicionar ao Estoque
+
+                    <button type="submit"
+                            class="btn btn-success w-100 py-3 fw-bold shadow btn-confirm">
+
+                        ✅ Confirmar e Atualizar Estoque
+
                     </button>
-                    <a href="/compras-inteligentes" class="btn btn-link text-white-50 w-100 mt-2">Voltar e cancelar</a>
+
+                    <a href="{{ url_for('compras.compras_inteligentes') }}"
+                       class="btn btn-link text-white-50 w-100 mt-2">
+
+                        ← Voltar e refazer análise
+
+                    </a>
+
                 </div>
+
             </form>
+
         </div>
+
     </div>
+
 </div>
+
+<!-- STYLE SaaS -->
+<style>
+
+    .animate-in {
+        animation: fadeUp 0.5s ease;
+    }
+
+    @keyframes fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* tabela mais limpa */
+    .table-head th {
+        color: #9ca3af;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* linhas animadas */
+    .item-row {
+        animation: fadeUp 0.4s ease forwards;
+        opacity: 0;
+    }
+
+    /* inputs mais SaaS */
+    .form-control:focus {
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 0.2rem rgba(245, 158, 11, 0.15);
+    }
+
+    /* botão premium */
+    .btn-confirm {
+        transition: 0.3s ease;
+    }
+
+    .btn-confirm:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.05);
+    }
+
+</style>
+
 {% endblock %}

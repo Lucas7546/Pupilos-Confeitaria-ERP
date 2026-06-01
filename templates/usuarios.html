@@ -1,108 +1,100 @@
 {% extends "base.html" %}
 
 {% block content %}
+
 <div class="container-fluid py-4 px-md-5 animate-in">
+
+    <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-4">
+
         <div>
-            <h1 class="fw-extrabold text-white mb-1" style="font-size: 2rem; letter-spacing: -1px;">
+            <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.1rem;">
                 👥 Gestão de <span class="text-warning">Acessos</span>
             </h1>
-            <p class="text-white-50 mb-0">Controle de permissões e segurança da equipe.</p>
+            <p class="text-white-50 mb-0">
+                Controle completo de permissões, segurança e usuários do sistema.
+            </p>
         </div>
 
-        <div class="bg-dark-card border border-secondary border-opacity-25 rounded-3 px-3 py-2 shadow-sm">
-            <small class="text-white-50 d-block fw-bold text-uppercase" style="font-size: 0.6rem;">
-                Usuários Totais
+        <div class="text-end bg-dark-card border border-secondary border-opacity-25 rounded-4 px-3 py-2 shadow-lg">
+            <small class="text-white-50 d-block text-uppercase fw-bold" style="font-size: 0.65rem;">
+                Total de usuários
             </small>
+            <span class="text-white fs-3 fw-bold">{{ equipe|length }}</span>
+        </div>
 
-            <span class="text-white fs-5 fw-bold">
-                {{ equipe|length }}
+    </div>
+
+    <!-- SEARCH -->
+    <div class="mb-4">
+        <div class="input-group shadow-sm">
+            <span class="input-group-text bg-dark border-secondary text-white-50">
+                🔍
             </span>
+            <input type="text"
+                   id="searchInput"
+                   class="form-control bg-dark border-secondary text-white"
+                   placeholder="Buscar usuário por nome ou cargo..."
+                   onkeyup="filterTable()">
         </div>
     </div>
 
-    <div class="card bg-dark-card border-0 shadow-lg rounded-4 mb-5 overflow-hidden">
-        <div class="card-header bg-black bg-opacity-20 border-0 py-3">
-            <h6 class="mb-0 text-white fw-bold">
-                <i class="bi bi-person-plus-fill me-2 text-warning"></i>
-                CADASTRAR NOVO USUÁRIO
-            </h6>
+    <!-- FORM CARD -->
+    <div class="card bg-dark-card border-0 shadow-lg rounded-4 mb-4 overflow-hidden">
+
+        <div class="card-header bg-black bg-opacity-25 border-0 py-3">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-person-plus-fill text-warning me-2"></i>
+                <strong class="text-white">Criar novo usuário</strong>
+            </div>
         </div>
 
         <div class="card-body p-4">
 
             <form action="{{ url_for('usuarios.criar_usuario') }}" method="POST">
 
-                <div class="row g-3 align-items-end">
+                <div class="row g-3">
 
                     <div class="col-md-3">
-                        <label class="text-white-50 small fw-bold mb-2">
-                            NOME DE USUÁRIO
-                        </label>
-
-                        <input type="text" name="username" class="form-control bg-dark border-secondary text-white py-2"
-                            placeholder="Ex: maria_pupilos" required>
+                        <label class="text-white-50 small fw-bold mb-1">USUÁRIO</label>
+                        <input type="text"
+                               name="username"
+                               class="form-control bg-dark border-secondary text-white py-2"
+                               placeholder="ex: joao.silva"
+                               required>
                     </div>
 
                     <div class="col-md-3">
-                        <label class="text-white-50 small fw-bold mb-2">
-                            SENHA INICIAL
-                        </label>
-
-                        <input type="password" name="senha" class="form-control bg-dark border-secondary text-white py-2"
-                            placeholder="••••••••" required>
+                        <label class="text-white-50 small fw-bold mb-1">SENHA</label>
+                        <input type="password"
+                               name="senha"
+                               class="form-control bg-dark border-secondary text-white py-2"
+                               placeholder="••••••••"
+                               required>
                     </div>
 
                     <div class="col-md-3">
+                        <label class="text-white-50 small fw-bold mb-1">NÍVEL</label>
+                        <select name="nivel"
+                                class="form-select bg-dark border-secondary text-white py-2">
 
-                        <label class="text-white-50 small fw-bold mb-2">
-                            NÍVEL DE ACESSO
-                        </label>
-
-                        <select name="nivel" class="form-select bg-dark border-secondary text-white py-2">
-
-                            <option value="colaborador" selected>
-                                🍰 colaborador
-                            </option>
-
-                            <option value="financeiro">
-                                💰 financeiro
-                            </option>
-
-                            <option value="ti">
-                                💻 ti
-                            </option>
-
-                            <option value="dono">
-                                👑 dono
-                            </option>
+                            <option value="colaborador">🍰 Colaborador</option>
+                            <option value="financeiro">💰 Financeiro</option>
+                            <option value="ti">💻 TI</option>
+                            <option value="dono">👑 Dono</option>
 
                             {% if current_user.nivel == "admin" %}
-
-                            <option value="socios">
-                                💼 socios
-                            </option>
-
-                            <option value="admin">
-                                🛡️ admin
-                            </option>
-
+                            <option value="socios">💼 Sócios</option>
+                            <option value="admin">🛡️ Admin</option>
                             {% endif %}
 
                         </select>
-
                     </div>
 
-                    <div class="col-md-3">
-
+                    <div class="col-md-3 d-flex align-items-end">
                         <button class="btn btn-warning w-100 fw-bold py-2 shadow-sm">
-
-                            <i class="bi bi-check-lg me-1"></i>
-
-                            CRIAR CONTA
-
+                            ➕ CRIAR USUÁRIO
                         </button>
-
                     </div>
 
                 </div>
@@ -113,147 +105,143 @@
 
     </div>
 
+    <!-- TABLE -->
     <div class="card bg-dark-card border-0 shadow-lg rounded-4 overflow-hidden">
 
         <div class="table-responsive">
 
-            <table class="table table-hover table-dark align-middle mb-0" style="--bs-table-bg: transparent;">
+            <table class="table table-dark table-hover align-middle mb-0" id="userTable">
 
-                <thead class="bg-black bg-opacity-40 font-monospace small">
+                <thead class="bg-black bg-opacity-40 text-white-50 small text-uppercase">
 
                     <tr>
                         <th class="ps-4 py-3">ID</th>
-                        <th class="py-3">NOME DE ACESSO</th>
-                        <th class="py-3">CARGO / NÍVEL</th>
-                        <th class="py-3">STATUS</th>
-                        <th class="py-3 text-end pe-4">GESTÃO</th>
+                        <th>Usuário</th>
+                        <th>Cargo</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Ações</th>
                     </tr>
 
                 </thead>
 
                 <tbody>
 
-                    {% for u in equipe %}
+                {% for u in equipe %}
 
-                    <tr class="border-bottom border-secondary border-opacity-10 transition-all">
+                <tr class="border-bottom border-secondary border-opacity-10 user-row">
 
-                        <td class="ps-4 text-white-50 font-monospace">
-                            #{{ u[0] }}
-                        </td>
+                    <!-- ID -->
+                    <td class="ps-4 text-white-50 font-monospace">
+                        #{{ u[0] }}
+                    </td>
 
-                        <td class="fw-bold text-white fs-6">
-                            <i class="bi bi-person-circle me-2 text-white-50"></i>
-                            {{ u[1] }}
-                        </td>
+                    <!-- USER -->
+                    <td class="fw-bold text-white">
+                        <i class="bi bi-person-circle text-white-50 me-2"></i>
+                        {{ u[1] }}
+                    </td>
 
-                        <td>
+                    <!-- ROLE BADGE -->
+                    <td>
 
-                            {% if u[2] == "admin" %}
-
+                        {% if u[2] == "admin" %}
                             <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2">
                                 🛡️ ADMIN
                             </span>
 
-                            {% elif u[2] == "socios" %}
-
+                        {% elif u[2] == "socios" %}
                             <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2">
-                                💼 SOCIOS
+                                💼 SÓCIOS
                             </span>
 
-                            {% elif u[2] == "financeiro" %}
-
+                        {% elif u[2] == "financeiro" %}
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2">
                                 💰 FINANCEIRO
                             </span>
 
-                            {% elif u[2] == "ti" %}
-
+                        {% elif u[2] == "ti" %}
                             <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2">
                                 💻 TI
                             </span>
 
-                            {% elif u[2] == "dono" %}
-
+                        {% elif u[2] == "dono" %}
                             <span class="badge bg-light bg-opacity-10 text-light border border-light border-opacity-25 px-3 py-2">
                                 👑 DONO
                             </span>
 
-                            {% else %}
-
+                        {% else %}
                             <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2">
                                 🍰 COLABORADOR
                             </span>
+                        {% endif %}
 
-                            {% endif %}
+                    </td>
 
-                        </td>
-
-                        <td>
-
-                            {% if u[3] == 1 %}
-
-                            <span class="text-success small fw-bold">
-                                <i class="bi bi-circle-fill me-1" style="font-size: 0.6rem;"></i>
-                                ATIVO
+                    <!-- STATUS -->
+                    <td>
+                        {% if u[3] == 1 %}
+                            <span class="text-success fw-bold">
+                                ● ATIVO
                             </span>
-
-                            {% else %}
-
-                            <span class="text-white-50 small fw-bold">
-                                <i class="bi bi-slash-circle me-1"></i>
-                                BLOQUEADO
+                        {% else %}
+                            <span class="text-danger fw-bold">
+                                ● BLOQUEADO
                             </span>
+                        {% endif %}
+                    </td>
 
-                            {% endif %}
+                    <!-- ACTIONS -->
+                    <td class="text-end pe-4">
 
-                        </td>
+                        <div class="btn-group shadow-sm">
 
-                        <td class="text-end pe-4">
+                            <!-- EDIT -->
+                            <a href="{{ url_for('usuarios.editar_usuario_page', id_usuario=u[0]) }}"
+                               class="btn btn-sm btn-outline-warning">
 
-                            <div class="btn-group shadow-sm">
+                                <i class="bi bi-pencil"></i>
+                                Editar
 
-                                <button class="btn btn-outline-light border-opacity-10 btn-sm px-3"
-                                    data-bs-toggle="modal" data-bs-target="#editModal{{ u[0] }}">
+                            </a>
 
-                                    <i class="bi bi-pencil me-1"></i>
+                            <!-- BLOCK / UNBLOCK -->
+                            {% if u[1] != current_user.username %}
 
-                                    Editar
+                                <a href="#"
+                                   class="btn btn-sm btn-outline-light">
 
-                                </button>
-
-                                {% if u[1] == current_user.username %}
-
-                                <button class="btn btn-outline-secondary btn-sm px-3 border-opacity-10"
-                                    disabled
-                                    title="Você não pode bloquear sua própria conta">
-
-                                    <i class="bi bi-lock"></i>
-                                    
-                                
-                                </button>
-
-                                {% else %}
-
-                                <a href="{{ url_for('usuarios.editar_usuario_page', id_usuario=u[0]) }}"
-                                    class="btn {% if u[3] == 1 %}btn-outline-danger{% else %}btn-success{% endif %} btn-sm px-3 border-opacity-10">
-
-                                    <i class="bi {% if u[3] == 1 %}bi-person-lock{% else %}bi-person-check{% endif %}"></i>
+                                    <i class="bi bi-shield-lock"></i>
 
                                 </a>
 
-                                {% endif %}
-                                <form method="POST" action="{{ url_for('usuarios.deletar_user', id=u[0]) }}" class="d-inline">
-                                     <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Excluir usuário?')">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
+                            {% else %}
 
-                        </td>
+                                <button class="btn btn-sm btn-secondary" disabled>
+                                    Você
+                                </button>
 
-                    </tr>
+                            {% endif %}
 
-                    {% endfor %}
+                            <!-- DELETE -->
+                            <form method="POST"
+                                  action="{{ url_for('usuarios.deletar_user', id=u[0]) }}">
+
+                                <button class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Tem certeza que deseja excluir este usuário?')">
+
+                                    <i class="bi bi-trash"></i>
+
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
 
                 </tbody>
 
@@ -265,48 +253,41 @@
 
 </div>
 
+<!-- SEARCH SCRIPT -->
+<script>
+function filterTable() {
+    let input = document.getElementById("searchInput");
+    let filter = input.value.toLowerCase();
+    let rows = document.querySelectorAll("#userTable tbody tr");
+
+    rows.forEach(row => {
+        let name = row.children[1].innerText.toLowerCase();
+        row.style.display = name.includes(filter) ? "" : "none";
+    });
+}
+</script>
+
+<!-- STYLE -->
 <style>
-    .bg-dark-card {
-        background: #1e293b !important;
-    }
 
-    .fw-extrabold {
-        font-weight: 800;
-    }
+.bg-dark-card {
+    background: #1e293b;
+}
 
-    .transition-all {
-        transition: all 0.2s ease-in-out;
-    }
+.animate-in {
+    animation: fadeUp 0.4s ease-out;
+}
 
-    tr:hover {
-        background-color: rgba(255, 255, 255, 0.02) !important;
-    }
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
-    .shadow-2xl {
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-    }
+.user-row:hover {
+    background: rgba(255,255,255,0.03);
+    transition: 0.2s;
+}
 
-    .italic {
-        font-style: italic;
-    }
-
-    .animate-in {
-        animation: slideUp 0.5s ease-out;
-    }
-
-    @keyframes slideUp {
-
-        from {
-            opacity: 0;
-            transform: translateY(15px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-    }
 </style>
 
 {% endblock %}

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, Response
+from flask import Blueprint, render_template, request, Response, flash, redirect, url_for
 from flask_login import login_required, current_user
 from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
@@ -85,3 +85,29 @@ def exportar_logs():
         mimetype="application/json",
         headers={"Content-Disposition": "attachment; filename=auditoria_pupilos.json"},
     )
+
+
+@auditoria_bp.route("/logs/limpar", methods=["POST"])
+@login_required
+@acesso_requerido("auditoria")
+def limpar_logs():
+
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM logs")
+                conn.commit()
+
+        registrar_log(
+            "DELETE",
+            "AUDITORIA",
+            f"Logs apagados por {current_user.username}"
+        )
+
+        flash("Logs limpos com sucesso.", "success")
+
+    except Exception as e:
+        log_erro(f"Erro ao limpar logs: {e}")
+        flash("Erro ao limpar logs.", "danger")
+
+    return redirect(url_for("auditoria.auditoria"))

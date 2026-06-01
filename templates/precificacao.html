@@ -2,184 +2,195 @@
 
 {% block content %}
 <div class="container-fluid py-4 px-md-5 animate-in">
-    
-    <!-- HEADER ESTRATÉGICO -->
+
+    <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-end mb-4">
+
         <div>
-            <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.5rem; letter-spacing: -1.5px;">
+            <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.4rem; letter-spacing: -1.2px;">
                 💰 Inteligência de <span class="text-warning">Preços</span>
             </h1>
-            <p class="text-white-50 fs-5 mb-0">Análise de margens baseada no custo real dos insumos.</p>
+            <p class="text-white-50 fs-5 mb-0">
+                Análise de margens baseada no custo real dos insumos.
+            </p>
         </div>
-        <div class="text-end d-none d-md-block">
-            <span class="badge bg-dark-card border border-secondary border-opacity-25 text-white-50 font-monospace py-2 px-3">
-                STATUS: SISTEMA ATIVO
+
+        <div class="d-none d-md-block">
+            <span class="badge bg-dark-card border border-secondary border-opacity-25 text-white-50 px-3 py-2 font-monospace">
+                🟢 SISTEMA ATIVO
             </span>
         </div>
+
     </div>
 
-    <!-- DASHBOARD DE METAS -->
-    <div class="card bg-dark-card border-0 shadow-lg rounded-4 mb-5 overflow-hidden">
+    <!-- DASHBOARD METAS -->
+    <div class="card bg-dark-card border-0 shadow-lg rounded-4 mb-4 overflow-hidden">
+
         <div class="row g-0 text-center">
+
             <div class="col-md-4 p-4 border-end border-secondary border-opacity-10">
-                <small class="text-white-50 d-block fw-bold text-uppercase mb-2" style="font-size: 0.65rem; letter-spacing: 1px;">Ponto de Equilíbrio</small>
-                <span class="text-info fs-5 fw-bold"><i class="bi bi-scales me-2"></i>Custo + 10%(impostos)</span>
+                <small class="text-white-50 d-block fw-bold text-uppercase mb-2">Break-even</small>
+                <span class="text-info fw-bold fs-6">
+                    <i class="bi bi-scales me-1"></i> Custo + 10%
+                </span>
             </div>
+
             <div class="col-md-4 p-4 border-end border-secondary border-opacity-10">
-                <small class="text-white-50 d-block fw-bold text-uppercase mb-2" style="font-size: 0.65rem; letter-spacing: 1px;">Meta de Lucratividade</small>
-                <span class="text-success fs-5 fw-bold"><i class="bi bi-graph-up-arrow me-2"></i>Lucro Líquido Dinâmico</span>
+                <small class="text-white-50 d-block fw-bold text-uppercase mb-2">Meta Lucro</small>
+                <span class="text-success fw-bold fs-6">
+                    <i class="bi bi-graph-up-arrow me-1"></i> Margem dinâmica
+                </span>
             </div>
+
             <div class="col-md-4 p-4">
-                <small class="text-white-50 d-block fw-bold text-uppercase mb-2" style="font-size: 0.65rem; letter-spacing: 1px;">Status de Monitoramento</small>
-                <span class="text-warning fs-5 fw-bold"><i class="bi bi-shield-check me-2"></i>Alertas Ativos</span>
+                <small class="text-white-50 d-block fw-bold text-uppercase mb-2">Monitoramento</small>
+                <span class="text-warning fw-bold fs-6">
+                    <i class="bi bi-shield-check me-1"></i> Alertas ativos
+                </span>
             </div>
-        </div>
-    </div>
-    <!-- CONTROLE DINÂMICO DE MARGEM -->
-<div class="card bg-dark-card border-0 shadow-lg rounded-4 mb-4">
-    <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4">
-        <button type="button" id="btnAplicar" class="btn btn-warning fw-bold px-4 py-2" onclick="aplicarPrecos()">
-            <i class="bi bi-check-all me-2"></i>Aplicar Novos Preços
-        </button>
-
-        <div>
-            <h5 class="text-white fw-bold mb-1">
-                🎯 Simulação de Margem
-            </h5>
-
-            <small class="text-white-50">
-                Ajuste a margem desejada e veja automaticamente o preço ideal de venda.
-            </small>
-        </div>
-
-        <div class="d-flex align-items-center gap-3">
-
-            <span class="text-white-50 fw-bold">
-                Lucro Desejado:
-            </span>
-
-            <input
-                type="range"
-                id="rangeMargem"
-                class="form-range"
-                min="5"
-                max="80"
-                value="30"
-                style="width: 220px;"
-            >
-
-            <span
-                id="valorMargem"
-                class="badge bg-warning text-dark px-3 py-2 fs-6"
-            >
-                30%
-            </span>
 
         </div>
 
     </div>
-</div>
 
-    <!-- TABELA DE ANÁLISE -->
-    <div class="card bg-dark-card border-0 shadow-2xl rounded-4 overflow-hidden">
+    <!-- CONTROLE -->
+    <div class="card bg-dark-card border-0 shadow-lg rounded-4 mb-4">
+
+        <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+
+            <button id="btnAplicar"
+                    class="btn btn-warning fw-bold px-4 py-2"
+                    onclick="aplicarPrecos()">
+                <i class="bi bi-check-all me-2"></i>Aplicar Preços
+            </button>
+
+            <div>
+                <h5 class="text-white fw-bold mb-1">🎯 Simulação de Margem</h5>
+                <small class="text-white-50">Ajuste e visualize preços ideais em tempo real</small>
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+
+                <span class="text-white-50 fw-bold">Margem:</span>
+
+                <input type="range"
+                       id="rangeMargem"
+                       class="form-range"
+                       min="5"
+                       max="80"
+                       value="30"
+                       style="width: 220px;">
+
+                <span id="valorMargem"
+                      class="badge bg-warning text-dark px-3 py-2 fs-6">
+                    30%
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- TABELA -->
+    <div class="card bg-dark-card border-0 shadow-lg rounded-4 overflow-hidden">
+
         <div class="table-responsive">
-            <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent;">
-                <thead class="bg-black bg-opacity-40 font-monospace small">
+
+            <table class="table table-dark table-hover align-middle mb-0">
+
+                <thead class="bg-black bg-opacity-40 text-white-50 small text-uppercase">
                     <tr>
-                        <th class="ps-4 py-4 text-white-50">PRODUTO</th>
-                        <th class="py-4 text-white-50">PREÇO ATUAL</th>
-                        <th class="py-4 text-white-50">PONTO DE EQUILÍBRIO (MÍN)</th>
-                        <th class="py-4 text-white-50">SUGERIDO (META)</th>
-                        <th class="py-4 text-center text-white-50">SAÚDE FINANCEIRA</th>
-                        <th class="py-4 text-end pe-4 text-white-50">DESCRIÇÃO DO PRODUTO</th>
+                        <th class="ps-4">Produto</th>
+                        <th>Atual</th>
+                        <th>Equilíbrio</th>
+                        <th>Sugerido</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-end pe-4">Ação</th>
                     </tr>
                 </thead>
+
                 <tbody>
-                    {% for item in tabela %}
-                    <tr class="border-bottom border-secondary border-opacity-10 transition-all" data-id="{{ item.id }}">
-                        <td class="ps-4 py-3">
-                            <span class="fw-bold text-info fs-5">{{ item.nome }}</span>
-                        </td>
-                        <td class="py-3">
-                            <span class="fs-5 {% if item.alerta %}text-danger fw-extrabold{% else %}text-white{% endif %}">
-                                R$ {{ "%.2f"|format(item.atual)|replace('.', ',') }}
-                            </span>
-                        </td>
-                        <td class="py-3 text-white-50 font-monospace">
-                            R$ {{ "%.2f"|format(item.equilibrio)|replace('.', ',') }}
-                        </td>
-                        <td class="py-3">
-                            <span class="text-success fw-bold fs-5 preco-sugerido" data-custo="{{ item.custo }}">R$ {{ "%.2f"|format(item.sugerido)|replace('.', ',') }}</span>
-                        </td>
-                        <td class="py-3 text-center">
 
-                            <div
-                                class="status-financeiro"
-                                data-atual="{{ item.atual }}"
-                                >
-                            </div>
+                {% for item in tabela %}
 
-                        </td>
-                        <td class="py-3 text-end pe-4">
-                            <a href="/ficha-tecnica/{{ item.id }}" class="btn btn-outline-light border-opacity-10 btn-sm rounded-3 transition-btn px-3">
-                                <i class="bi bi-calculator me-1"></i> Ficha Técnica
-                            </a>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center py-5 text-white-50">
-                            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-                            Nenhum produto cadastrado ou sem ficha técnica.
-                        </td>
-                    </tr>
-                    {% endfor %}
+                <tr class="border-bottom border-secondary border-opacity-10"
+                    data-id="{{ item.id }}"
+                    data-atual="{{ item.atual }}"
+                    data-equilibrio="{{ item.equilibrio }}"
+                    data-sugerido="{{ item.sugerido }}"
+                    data-custo="{{ item.custo }}">
+
+                    <td class="ps-4 fw-bold text-info">
+                        {{ item.nome }}
+                    </td>
+
+                    <td class="{% if item.alerta %}text-danger fw-bold{% else %}text-white{% endif %}">
+                        R$ {{ "%.2f"|format(item.atual)|replace('.', ',') }}
+                    </td>
+
+                    <td class="text-white-50 font-monospace">
+                        R$ {{ "%.2f"|format(item.equilibrio)|replace('.', ',') }}
+                    </td>
+
+                    <td>
+                        <span class="preco-sugerido text-success fw-bold">
+                            R$ {{ "%.2f"|format(item.sugerido)|replace('.', ',') }}
+                        </span>
+                    </td>
+
+                    <td class="text-center status-financeiro"></td>
+
+                    <td class="text-end pe-4">
+                        <a href="/ficha-tecnica/{{ item.id }}"
+                           class="btn btn-outline-light btn-sm">
+                            <i class="bi bi-calculator me-1"></i> Ficha
+                        </a>
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
                 </tbody>
+
             </table>
+
         </div>
+
     </div>
 
-    <!-- DICAS E ESTRATÉGIA -->
-    <div class="row g-4 mt-4">
-        <div class="col-md-6">
-            <div class="p-4 rounded-4 bg-info bg-opacity-10 border border-info border-opacity-10">
-                <h5 class="text-info fw-bold"><i class="bi bi-lightbulb me-2"></i>Dica de Ouro</h5>
-                <p class="text-white-50 mb-0 small">Produtos com "Margem Baixa" podem ser usados como "Iscas", mas certifique-se de que o ticket médio da venda compense a operação.</p>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="p-4 rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-10">
-                <h5 class="text-warning fw-bold"><i class="bi bi-arrow-repeat me-2"></i>Revisão Periódica</h5>
-                <p class="text-white-50 mb-0 small">Sempre que o preço de um insumo subir no cadastro de Matéria-Prima, a Saúde Financeira aqui será atualizada automaticamente.</p>
-            </div>
-        </div>
-    </div>
 </div>
 
+<!-- STYLE -->
 <style>
-    .bg-dark-card { background: #1e293b !important; }
-    .transition-btn { transition: all 0.3s ease; }
-    .transition-btn:hover { transform: translateY(-2px); filter: brightness(1.2); border-color: rgba(255,255,255,0.5) !important; }
-    
-    .pulse-red {
-        width: 8px;
-        height: 8px;
-        background-color: #ef4444;
-        border-radius: 50%;
-        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-        animation: pulse-red 1.5s infinite;
-    }
+.bg-dark-card { background: #1e293b !important; }
 
-    @keyframes pulse-red {
-        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-    }
+.animate-in {
+    animation: fadeIn 0.4s ease;
+}
 
-    .animate-in { animation: fadeIn 0.5s ease-in-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.pulse-red {
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(239,68,68,.6); }
+    70% { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+    100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+}
 </style>
 
+<!-- SCRIPT (CORRIGIDO E ROBUSTO) -->
 <script>
 
 const rangeMargem = document.getElementById("rangeMargem");
@@ -187,148 +198,109 @@ const valorMargem = document.getElementById("valorMargem");
 
 function atualizarPrecificacao() {
 
-    const margem = parseFloat(rangeMargem.value);
-
+    const margem = Number(rangeMargem.value);
     valorMargem.innerText = margem + "%";
 
-    const precos = document.querySelectorAll(".preco-sugerido");
-    const status = document.querySelectorAll(".status-financeiro");
+    document.querySelectorAll("tr[data-id]").forEach((row) => {
 
-    precos.forEach((item, index) => {
+        const custo = Number(row.dataset.custo);
+        const atual = Number(row.dataset.atual);
+        const equilibrio = Number(row.dataset.equilibrio);
 
-        const custo = parseFloat(item.dataset.custo);
-        const precoAtual = parseFloat(status[index].dataset.atual);
+        const status = row.querySelector(".status-financeiro");
+        const sugeridoEl = row.querySelector(".preco-sugerido");
+
+        // preço ideal dinâmico
+        const precoIdeal = custo > 0 ? custo / (1 - margem / 100) : 0;
 
         if (custo <= 0) {
-
-            item.innerText = "R$ 0,00";
-
-            status[index].innerHTML = `
-                <div class="d-inline-flex align-items-center bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 py-2 rounded-pill">
-                    <small class="fw-bold">SEM CUSTO</small>
-                </div>
-            `;
-
+            status.innerHTML = `<span class="text-secondary">Sem custo</span>`;
             return;
         }
 
-        // PREÇO IDEAL
-        const precoIdeal = custo / (1 - (margem / 100));
+        if (atual < equilibrio) {
 
-        item.innerText =
-            "R$ " +
-            precoIdeal.toFixed(2).replace(".", ",");
+            status.innerHTML = `
+                <span class="text-danger fw-bold">
+                    <span class="pulse-red me-2 d-inline-block"></span>
+                    PREJUÍZO
+                </span>`;
 
-        // PONTO DE EQUILÍBRIO
-        const equilibrio = custo * 1.10;
+        } else if (atual < precoIdeal) {
 
-        // STATUS
-        if (precoAtual < equilibrio) {
+            status.innerHTML = `
+                <span class="text-warning fw-bold">
+                    ⚠ Margem baixa
+                </span>`;
 
-            item.classList.remove(
-                "text-success",
-                "text-warning",
-                "text-danger"
-            );
+        } else {
 
-            item.classList.add("text-danger");
-
-            status[index].innerHTML = `
-                <div class="d-inline-flex align-items-center bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill">
-                    <span class="pulse-red me-2"></span>
-                    <small class="fw-bold">PREJUÍZO</small>
-                </div>
-            `;
+            status.innerHTML = `
+                <span class="text-success fw-bold">
+                    ✔ Saudável
+                </span>`;
 
         }
-        else if (precoAtual < precoIdeal) {
 
-            item.classList.remove(
-                "text-success",
-                "text-warning",
-                "text-danger"
-            );
-
-            item.classList.add("text-warning");
-
-            status[index].innerHTML = `
-                <div class="d-inline-flex align-items-center bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2 rounded-pill">
-                    <i class="bi bi-exclamation-triangle-fill me-2 small"></i>
-                    <small class="fw-bold">MARGEM BAIXA</small>
-                </div>
-            `;
-
-        }
-        else {
-
-            item.classList.remove(
-                "text-success",
-                "text-warning",
-                "text-danger"
-            );
-
-            item.classList.add("text-success");
-
-            status[index].innerHTML = `
-                <div class="d-inline-flex align-items-center bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
-                    <i class="bi bi-check-circle-fill me-2 small"></i>
-                    <small class="fw-bold">SAUDÁVEL</small>
-                </div>
-            `;
-        }
+        sugeridoEl.innerText =
+            "R$ " + precoIdeal.toFixed(2).replace(".", ",");
 
     });
 
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-
     atualizarPrecificacao();
-
-    rangeMargem.addEventListener(
-        "input",
-        atualizarPrecificacao
-    );
-
+    rangeMargem.addEventListener("input", atualizarPrecificacao);
 });
 
-
 async function aplicarPrecos() {
-    if (!confirm("Tem certeza que deseja atualizar o preço de venda de todos os produtos para esta margem?")) return;
+
+    if (!confirm("Aplicar novos preços?")) return;
 
     const btn = document.getElementById("btnAplicar");
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+    btn.innerHTML = "Salvando...";
 
-    const produtosParaAtualizar = [];
-    document.querySelectorAll(".preco-sugerido").forEach((el, index) => {
-        // Pega o ID do item da linha da tabela (você precisará ter um data-id no elemento)
-        const row = el.closest('tr');
+    const itens = [];
+
+    document.querySelectorAll("tr[data-id]").forEach(row => {
+
         const id = row.dataset.id;
-        const preco = parseFloat(el.innerText.replace("R$ ", "").replace(/\./g, "").replace(",", "."));
+        const preco = row.querySelector(".preco-sugerido").innerText
+            .replace("R$","")
+            .replace(/\./g,"")
+            .replace(",",".")
+            .trim();
 
-        produtosParaAtualizar.push({ id: id, novo_preco: preco });
+        itens.push({
+            id,
+            novo_preco: Number(preco)
+        });
+
     });
 
     try {
-        const response = await fetch('/api/atualizar-precos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ itens: produtosParaAtualizar })
+
+        const res = await fetch("/api/atualizar-precos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ itens })
         });
 
-        if (response.ok) {
-            alert("Preços atualizados com sucesso!");
-            location.reload(); // Recarrega para ver os novos preços na tabela
-        } else {
-            throw new Error("Erro ao salvar");
-        }
-    } catch (err) {
-        alert("Erro ao aplicar preços: " + err.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-check-all me-2"></i>Aplicar Novos Preços';
+        if (!res.ok) throw new Error("Erro");
+
+        alert("Atualizado com sucesso!");
+        location.reload();
+
+    } catch (e) {
+        alert("Erro ao atualizar");
     }
+
+    btn.disabled = false;
+    btn.innerHTML = "Aplicar Preços";
 }
+
 </script>
+
 {% endblock %}

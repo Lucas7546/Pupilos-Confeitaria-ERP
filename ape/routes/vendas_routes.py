@@ -7,6 +7,7 @@ from ape.extensions import limiter
 import os
 from modules import importador_ia as ia
 from modules import produtos, vendas, receitas
+from modules.db import get_conn
 
 vendas_bp = Blueprint('vendas', __name__)
 
@@ -100,3 +101,89 @@ def deletar_venda(id_venda):
     else:
         flash("Não foi possível estornar a venda.", "warning")
     return redirect(url_for("vendas.pagina_vendas"))
+
+
+@vendas_bp.route("/confirmar-importacao", methods=["POST"])
+@login_required
+@acesso_requerido("vendas")
+@limiter.limit("10 per minute")
+def confirmar_importacao():
+
+    try:
+        total = request.form.get("total_itens", "0")
+
+        try:
+            total = int(total)
+        except:
+            total = 0
+
+        if total <= 0:
+            flash("Nenhum item para importar.", "warning")
+            return redirect(url_for("vendas.central_importacoes"))
+
+        salvos = 0
+
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+
+                for i in range(min(total, 100)):
+
+                    nome = request.form.get(f"nome_{i}", "").strip()
+                    preco = request.form.get(f"preco_{i}", "").strip()
+
+                    try:
+                        preco = float(preco)
+                    except:
+                        preco = 0
+
+                    if not nome:
+                        continue
+
+                    # =========================
+                    # INSERE OU ATUALIZA PRODUTO
+                    # =========================
+                    cur.execute("""
+                        SELECT id_produto
+                        FROM produtos
+                        WHERE LOWER(nome) = LOWER(%s)
+                        LIMIT 1
+                    """, (nome,))
+
+                    existe = cur.fetchone()
+
+                    if existe:
+                        id_produto = existe[0]
+                        cur.execute("""
+                            UPDATE produtos
+                            SET preco_venda = %s
+                            WHERE id_produto = %s
+                        """, (preco, id_produto))
+
+                    else:
+                        cur.execute("""
+                            INSERT INTO produtos (nome, preco_venda, categoria)
+                            VALUES (%s, %s, 'Importado')
+                            RETURNING id_produto
+                        """, (nome, preco))
+
+                        id_produto = cur.fetchone()[0]
+
+                    salvos += 1
+
+            conn.commit()
+
+        registrar_log(
+            "IMPORTACAO",
+            "VENDAS",
+            f"{salvos} produtos importados",
+            current_user.username
+        )
+
+        flash(f"{salvos} itens importados com sucesso!", "success")
+
+        return redirect(url_for("vendas.pagina_vendas"))
+
+    except Exception as e:
+        log_erro(f"Erro importação vendas: {e}")
+        flash("Erro ao importar dados.", "danger")
+        return redirect(url_for("vendas.central_importacoes"))

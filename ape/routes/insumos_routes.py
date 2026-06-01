@@ -82,13 +82,16 @@ def deletar_mp(id_mp):
 @insumos_bp.route('/registrar-compra', methods=['POST'])
 @login_required
 def rota_registrar_compra():
+    # Validação rigorosa
     id_mp = request.form.get('id_materia_prima')
-    qtd = request.form.get('quantidade')
-    valor = request.form.get('preco_total')
+    qtd = _parse_float(request.form.get('quantidade', '0'))
+    valor = _parse_float(request.form.get('preco_total', '0'))
 
-    sucesso = estoque.registrar_compra_estoque(int(id_mp), float(qtd), float(valor))
-    
-    if sucesso:
+    if not id_mp or qtd <= 0 or valor <= 0:
+        flash("Dados inválidos. Verifique a quantidade e o preço.", "danger")
+        return redirect(url_for('estoque.pagina_compras'))
+
+    if estoque.registrar_compra_estoque(int(id_mp), qtd, valor):
         flash("Compra registrada com sucesso!", "success")
     else:
         flash("Erro ao registrar compra.", "danger")

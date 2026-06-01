@@ -2,111 +2,198 @@
 
 {% block content %}
 <div class="container py-5 animate-in">
+
     <div class="row justify-content-center">
         <div class="col-lg-6 col-md-8">
-            
+
             <div class="card bg-dark-card border-0 shadow-2xl rounded-4 overflow-hidden">
-                <!-- HEADER COM DESTAQUE -->
+
+                <!-- HEADER -->
                 <div class="card-header bg-warning py-4 border-0">
                     <div class="d-flex align-items-center justify-content-center">
+
                         <div class="bg-black bg-opacity-10 rounded-circle p-2 me-3">
                             <i class="bi bi-file-earmark-check-fill fs-3 text-dark"></i>
                         </div>
-                        <h2 class="mb-0 fw-extrabold text-dark" style="letter-spacing: -1px;">Revisar Importação</h2>
+
+                        <div>
+                            <h2 class="mb-0 fw-extrabold text-dark">
+                                Revisar Importação
+                            </h2>
+                            <small class="text-dark opacity-75">
+                                Confirmação final antes de gravar no sistema
+                            </small>
+                        </div>
+
                     </div>
                 </div>
 
                 <div class="card-body p-4 p-md-5">
+
+                    <!-- RESUMO -->
                     <div class="text-center mb-4">
-                        <p class="text-white-50">O sistema mapeou os dados do seu arquivo.<br>Confira os itens que serão criados ou atualizados:</p>
+                        <p class="text-white-50 mb-0">
+                            O sistema identificou os registros abaixo.
+                            Confirme para persistir no banco.
+                        </p>
                     </div>
-                    
-                    <!-- RESUMO TIPO DASHBOARD -->
+
+                    <!-- DASH RESUMO -->
                     <div class="row g-3 mb-4">
+
                         <div class="col-4">
-                            <div class="bg-black bg-opacity-20 p-3 rounded-4 border border-secondary border-opacity-10 text-center">
-                                <i class="bi bi-bag-plus text-info fs-4 d-block mb-1"></i>
-                                <span class="d-block fw-extrabold text-white fs-4">{{ novos_produtos }}</span>
-                                <small class="text-white-50 fw-bold" style="font-size: 0.6rem; text-uppercase;">Produtos</small>
+                            <div class="bg-black bg-opacity-25 p-3 rounded-4 text-center metric-card">
+
+                                <i class="bi bi-box-seam text-info fs-4 d-block mb-1"></i>
+
+                                <span class="d-block fw-bold text-white fs-4">
+                                    {{ novos_produtos }}
+                                </span>
+
+                                <small class="text-white-50 text-uppercase">
+                                    Produtos
+                                </small>
+
                             </div>
                         </div>
+
                         <div class="col-4">
-                            <div class="bg-black bg-opacity-20 p-3 rounded-4 border border-secondary border-opacity-10 text-center">
-                                <i class="bi bi-box-seam text-success fs-4 d-block mb-1"></i>
-                                <span class="d-block fw-extrabold text-white fs-4">{{ novas_mps }}</span>
-                                <small class="text-white-50 fw-bold" style="font-size: 0.6rem; text-uppercase;">Insumos</small>
+                            <div class="bg-black bg-opacity-25 p-3 rounded-4 text-center metric-card">
+
+                                <i class="bi bi-basket text-success fs-4 d-block mb-1"></i>
+
+                                <span class="d-block fw-bold text-white fs-4">
+                                    {{ novas_mps }}
+                                </span>
+
+                                <small class="text-white-50 text-uppercase">
+                                    Insumos
+                                </small>
+
                             </div>
                         </div>
+
                         <div class="col-4">
-                            <div class="bg-black bg-opacity-20 p-3 rounded-4 border border-secondary border-opacity-10 text-center">
-                                <i class="bi bi-link-45deg text-warning fs-4 d-block mb-1"></i>
-                                <span class="d-block fw-extrabold text-white fs-4">{{ receitas }}</span>
-                                <small class="text-white-50 fw-bold" style="font-size: 0.6rem; text-uppercase;">Receitas</small>
+                            <div class="bg-black bg-opacity-25 p-3 rounded-4 text-center metric-card">
+
+                                <i class="bi bi-diagram-3 text-warning fs-4 d-block mb-1"></i>
+
+                                <span class="d-block fw-bold text-white fs-4">
+                                    {{ receitas }}
+                                </span>
+
+                                <small class="text-white-50 text-uppercase">
+                                    Receitas
+                                </small>
+
                             </div>
                         </div>
+
                     </div>
 
-                    <!-- ALERTA DE CUSTO ZERO -->
-                    <div class="p-3 rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-10 mb-4">
+                    <!-- ALERTA -->
+                    <div class="p-3 rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-25 mb-4">
+
                         <div class="d-flex">
-                            <i class="bi bi-info-circle-fill text-warning fs-5 me-3"></i>
-                            <div class="small text-white-50">
-                                <strong class="text-warning">Importante:</strong> Os itens entrarão com <span class="text-white">custo zero</span>. Após confirmar, visite a tela de estoque para lançar os preços de compra e garantir o cálculo correto do lucro.
+
+                            <i class="bi bi-exclamation-triangle-fill text-warning fs-5 me-3"></i>
+
+                            <div class="text-white-50 small">
+
+                                <strong class="text-warning">Atenção:</strong>
+                                Os itens serão importados com custo inicial zero.
+                                Atualize os custos no estoque para precisão financeira.
+
                             </div>
+
                         </div>
+
                     </div>
 
-                    <!-- BOTÕES DE AÇÃO -->
+                    <!-- AÇÕES -->
                     <div class="d-grid gap-3">
-                        <form action="/confirmar-importacao" method="POST" id="confirmForm">
-                            <button type="submit" class="btn btn-success btn-lg w-100 fw-extrabold py-3 rounded-3 shadow-lg hover-grow" id="confirmBtn">
-                                <i class="bi bi-cloud-check-fill me-2"></i>SALVAR DADOS NO SISTEMA
+
+                        <form action="{{ url_for('vendas.confirmar_importacao') }}"
+                              method="POST"
+                              id="confirmForm">
+
+                            <button type="submit"
+                                    id="confirmBtn"
+                                    class="btn btn-success btn-lg w-100 fw-bold py-3 rounded-3 shadow-lg hover-grow">
+
+                                <i class="bi bi-cloud-check-fill me-2"></i>
+                                CONFIRMAR IMPORTAÇÃO
+
                             </button>
+
                         </form>
-                        
-                        <a href="/importacoes" class="btn btn-link text-white-50 text-decoration-none small fw-bold">
-                            <i class="bi bi-trash3 me-1"></i> Descartar e voltar
+
+                        <a href="{{ url_for('importacoes.listar_importacoes') }}"
+                           class="btn btn-outline-light w-100 py-3 rounded-3">
+
+                            Cancelar e voltar
+
                         </a>
+
                     </div>
+
                 </div>
+
             </div>
 
+            <!-- FOOTER SEGURANÇA -->
             <div class="text-center mt-4 opacity-50">
-                <small class="text-white font-monospace" style="font-size: 0.7rem;">
-                    <i class="bi bi-shield-lock-fill me-1"></i> TRANSAÇÃO PROTEGIDA PELA SESSÃO ATIVA
+
+                <small class="text-white font-monospace" style="font-size:0.7rem;">
+                    <i class="bi bi-shield-lock-fill me-1"></i>
+                    TRANSAÇÃO SEGURA - SESSÃO AUTENTICADA
                 </small>
+
             </div>
+
         </div>
     </div>
 </div>
 
 <style>
-    .bg-dark-card { background: #1e293b !important; }
-    .fw-extrabold { font-weight: 800; }
-    .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); }
-    
-    .hover-grow { transition: all 0.2s ease-in-out; }
-    .hover-grow:hover { transform: translateY(-2px); }
+.bg-dark-card { background:#1e293b !important; }
+.shadow-2xl { box-shadow:0 25px 50px -12px rgba(0,0,0,0.6); }
 
-    .animate-in { animation: zoomIn 0.4s ease-out; }
-    @keyframes zoomIn {
-        from { opacity: 0; transform: scale(0.95); }
-        to { opacity: 1; transform: scale(1); }
-    }
+.animate-in { animation: zoomIn .35s ease; }
 
-    /* Estilização do Spinner para o JS */
-    .btn.disabled { opacity: 0.8; pointer-events: none; }
+@keyframes zoomIn {
+    from { opacity:0; transform:scale(0.95); }
+    to { opacity:1; transform:scale(1); }
+}
+
+.hover-grow {
+    transition: all .2s ease;
+}
+
+.hover-grow:hover {
+    transform: translateY(-2px);
+}
+
+.metric-card {
+    transition: transform .2s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-3px);
+}
 </style>
 
 <script>
-    // Feedback visual ao clicar no botão de confirmação
-    document.getElementById('confirmForm').onsubmit = function() {
-        const btn = document.getElementById('confirmBtn');
-        btn.innerHTML = `
-            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-            PROCESSANDO ARQUIVO...
-        `;
-        btn.classList.add('disabled');
-    };
+document.getElementById('confirmForm').onsubmit = function () {
+    const btn = document.getElementById('confirmBtn');
+
+    btn.innerHTML = `
+        <span class="spinner-border spinner-border-sm me-2"></span>
+        PROCESSANDO...
+    `;
+
+    btn.disabled = true;
+};
 </script>
+
 {% endblock %}

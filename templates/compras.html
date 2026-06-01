@@ -126,25 +126,38 @@
     });
 
     form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('btnSubmit');
-        btn.disabled = true;
-        btn.textContent = "PROCESSANDO...";
+    e.preventDefault();
 
-        try {
-            const response = await fetch(form.action, { method: 'POST', body: new FormData(form) });
-            if (response.ok) {
-                alert("Entrada registrada com sucesso!");
-                window.location.reload(); // Recarrega para atualizar os saldos reais do banco
-            } else {
-                alert("Erro ao salvar no banco de dados.");
-            }
-        } catch (err) {
-            alert("Erro de conexão.");
-        } finally {
-            btn.disabled = false;
-            btn.textContent = "PROCESSAR ENTRADA";
+    const btn = document.getElementById('btnSubmit');
+    btn.disabled = true;
+    btn.textContent = "PROCESSANDO...";
+
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form)
+        });
+
+        const data = await response.json().catch(() => null);
+
+        if (response.ok) {
+
+            btn.textContent = "✔ CONCLUÍDO";
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 800);
+
+        } else {
+            alert(data?.message || "Erro ao salvar.");
         }
-    });
+
+    } catch (err) {
+        alert("Erro de conexão.");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "PROCESSAR ENTRADA";
+    }
+});
 </script>
 {% endblock %}

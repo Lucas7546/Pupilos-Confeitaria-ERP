@@ -39,7 +39,7 @@ def create_app():
     app.context_processor(inject_empresa)
     app.register_blueprint(estoque_bp)
     app.register_blueprint(compras_bp)
-    app.register_blueprint(export_bp)
+    app.register_blueprint(export_bp, url_prefix="/export")
     app.register_blueprint(vendas_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(financeiro_bp, url_prefix='/financeiro')

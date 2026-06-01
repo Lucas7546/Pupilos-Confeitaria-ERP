@@ -2,78 +2,188 @@
 
 {% block content %}
 
-<div class="container py-5">
+<!-- LOADING OVERLAY (SaaS STYLE) -->
+<div id="loadingOverlay" class="loading-overlay d-none">
+    <div class="loading-box text-center">
+        <div class="spinner-border text-warning mb-3" style="width: 3rem; height: 3rem;"></div>
+        <h4 class="fw-bold">Analisando nota fiscal...</h4>
+        <p class="text-white-50">
+            A IA está processando e extraindo os itens automaticamente
+        </p>
+    </div>
+</div>
+
+<div class="container py-5 animate-in">
+
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card bg-dark text-white shadow-lg border-0 rounded-4">
+
+            <div class="card bg-dark text-white shadow-lg border-0 rounded-4 main-card">
+
                 <div class="card-body p-5">
-                    
+
                     <h1 class="fw-bold mb-3">
                         <i class="bi bi-robot"></i> 🧠 Compras Inteligentes
                     </h1>
+
                     <p class="text-white-50 mb-4">
-                        Capture a nota fiscal ou o comprovante. A Inteligência de compras identificará os itens e atualizará o seu estoque automático.
+                        Capture a nota fiscal ou o comprovante. A Inteligência de compras identificará os itens e atualizará o seu estoque automaticamente.
                     </p>
 
-                    <form id="formProcessamento" action="/processar-nota" method="POST" enctype="multipart/form-data">
-                        
+                    <form id="formProcessamento"
+                          action="{{ url_for('compras.processar_nota') }}"
+                          method="POST"
+                          enctype="multipart/form-data">
+
+                        <!-- UPLOAD -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">Foto da Nota Fiscal</label>
-                            <input 
-                                type="file" 
-                                name="foto_nota" 
+
+                            <input
+                                type="file"
+                                name="foto_nota"
                                 id="foto_nota"
-                                accept="image/*" 
-                                capture="environment" 
-                                class="form-control form-control-lg bg-secondary text-white border-0" 
+                                accept="image/*"
+                                capture="environment"
+                                class="form-control form-control-lg bg-secondary text-white border-0"
                                 required
                             >
                         </div>
 
-                        <div id="previewContainer" class="mb-4 text-center d-none">
-                            <img id="imgPreview" src="#" alt="Preview" class="img-fluid rounded shadow" style="max-height: 300px;">
+                        <!-- PREVIEW -->
+                        <div id="previewContainer" class="mb-4 text-center d-none preview-box">
+                            <img id="imgPreview"
+                                 src="#"
+                                 alt="Preview"
+                                 class="img-fluid rounded-4 shadow"
+                                 style="max-height: 320px;">
                         </div>
 
-                        <button type="submit" id="btnSubmit" class="btn btn-warning w-100 fw-bold py-3 rounded-3 shadow">
+                        <!-- BOTÃO -->
+                        <button type="submit" id="btnSubmit"
+                                class="btn btn-warning w-100 fw-bold py-3 rounded-3 shadow btn-action">
+
                             <span id="btnText">📸 Processar Nota com IA</span>
+
                             <span id="btnLoading" class="d-none">
-                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                Analisando nota...
+                                <span class="spinner-border spinner-border-sm"></span>
+                                Processando...
                             </span>
+
                         </button>
+
                     </form>
 
                 </div>
             </div>
+
         </div>
     </div>
 </div>
 
-<script>
-    // Preview da imagem antes do envio
-    document.getElementById('foto_nota').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = document.getElementById('imgPreview');
-                img.src = event.target.result;
-                document.getElementById('previewContainer').classList.remove('d-none');
-            }
-            reader.readAsDataURL(file);
+<!-- STYLE SAAS -->
+<style>
+
+    /* entrada geral */
+    .animate-in {
+        animation: fadeUp 0.5s ease;
+    }
+
+    @keyframes fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
         }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* card hover premium */
+    .main-card {
+        transition: 0.3s ease;
+    }
+
+    .main-card:hover {
+        transform: translateY(-5px);
+    }
+
+    /* preview */
+    .preview-box img {
+        border: 2px solid rgba(255,255,255,0.1);
+    }
+
+    /* botão premium */
+    .btn-action {
+        transition: 0.3s ease;
+    }
+
+    .btn-action:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.05);
+    }
+
+    /* LOADING OVERLAY */
+    .loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .loading-box {
+        color: white;
+        animation: fadeUp 0.4s ease;
+    }
+
+</style>
+
+<!-- SCRIPT -->
+<script>
+
+    // preview imagem
+    document.getElementById('foto_nota').addEventListener('change', function(e) {
+
+        const file = e.target.files[0];
+
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = function(event) {
+
+            const img = document.getElementById('imgPreview');
+
+            img.src = event.target.result;
+
+            document.getElementById('previewContainer')
+                .classList.remove('d-none');
+
+        }
+
+        reader.readAsDataURL(file);
+
     });
 
-    // Feedback de carregamento no botão
+    // loading SaaS (sem AJAX)
     document.getElementById('formProcessamento').addEventListener('submit', function() {
-        const btn = document.getElementById('btnSubmit');
-        const btnText = document.getElementById('btnText');
-        const btnLoading = document.getElementById('btnLoading');
-        
-        btn.disabled = true;
-        btnText.classList.add('d-none');
-        btnLoading.classList.remove('d-none');
-    });
-</script>
 
-{% endblock %}
+        document.getElementById('loadingOverlay')
+            .classList.remove('d-none');
+
+        const btn = document.getElementById('btnSubmit');
+        const text = document.getElementById('btnText');
+        const loading = document.getElementById('btnLoading');
+
+        btn.disabled = true;
+        text.classList.add('d-none');
+        loading.classList.remove('d-none');
+
+    });
+
+</script>

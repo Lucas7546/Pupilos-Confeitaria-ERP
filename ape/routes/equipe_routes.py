@@ -16,7 +16,7 @@ def _requer_nivel(*niveis):
 @login_required
 def gerenciar_equipe():
     if _requer_nivel("admin", "socios"):
-        return redirect(url_for("main.dashboard")))
+        return redirect(url_for("main.dashboard"))
     try:
         return render_template("equipe.html", equipe=usuarios.listar_usuarios() or [])
     except Exception as e:

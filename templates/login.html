@@ -183,11 +183,16 @@
     </div>
 
     <script>
-        // Lógica de tema aleatório
+        // Força a execução imediata e garante a troca da cor
         (function() {
             const temas = ['tema-azul', 'tema-laranja', 'tema-verde', 'tema-roxo', 'tema-vermelho'];
-            document.body.classList.add(temas[Math.floor(Math.random() * temas.length)]);
+            const corAleatoria = temas[Math.floor(Math.random() * temas.length)];
+            document.body.classList.add(corAleatoria);
+            
+            // Define o ano
             document.getElementById("ano").innerText = new Date().getFullYear();
+            
+            console.log("Tema carregado:", corAleatoria); // Isso ajuda a ver no console do navegador se trocou
         })();
 
         function toggleSenha() {

@@ -29,7 +29,7 @@
                 </button>
                 <ul class="dropdown-menu dropdown-menu-dark bg-dark-card border-secondary border-opacity-25 shadow-lg rounded-3 p-2" aria-labelledby="dropdownEntradas">
                     <li>
-                        <a class="dropdown-item py-2 rounded-2" href="/compras">
+                        <a class="dropdown-item py-2 rounded-2" href="{{ url_for('estoque.pagina_compras') }}">
                             <i class="bi bi-cart-plus me-2 text-primary"></i> Registrar Compra (Insumos/MP)
                         </a>
                     </li>
@@ -119,8 +119,9 @@
                                     <i class="bi bi-pencil-square"></i> AJUSTAR
                                 </button>
                                 {% if session.get('nivel')|lower in ['admin', 'administrador', 'socios'] %}
-                                <form action="{{ url_for('deletar_mp', id_mp=item[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Deseja excluir {{ item[1] }}?')">
-                                     <button type="submit" class="btn btn-outline-danger btn-sm px-2 rounded-3">
+                                <form action="{{ url_for('insumos.deletar_mp', id_mp=item[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Deseja excluir {{ item[1] }}?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm px-2 rounded-3">
                                         <i class="bi bi-trash3"></i>
                                      </button>
                                 </form>
@@ -136,7 +137,7 @@
                                     <h5 class="modal-title fw-bold text-white">Ajustar Insumo</h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
-                                <form action="{{ url_for('processar_edicao_mp', id_mp=item[0]) }}" method="POST">
+                                <form action="{{ url_for('insumos.processar_edicao_mp', id_mp=item[0]) }}" method="POST">
                                     <div class="modal-body px-4">
                                         <p class="text-white-50 small mb-4">Editando: <strong class="text-warning fs-6 d-block mt-1">{{ item[1] }}</strong></p>
                                         <div class="mb-3">
@@ -201,7 +202,7 @@
                                 <button class="btn btn-outline-warning btn-sm px-2 rounded-3 fw-bold" data-bs-toggle="modal" data-bs-target="#modalAjustarSub{{ sub[0] }}">
                                     <i class="bi bi-sliders"></i> AJUSTAR
                                 </button>
-                                <a href="/subprodutos/historico/{{ sub[0] }}" class="btn btn-outline-info btn-sm px-2 rounded-3 fw-bold">
+                                <a href="{{ url_for('subprodutos.historico_subproduto', id_subproduto=sub[0]) }}" class="btn btn-outline-info btn-sm px-2 rounded-3 fw-bold">
                                     <i class="bi bi-eye"></i> LOTE
                                 </a>
                             </div>
@@ -215,7 +216,7 @@
                                     <h5 class="modal-title fw-bold text-white">Ajustar Saldo Subproduto</h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
-                                <form action="{{ url_for('ajustar_estoque_subproduto', id_subproduto=sub[0]) }}" method="POST">
+                                <form action="{{ url_for('subprodutos.ajustar_estoque_subproduto', id_subproduto=sub[0]) }}" method="POST">
                                     <div class="modal-body px-4">
                                         <p class="text-white-50 small">Corrigir estoque de: <strong class="text-warning fs-6 d-block mt-1">{{ sub[1] }}</strong></p>
                                         <div class="mb-3">
@@ -256,11 +257,11 @@
                                 <button class="btn btn-outline-warning btn-sm px-2 rounded-3 fw-bold" data-bs-toggle="modal" data-bs-target="#modalEditarProd{{ prod[0] }}">
                                     <i class="bi bi-pencil-square"></i> AJUSTAR
                                 </button>
-                                <a href="/ficha-tecnica/{{ prod[0]|int }}" class="btn btn-outline-info btn-sm px-2 rounded-3 fw-bold">
+                                <a href="{{ url_for('produtos.ficha_tecnica', id_produto=prod[0]) }}" class="btn btn-outline-info btn-sm px-2 rounded-3 fw-bold">
                                     <i class="bi bi-journal-text"></i> FICHA
                                 </a>
                                 {% if session.get('nivel')|lower in ['admin', 'administrador', 'socios'] %}
-                                 <form action="{{ url_for('deletar_produto', id_produto=prod[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Deseja excluir o produto {{ prod[1] }}?')">
+                                 <form action="{{ url_for('produtos.deletar_produto', id_produto=prod[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Deseja excluir o produto {{ prod[1] }}?')">
                                     <button type="submit" class="btn btn-outline-danger btn-sm px-2 rounded-3">
                                         <i class="bi bi-trash3"></i>
                                     </button>
@@ -277,7 +278,7 @@
                                     <h5 class="modal-title fw-bold text-white">Editar Dados do Produto</h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
-                                <form action="{{ url_for('atualizar_produto', id_produto=prod[0]) }}" method="POST">
+                                <form action="{{ url_for('produtos.atualizar_produto', id_produto=prod[0]) }}" method="POST">
                                     <div class="modal-body px-4">
                                         <div class="mb-3">
                                             <label class="form-label text-white-50 small fw-bold">NOME COMERCIAL</label>
@@ -311,7 +312,7 @@
                 <h5 class="modal-title fw-bold text-white">⚙️ Registrar Lote de Produção</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form action="/subprodutos/registrar-lote" method="POST">
+            <form action="{{ url_for('subprodutos.registrar_lote') }}" method="POST">
                 <div class="modal-body px-4">
                     <p class="text-white-50 small mb-3">Utilize este formulário para injetar estoque em itens fabricados internamente na confeitaria.</p>
                     
@@ -340,45 +341,33 @@
 </div>
 
 <script>
-function filtrarEstoqueUnificado() {
-    let textoBusca = document.getElementById('buscaNomeItem').value.toLowerCase().trim();
-    let categoriaSelecionada = document.getElementById('buscaCategoriaItem').value;
-    
-    let linhas = document.querySelectorAll('#tabelaGlobalEstoque tbody tr[data-tipo]');
-    
-    linhas.forEach(linha => {
-        let elementoNome = linha.querySelector('.alvo-busca-nome');
-        if (!elementoNome) return;
-        
-        let nomeItem = elementoNome.textContent.toLowerCase();
-        let tipoItem = linha.getAttribute('data-tipo');
-        
-        let atendeTexto = true;
-        let atendeCategoria = true;
-        
-        if (textoBusca && !nomeItem.includes(textoBusca)) {
-            atendeTexto = false;
-        }
-        
-        if (categoriaSelecionada !== 'todos' && tipoItem !== categoriaSelecionada) {
-            atendeCategoria = false;
-        }
-        
-        if (atendeTexto && atendeCategoria) {
-            linha.style.display = '';
-        } else {
-            linha.style.display = 'none';
-        }
-    });
-}
+// Usando um evento de input para busca instantânea em tempo real
+document.getElementById('buscaNomeItem').addEventListener('input', function() {
+    let filtroTexto = this.value.toLowerCase();
+    let categoria = document.getElementById('buscaCategoriaItem').value;
+    let linhas = document.querySelectorAll('#tabelaGlobalEstoque tbody tr');
 
-document.getElementById('buscaNomeItem').addEventListener('keyup', filtrarEstoqueUnificado);
-document.getElementById('buscaCategoriaItem').addEventListener('change', filtrarEstoqueUnificado);
+    linhas.forEach(linha => {
+        let nome = linha.querySelector('.alvo-busca-nome') ? linha.querySelector('.alvo-busca-nome').textContent.toLowerCase() : '';
+        let tipo = linha.getAttribute('data-tipo');
+        
+        let matchTexto = nome.includes(filtroTexto);
+        let matchCategoria = (categoria === 'todos' || tipo === categoria);
+
+        linha.style.display = (matchTexto && matchCategoria) ? '' : 'none';
+    });
+});
+
+// Garante que a mudança no select também dispare a busca
+document.getElementById('buscaCategoriaItem').addEventListener('change', function() {
+    document.getElementById('buscaNomeItem').dispatchEvent(new Event('input'));
+});
 
 function limparFiltrosGlobais() {
     document.getElementById('buscaNomeItem').value = '';
     document.getElementById('buscaCategoriaItem').value = 'todos';
-    filtrarEstoqueUnificado();
+    // Dispara o evento de input para limpar a tabela
+    document.getElementById('buscaNomeItem').dispatchEvent(new Event('input'));
 }
 </script>
 

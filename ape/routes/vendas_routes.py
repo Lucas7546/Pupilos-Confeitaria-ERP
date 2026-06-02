@@ -274,6 +274,47 @@ def confirmar_importacao():
         log_erro(f"Erro importação vendas: {e}")
         flash("Erro ao importar dados.", "danger")
         return redirect(url_for("vendas.central_importacoes"))
+
+
+
+@vendas_bp.route("/importacao-preview", methods=["POST"])
+@login_required
+@acesso_requerido("vendas")
+def importacao_preview():
+
+    arquivo = request.files.get("arquivo")
+
+    if not arquivo:
+        return {"sucesso": False, "erro": "Arquivo não enviado"}
+
+    try:
+        preview = ia.processar_relatorio_delivery_preview(arquivo)
+        return preview
+
+    except Exception as e:
+        log_erro(f"Erro preview importação: {e}")
+        return {"sucesso": False, "erro": str(e)}
     
 
+@vendas_bp.route("/importacao-confirmar", methods=["POST"])
+@login_required
+@acesso_requerido("vendas")
+def importacao_confirmar():
 
+    try:
+        vendas_json = request.json.get("vendas", [])
+
+        resultado = ia.processar_relatorio_delivery_commit(vendas_json)
+
+        if resultado["sucesso"]:
+            registrar_log(
+                "IMPORTACAO",
+                "VENDAS",
+                f"{resultado['processadas']} vendas importadas"
+            )
+
+        return resultado
+
+    except Exception as e:
+        log_erro(f"Erro confirmação importação: {e}")
+        return {"sucesso": False, "erro": str(e)}

@@ -37,7 +37,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.context_processor(inject_empresa)
-    app.register_blueprint(estoque_bp)
+    app.register_blueprint(estoque_bp, url_prefix="/estoque")
     app.register_blueprint(compras_bp)
     app.register_blueprint(export_bp, url_prefix="/export")
     app.register_blueprint(vendas_bp)

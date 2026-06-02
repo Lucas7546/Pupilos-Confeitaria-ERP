@@ -6,6 +6,7 @@ from google import genai
 from modules.db import get_conn
 from utils.logger import log_info, log_erro
 from modules import vendas
+from modules.produtos import cadastrar_produto
 
 client = genai.Client()
 
@@ -103,7 +104,7 @@ def normalizar_vendas(dados: list[dict]) -> list[dict]:
     vendas = []
     for item in dados:
         nome = item.get("produto", "")
-        id_produto = localizar_produto_erp(nome)
+        id_produto = garantir_produto_erp(nome, item.get("valor_unitario", 0))
         vendas.append(
             {
                 "id_produto": id_produto,
@@ -271,3 +272,104 @@ def localizar_produto_erp(nome_produto: str) -> int | None:
         log_erro(f"Erro ao localizar produto no ERP: {e}")
         return None
 
+
+def garantir_produto_erp(nome: str, preco_sugerido=0.0):
+    if not nome:
+        return None
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                SELECT id_produto
+                FROM produtos
+                WHERE LOWER(nome) = LOWER(%s)
+                LIMIT 1
+            """, (nome,))
+
+            row = cur.fetchone()
+
+            if row:
+                return row[0]
+
+            # cria produto automaticamente vindo do delivery
+            cur.execute("""
+                INSERT INTO produtos (nome, preco_venda, categoria)
+                VALUES (%s, %s, 'IMPORTADO')
+                RETURNING id_produto
+            """, (nome, preco_sugerido))
+
+            id_produto = cur.fetchone()[0]
+            conn.commit()
+
+            return id_produto
+
+
+def processar_relatorio_delivery_preview(arquivo):
+    try:
+        df = ler_arquivo(arquivo)
+
+        dados = interpretar_relatorio_com_ia(df)
+        vendas_norm = normalizar_vendas(dados)
+
+        financeiro = gerar_financeiro(vendas_norm)
+
+        produtos_preview = []
+
+        for v in vendas_norm:
+            produtos_preview.append({
+                "nome": v["produto"],
+                "quantidade": v["quantidade"],
+                "valor_unitario": v["valor_unitario"],
+                "status": "novo" if v["id_produto"] is None else "existente"
+            })
+
+        return {
+            "sucesso": True,
+            "resumo": {
+                "total_itens": len(vendas_norm),
+                "faturamento": financeiro["faturamento"],
+                "taxas": financeiro["taxas"],
+                "repasse": financeiro["repasse_liquido"]
+            },
+            "vendas": vendas_norm,
+            "produtos": produtos_preview
+        }
+
+    except Exception as e:
+        log_erro(f"Erro preview delivery: {e}")
+        return {"sucesso": False, "erro": str(e)}
+    
+
+
+def processar_relatorio_delivery_commit(vendas_norm):
+    try:
+        processadas = 0
+
+        for v in vendas_norm:
+
+            if not v.get("id_produto"):
+                continue
+
+            qtd = int(v.get("quantidade") or 0)
+
+            if qtd <= 0:
+                continue
+
+            vendas.registrar_venda(
+                id_produto=v["id_produto"],
+                quantidade=qtd,
+                valor_total=float(v.get("valor_total") or 0),
+                usuario="IMPORTADOR_IA"
+            )
+
+            processadas += 1
+
+        return {
+            "sucesso": True,
+            "processadas": processadas
+        }
+
+    except Exception as e:
+        log_erro(f"Erro commit delivery: {e}")
+        return {"sucesso": False, "erro": str(e)}

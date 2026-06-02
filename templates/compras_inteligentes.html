@@ -171,8 +171,10 @@
     });
 
     // loading SaaS (sem AJAX)
-    document.getElementById('formProcessamento').addEventListener('submit', function() {
-
+    document.getElementById('formProcessamento').addEventListener('submit', function(e) {
+         if (document.getElementById('foto_nota').files.length === 0) {
+            return;
+        }
         document.getElementById('loadingOverlay')
             .classList.remove('d-none');
 
@@ -187,3 +189,4 @@
     });
 
 </script>
+{% endblock %}

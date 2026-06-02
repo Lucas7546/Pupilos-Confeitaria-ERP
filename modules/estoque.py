@@ -382,7 +382,7 @@ def obter_historico_movimentacoes() -> list[dict]:
                 cur.execute(
                     """
                     SELECT
-                        mov.id_movimentacao,
+                        mov.id_movimento,
                         mov.data_movimento,
                         COALESCE(mp.nome, s.nome, p.nome) AS nome_item,
                         CASE
@@ -399,7 +399,7 @@ def obter_historico_movimentacoes() -> list[dict]:
                     LEFT JOIN materia_prima mp ON mov.id_materia_prima = mp.id_materia_prima
                     LEFT JOIN subprodutos s ON mov.id_subproduto = s.id_subproduto
                     LEFT JOIN produtos p ON mov.id_produto = p.id_produto
-                    ORDER BY mov.data_movimento DESC, mov.id_movimentacao DESC
+                    ORDER BY mov.data_movimento DESC, mov.id_movimento DESC
                     """
                 )
                 rows = cur.fetchall()

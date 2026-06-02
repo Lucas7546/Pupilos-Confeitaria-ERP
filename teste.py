@@ -7,9 +7,35 @@ with get_conn() as conn:
     with conn.cursor() as cur:
 
         cur.execute("""
-            ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS id_empresa INT;
+            SELECT
+                p.id_produto,
+                p.nome,
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN mov.tipo_movimento = 'entrada'
+                            THEN mov.quantidade
+                            ELSE 0
+                        END
+                    ),0
+                ) AS fabricado,
+                COALESCE(SUM(iv.quantidade),0) AS vendido
+
+            FROM produtos p
+
+            LEFT JOIN movimentacao_estoque mov
+                ON mov.id_produto = p.id_produto
+
+            LEFT JOIN itens_venda iv
+                ON iv.id_produto = p.id_produto
+
+            GROUP BY
+                p.id_produto,
+                p.nome
+
+            ORDER BY
+                p.nome
         """)
 
-        conn.commit()
-
-print("\nPROCESSO FINALIZADO COM SUCESSO")
+        for linha in cur.fetchall():
+            print(linha)

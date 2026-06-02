@@ -8,8 +8,6 @@ def init_tenant(app):
 
         if current_user.is_authenticated:
             g.empresa_id = getattr(current_user, "id_empresa", None)
-            g.user_id = getattr(current_user, "id", None)
         else:
             g.empresa_id = None
-            g.user_id = None
 

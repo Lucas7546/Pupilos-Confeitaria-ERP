@@ -8,5 +8,5 @@ class Config:
     MAX_CONTENT_LENGTH = 20 * 1024 * 1024  # 20MB
 
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SECURE = False  # True em produção HTTPS
+    SESSION_COOKIE_SECURE = True  # True em produção HTTPS
     SESSION_COOKIE_SAMESITE = "Lax"

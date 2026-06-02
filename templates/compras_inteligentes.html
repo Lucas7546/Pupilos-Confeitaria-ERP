@@ -2,191 +2,153 @@
 
 {% block content %}
 
-<!-- LOADING OVERLAY (SaaS STYLE) -->
-<div id="loadingOverlay" class="loading-overlay d-none">
-    <div class="loading-box text-center">
-        <div class="spinner-border text-warning mb-3" style="width: 3rem; height: 3rem;"></div>
-        <h4 class="fw-bold">Analisando nota fiscal...</h4>
-        <p class="text-white-50">
-            A IA está processando e extraindo os itens automaticamente
-        </p>
+<div class="container py-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-white">
+                🧾 Resultado da Nota Fiscal
+            </h2>
+            <p class="text-white-50">
+                Confirme os itens antes de atualizar o estoque
+            </p>
+        </div>
+
+        <a href="{{ url_for('compras.compras_inteligentes') }}"
+           class="btn btn-outline-light">
+            Voltar
+        </a>
     </div>
-</div>
 
-<div class="container py-5 animate-in">
+    <form method="POST" action="{{ url_for('compras.confirmar_nota') }}">
 
-    <div class="row justify-content-center">
-        <div class="col-md-8">
+        <input type="hidden" name="total_itens" value="{{ total_itens }}">
 
-            <div class="card bg-dark text-white shadow-lg border-0 rounded-4 main-card">
+        <div class="card bg-dark text-white border-0 shadow-lg">
 
-                <div class="card-body p-5">
+            <div class="card-body">
 
-                    <h1 class="fw-bold mb-3">
-                        <i class="bi bi-robot"></i> 🧠 Compras Inteligentes
-                    </h1>
+                <div class="table-responsive">
 
-                    <p class="text-white-50 mb-4">
-                        Capture a nota fiscal ou o comprovante. A Inteligência de compras identificará os itens e atualizará o seu estoque automaticamente.
-                    </p>
+                    <table class="table table-dark table-hover align-middle">
 
-                    <form id="formProcessamento"
-                          action="{{ url_for('compras.processar_nota') }}"
-                          method="POST"
-                          enctype="multipart/form-data">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Qtd</th>
+                                <th>Preço</th>
+                                <th>Status</th>
+                                <th>Confirmação</th>
+                            </tr>
+                        </thead>
 
-                        <!-- UPLOAD -->
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">Foto da Nota Fiscal</label>
+                        <tbody>
 
-                            <input
-                                type="file"
-                                name="foto_nota"
-                                id="foto_nota"
-                                accept="image/*"
-                                capture="environment"
-                                class="form-control form-control-lg bg-secondary text-white border-0"
-                                required
-                            >
-                        </div>
+                        {% for item in itens %}
 
-                        <!-- PREVIEW -->
-                        <div id="previewContainer" class="mb-4 text-center d-none preview-box">
-                            <img id="imgPreview"
-                                 src="#"
-                                 alt="Preview"
-                                 class="img-fluid rounded-4 shadow"
-                                 style="max-height: 320px;">
-                        </div>
+                            <tr>
 
-                        <!-- BOTÃO -->
-                        <button type="submit" id="btnSubmit"
-                                class="btn btn-warning w-100 fw-bold py-3 rounded-3 shadow btn-action">
+                                <!-- NOME -->
+                                <td>
+                                    <input type="text"
+                                           name="nome_{{ loop.index0 }}"
+                                           value="{{ item.nome }}"
+                                           class="form-control form-control-sm bg-secondary text-white border-0">
+                                </td>
 
-                            <span id="btnText">📸 Processar Nota com IA</span>
+                                <!-- QUANTIDADE -->
+                                <td style="width:120px;">
+                                    <input type="number"
+                                           step="0.01"
+                                           name="qtd_{{ loop.index0 }}"
+                                           value="{{ item.quantidade }}"
+                                           class="form-control form-control-sm bg-secondary text-white border-0">
+                                </td>
 
-                            <span id="btnLoading" class="d-none">
-                                <span class="spinner-border spinner-border-sm"></span>
-                                Processando...
-                            </span>
+                                <!-- PREÇO -->
+                                <td style="width:140px;">
+                                    <input type="number"
+                                           step="0.01"
+                                           name="preco_{{ loop.index0 }}"
+                                           value="{{ item.valor_unitario or 0 }}"
+                                           class="form-control form-control-sm bg-secondary text-white border-0">
+                                </td>
 
-                        </button>
+                                <!-- STATUS IA -->
+                                <td>
+                                    {% if item.status == "existente" %}
+                                        <span class="badge bg-success">
+                                            ✔ Existente
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">
+                                            ✨ Novo
+                                        </span>
+                                    {% endif %}
 
-                    </form>
+                                    <br>
+
+                                    <small class="text-white-50">
+                                        Similaridade: {{ item.similaridade }}
+                                    </small>
+                                </td>
+
+                                <!-- CHECK -->
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               checked
+                                               name="check_{{ loop.index0 }}">
+                                    </div>
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                        </tbody>
+
+                    </table>
 
                 </div>
+
+                <!-- TOTAL FIXO -->
+                <div class="d-flex justify-content-between mt-3">
+
+                    <h5 class="text-white">
+                        Total itens: {{ total_itens }}
+                    </h5>
+
+                    <button type="submit"
+                            class="btn btn-success px-4 fw-bold">
+                        💾 Confirmar Entrada no Estoque
+                    </button>
+
+                </div>
+
             </div>
 
         </div>
-    </div>
+
+    </form>
+
 </div>
 
-<!-- STYLE SAAS -->
 <style>
 
-    /* entrada geral */
-    .animate-in {
-        animation: fadeUp 0.5s ease;
-    }
+table input {
+    border-radius: 6px !important;
+}
 
-    @keyframes fadeUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
+.card {
+    border-radius: 16px;
+}
 
-    /* card hover premium */
-    .main-card {
-        transition: 0.3s ease;
-    }
-
-    .main-card:hover {
-        transform: translateY(-5px);
-    }
-
-    /* preview */
-    .preview-box img {
-        border: 2px solid rgba(255,255,255,0.1);
-    }
-
-    /* botão premium */
-    .btn-action {
-        transition: 0.3s ease;
-    }
-
-    .btn-action:hover {
-        transform: translateY(-2px);
-        filter: brightness(1.05);
-    }
-
-    /* LOADING OVERLAY */
-    .loading-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.85);
-        backdrop-filter: blur(8px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-    }
-
-    .loading-box {
-        color: white;
-        animation: fadeUp 0.4s ease;
-    }
+tr:hover {
+    background: rgba(255,255,255,0.05);
+}
 
 </style>
 
-<!-- SCRIPT -->
-<script>
-
-    // preview imagem
-    document.getElementById('foto_nota').addEventListener('change', function(e) {
-
-        const file = e.target.files[0];
-
-        if (!file) return;
-
-        const reader = new FileReader();
-
-        reader.onload = function(event) {
-
-            const img = document.getElementById('imgPreview');
-
-            img.src = event.target.result;
-
-            document.getElementById('previewContainer')
-                .classList.remove('d-none');
-
-        }
-
-        reader.readAsDataURL(file);
-
-    });
-
-    // loading SaaS (sem AJAX)
-    document.getElementById('formProcessamento').addEventListener('submit', function(e) {
-         if (document.getElementById('foto_nota').files.length === 0) {
-            return;
-        }
-        document.getElementById('loadingOverlay')
-            .classList.remove('d-none');
-
-        const btn = document.getElementById('btnSubmit');
-        const text = document.getElementById('btnText');
-        const loading = document.getElementById('btnLoading');
-
-        btn.disabled = true;
-        text.classList.add('d-none');
-        loading.classList.remove('d-none');
-
-    });
-
-</script>
 {% endblock %}

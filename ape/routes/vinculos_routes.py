@@ -59,3 +59,4 @@ def vincular_receita_subproduto():
         flash("Erro ao vincular.", "danger")
  
     return redirect(url_for("insumos.render_cadastro"))
+

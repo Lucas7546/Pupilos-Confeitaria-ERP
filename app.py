@@ -27,7 +27,7 @@ from modules.db import init_db
 
 csrf = CSRFProtect()
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder="static")
 
     # 1. Carrega as configurações PRIMEIRO, para garantir que SECRET_KEY exista
     app.config.from_object('ape.config.Config')

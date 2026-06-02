@@ -17,6 +17,7 @@
                 </div>
                 <div class="card-body px-4 pb-4">
                     <form action="{{ url_for('insumos.cadastrar_mp') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="mb-3">
                             <label class="form-label text-white-50 small fw-bold">NOME DO INGREDIENTE</label>
                             <input name="nome" type="text" class="form-control form-control-lg custom-input" placeholder="Ex: Chocolate 70%" required>
@@ -65,6 +66,7 @@
                 </div>
                 <div class="card-body px-4 pb-4">
                     <form action="{{ url_for('produtos.cadastrar_produto_final') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="mb-3">
                             <label class="form-label text-white-50 small fw-bold">NOME COMERCIAL</label>
                             <input name="nome" type="text" class="form-control form-control-lg custom-input" placeholder="Ex: Brownie Supremo" required>
@@ -101,6 +103,7 @@
                 </div>
                 <div class="card-body px-4 pb-4">
                     <form action="{{ url_for('subprodutos.cadastrar_subproduto') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="mb-3">
                             <label class="form-label text-white-50 small fw-bold">NOME DA PRODUÇÃO INTERNA</label>
                             <input name="nome" type="text" class="form-control form-control-lg custom-input" placeholder="Ex: Massa Base Brownie, Brigadeiro Belga" required>
@@ -135,6 +138,7 @@
                 </div>
                 <div class="card-body px-4 py-4">
                     <form action="{{ url_for('vinculos.vincular_receita') }}" method="POST" class="row g-3 align-items-end">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="col-md-4">
                             <label class="form-label text-white-50 small fw-bold">PRODUTO FINAL</label>
                             <select name="id_produto" class="form-select custom-input" required>
@@ -213,6 +217,7 @@
                 </div>
                 <div class="card-body px-4 py-4">
                     <form action="{{ url_for('vinculos.vincular_subproduto_produto') }}" method="POST" class="row g-3 align-items-end">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="col-md-4">
                             <label class="form-label text-white-50 small fw-bold">PRODUTO DESTINO</label>
                             <select name="id_produto" class="form-select custom-input" required>

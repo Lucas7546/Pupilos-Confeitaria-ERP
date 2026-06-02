@@ -36,7 +36,8 @@
 
                 <div class="card-body p-4">
 
-                    <form action="/cadastrar-mp" method="POST" class="row g-3">
+                    <form action="{{ url_for('insumos.cadastrar_mp') }}" method="POST" class="row g-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                         <div class="col-12">
                             <label class="form-label text-white-50 small fw-bold">Nome do Insumo</label>
@@ -103,10 +104,12 @@
 
                 <div class="card-body p-4">
 
-                    <form action="/vender" method="POST" class="row g-3">
+                    <form action="{{ url_for('vendas.vender') }}" method="POST" class="row g-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
 
                         <div class="col-12">
-                            <label class="form-label text-white-50 small fw-bold">Produto</label>
+                            <label class="form-label text-white-50 small fw-bold">Nome do Produto</label>
                             <input name="nome_produto" class="form-control custom-input"
                                    placeholder="Ex: Bolo de Pote" required>
                         </div>

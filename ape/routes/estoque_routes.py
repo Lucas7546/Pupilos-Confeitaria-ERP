@@ -20,6 +20,48 @@ ALLOWED_MIME = {
 estoque_bp = Blueprint("estoque", __name__)
 
 
+@estoque_bp.route("/compras")
+@login_required
+def pagina_compras():
+    return render_template("compras.html", materias=estoque.listar_materia_prima())
+
+@estoque_bp.route("/registrar-producao", methods=["POST"])
+@login_required
+@acesso_requerido("estoque")
+def registrar_producao():
+    try:
+        tipo_item   = request.form.get("tipo_item", "")
+        id_item_raw = request.form.get("id_item", "")
+        qtd_raw     = request.form.get("quantidade", "").strip()
+
+        if not id_item_raw or not id_item_raw.isdigit():
+            flash("ID do item inválido.", "danger")
+            return redirect(url_for("estoque.estoque_painel"))
+
+        id_item = int(id_item_raw)
+        qtd = helpers._parse_float(qtd_raw)
+
+        if qtd <= 0:
+            flash("A quantidade deve ser maior que zero.", "warning")
+            return redirect(url_for("estoque.estoque_painel"))
+
+        if tipo_item == "subproduto":
+            estoque.entrada_subproduto(id_item, qtd)
+            registrar_log("PRODUCAO", "SUBPRODUTO", f"ID {id_item} | Qtd {qtd}")
+        elif tipo_item == "produto":
+            estoque.entrada_produto(id_item, qtd)
+            registrar_log("PRODUCAO", "PRODUTO", f"ID {id_item} | Qtd {qtd}")
+        else:
+            flash("Tipo de item desconhecido.", "danger")
+            return redirect(url_for("estoque.estoque_painel"))
+
+        flash(f"Produção de {qtd} unidade(s) registrada com sucesso!", "success")
+    except Exception as e:
+        logger.log_erro(f"Erro ao registrar produção: {e}")
+        flash(f"Erro ao processar produção: {e}", "danger")
+
+    return redirect(url_for("estoque.estoque_painel"))
+
 @estoque_bp.route("/escanear-inteligente", methods=["POST"])
 @login_required
 @acesso_requerido("estoque")
@@ -289,48 +331,7 @@ def previsao_estoque():
         )
 
         return redirect(url_for("main.dashboard"))
-    
-@estoque_bp.route("/compras")
-@login_required
-def pagina_compras():
-    return render_template("compras.html", materias=estoque.listar_materia_prima())
 
-@estoque_bp.route("/registrar-producao", methods=["POST"])
-@login_required
-@acesso_requerido("estoque")
-def registrar_producao():
-    try:
-        tipo_item   = request.form.get("tipo_item", "")
-        id_item_raw = request.form.get("id_item", "")
-        qtd_raw     = request.form.get("quantidade", "").strip()
-
-        if not id_item_raw or not id_item_raw.isdigit():
-            flash("ID do item inválido.", "danger")
-            return redirect(url_for("estoque.estoque_painel"))
-
-        id_item = int(id_item_raw)
-        qtd = helpers._parse_float(qtd_raw)
-
-        if qtd <= 0:
-            flash("A quantidade deve ser maior que zero.", "warning")
-            return redirect(url_for("estoque.estoque_painel"))
-
-        if tipo_item == "subproduto":
-            estoque.entrada_subproduto(id_item, qtd)
-            registrar_log("PRODUCAO", "SUBPRODUTO", f"ID {id_item} | Qtd {qtd}")
-        elif tipo_item == "produto":
-            estoque.entrada_produto(id_item, qtd)
-            registrar_log("PRODUCAO", "PRODUTO", f"ID {id_item} | Qtd {qtd}")
-        else:
-            flash("Tipo de item desconhecido.", "danger")
-            return redirect(url_for("estoque.estoque_painel"))
-
-        flash(f"Produção de {qtd} unidade(s) registrada com sucesso!", "success")
-    except Exception as e:
-        logger.log_erro(f"Erro ao registrar produção: {e}")
-        flash(f"Erro ao processar produção: {e}", "danger")
-
-    return redirect(url_for("estoque.estoque_painel"))
 
 @estoque_bp.route("/estoque/fechamento")
 @login_required

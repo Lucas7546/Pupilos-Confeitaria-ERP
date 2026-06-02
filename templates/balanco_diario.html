@@ -123,6 +123,16 @@ document.getElementById('filtroDataBalanco').addEventListener('change', function
         window.location.href = "{{ url_for('estoque.balanco_diario_page') }}?data=" + dataSelecionada;
     }
 });
+
+document.getElementById('filtroDataBalanco').addEventListener('change', function() {
+    let dataSelecionada = this.value;
+    if (dataSelecionada) {
+        // Feedback visual simples
+        this.disabled = true; 
+        this.style.opacity = '0.5';
+        window.location.href = "{{ url_for('estoque.balanco_diario_page') }}?data=" + dataSelecionada;
+    }
+});
 </script>
 
 <style>

@@ -30,6 +30,7 @@
                 <div class="card-body p-4 p-md-5">
 
                     <form action="/vender" method="POST" id="vendaForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                         <div class="mb-4">
 

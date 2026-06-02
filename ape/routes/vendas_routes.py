@@ -12,6 +12,77 @@ from modules.db import get_conn
 
 vendas_bp = Blueprint('vendas', __name__)
 
+
+
+@vendas_bp.route("/vendas")
+@login_required
+@acesso_requerido("vendas")
+@limiter.limit("60 per minute")
+def pagina_vendas():
+
+    try:
+
+        return render_template(
+            "vendas.html",
+            produtos=produtos.buscar_produto_por_nome("") or [],
+            historico_vendas=vendas.listar_vendas_recentes() or [],
+        )
+
+    except Exception as e:
+
+        log_erro(f"Erro na página de vendas: {e}")
+
+        flash(
+            "Erro ao carregar vendas.",
+            "danger"
+        )
+
+        return redirect(
+            url_for("main.dashboard")
+        )
+
+@vendas_bp.route("/vender", methods=["POST"])
+@login_required
+@acesso_requerido("vendas")
+@limiter.limit("60 per minute")
+def vender():
+    nome_produto = request.form.get("nome_produto", "").strip() # Pega o nome
+    qtd_raw = request.form.get("quantidade", "")
+
+    # Validação simples
+    if not nome_produto or not qtd_raw.isdigit():
+        flash("Dados inválidos.", "danger")
+        return redirect(url_for("vendas.pagina_vendas"))
+
+    qtd = int(qtd_raw)
+    
+    # Busca o produto pelo NOME (usando a função que você já tem no 'produtos')
+    prods = produtos.buscar_produto_por_nome(nome_produto) or []
+    
+    # Se 'buscar_produto_por_nome' retorna uma lista, pegamos o primeiro item
+    produto = prods[0] if prods else None
+
+    if not produto:
+        flash("Produto não encontrado.", "danger")
+        return redirect(url_for("vendas.pagina_vendas"))
+
+    id_p = produto[0] # Pega o ID que está no banco a partir do produto achado
+
+    if not receitas.validar_estoque_suficiente(id_p, qtd):
+        flash("Estoque insuficiente.", "danger")
+        return redirect(url_for("vendas.pagina_vendas"))
+
+    valor_total = float(produto[2]) * qtd # Supondo que o preço é o índice 2
+    usuario_atual = getattr(current_user, "username", "Sistema")
+
+    if vendas.registrar_venda(id_produto=id_p, quantidade=qtd, valor_total=valor_total, usuario=usuario_atual):
+        registrar_log("VENDA", "VENDAS", f"{nome_produto} | Qtd {qtd} | R$ {valor_total:.2f}")
+        flash("Venda registrada!", "success")
+    else:
+        flash("Erro ao registrar venda.", "danger")
+
+    return redirect(url_for("vendas.pagina_vendas"))
+
 @vendas_bp.route("/importacoes")
 @login_required
 @acesso_requerido("vendas")
@@ -77,105 +148,6 @@ def importar_ifood():
 
     return redirect(
         url_for("vendas.central_importacoes")
-    )
-
-@vendas_bp.route("/vendas")
-@login_required
-@acesso_requerido("vendas")
-@limiter.limit("60 per minute")
-def pagina_vendas():
-
-    try:
-
-        return render_template(
-            "vendas.html",
-            produtos=produtos.buscar_produto_por_nome("") or [],
-            historico_vendas=vendas.listar_vendas_recentes() or [],
-        )
-
-    except Exception as e:
-
-        log_erro(f"Erro na página de vendas: {e}")
-
-        flash(
-            "Erro ao carregar vendas.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("main.dashboard")
-        )
-
-@vendas_bp.route("/vender", methods=["POST"])
-@login_required
-@acesso_requerido("vendas")
-@limiter.limit("60 per minute")
-def vender():
-
-    id_p_raw = request.form.get("id_produto", "")
-    qtd_raw = request.form.get("quantidade", "")
-
-    if not id_p_raw.isdigit() or not qtd_raw.isdigit():
-        flash("Dados inválidos.", "danger")
-        return redirect(url_for("vendas.pagina_vendas"))
-
-    id_p = int(id_p_raw)
-    qtd = int(qtd_raw)
-
-    if qtd <= 0:
-        flash("Quantidade deve ser maior que zero.", "warning")
-        return redirect(url_for("vendas.pagina_vendas"))
-
-    prods = produtos.buscar_produto_por_nome("") or []
-
-    produto = next(
-        (p for p in prods if p[0] == id_p),
-        None
-    )
-
-    if not produto:
-        flash("Produto não encontrado.", "danger")
-        return redirect(url_for("vendas.pagina_vendas"))
-
-    if not receitas.validar_estoque_suficiente(id_p, qtd):
-        flash("Estoque insuficiente.", "danger")
-        return redirect(url_for("vendas.pagina_vendas"))
-
-    valor_total = float(produto[2]) * qtd
-
-    usuario_atual = getattr(
-        current_user,
-        "username",
-        "Sistema"
-    )
-
-    if vendas.registrar_venda(
-        id_produto=id_p,
-        quantidade=qtd,
-        valor_total=valor_total,
-        usuario=usuario_atual
-    ):
-
-        registrar_log(
-            "VENDA",
-            "VENDAS",
-            f"Prod {id_p} | Qtd {qtd} | R$ {valor_total:.2f}"
-        )
-
-        flash(
-            "Venda registrada!",
-            "success"
-        )
-
-    else:
-
-        flash(
-            "Erro ao registrar venda.",
-            "danger"
-        )
-
-    return redirect(
-        url_for("vendas.pagina_vendas")
     )
 
 @vendas_bp.route("/deletar-venda/<int:id_venda>")

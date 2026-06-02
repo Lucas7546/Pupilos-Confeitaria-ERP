@@ -2,152 +2,78 @@
 
 {% block content %}
 
-<div class="container py-5">
+<div class="text-center mb-5">
+    <h1 class="fw-bold text-warning">
+        🤖 Compras Inteligentes
+    </h1>
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-white">
-                🧾 Resultado da Nota Fiscal
-            </h2>
-            <p class="text-white-50">
-                Confirme os itens antes de atualizar o estoque
-            </p>
-        </div>
+    <p class="text-white-50">
+        Tire uma foto ou envie uma nota fiscal para atualização automática do estoque
+    </p>
+</div>
 
-        <a href="{{ url_for('compras.compras_inteligentes') }}"
-           class="btn btn-outline-light">
-            Voltar
-        </a>
-    </div>
+<div class="row justify-content-center">
 
-    <form method="POST" action="{{ url_for('compras.confirmar_nota') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="col-lg-7">
 
-        <input type="hidden" name="total_itens" value="{{ total_itens }}">
+        <div class="card bg-dark border-0 shadow-lg">
 
-        <div class="card bg-dark text-white border-0 shadow-lg">
+            <div class="card-body p-5">
 
-            <div class="card-body">
+                <form
+                    action="{{ url_for('compras.processar_nota') }}"
+                    method="POST"
+                    enctype="multipart/form-data"
+                    id="formOCR">
 
-                <div class="table-responsive">
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="{{ csrf_token() }}">
 
-                    <table class="table table-dark table-hover align-middle">
+                    <div class="mb-4">
 
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Qtd</th>
-                                <th>Preço</th>
-                                <th>Status</th>
-                                <th>Confirmação</th>
-                            </tr>
-                        </thead>
+                        <label class="form-label text-white fw-bold">
+                            📷 Foto da Nota Fiscal
+                        </label>
 
-                        <tbody>
+                        <input
+                            type="file"
+                            name="foto_nota"
+                            accept="image/*"
+                            capture="environment"
+                            class="form-control"
+                            id="fotoNota"
+                            required>
 
-                        {% for item in itens %}
+                    </div>
 
-                            <tr>
+                    <div class="text-center mb-4">
 
-                                <!-- NOME -->
-                                <td>
-                                    <input type="text"
-                                           name="nome_{{ loop.index0 }}"
-                                           value="{{ item.nome }}"
-                                           class="form-control form-control-sm bg-secondary text-white border-0">
-                                </td>
+                        <img
+                            id="preview"
+                            class="img-fluid rounded shadow d-none"
+                            style="max-height:400px;">
 
-                                <!-- QUANTIDADE -->
-                                <td style="width:120px;">
-                                    <input type="number"
-                                           step="0.01"
-                                           name="qtd_{{ loop.index0 }}"
-                                           value="{{ item.quantidade }}"
-                                           class="form-control form-control-sm bg-secondary text-white border-0">
-                                </td>
+                    </div>
 
-                                <!-- PREÇO -->
-                                <td style="width:140px;">
-                                    <input type="number"
-                                           step="0.01"
-                                           name="preco_{{ loop.index0 }}"
-                                           value="{{ item.valor_unitario or 0 }}"
-                                           class="form-control form-control-sm bg-secondary text-white border-0">
-                                </td>
+                    <button
+                        type="submit"
+                        class="btn btn-warning w-100 py-3 fw-bold"
+                        id="btnOCR">
 
-                                <!-- STATUS IA -->
-                                <td>
-                                    {% if item.status == "existente" %}
-                                        <span class="badge bg-success">
-                                            ✔ Existente
-                                        </span>
-                                    {% else %}
-                                        <span class="badge bg-warning text-dark">
-                                            ✨ Novo
-                                        </span>
-                                    {% endif %}
+                        🧠 Ler Nota Fiscal
 
-                                    <br>
-
-                                    <small class="text-white-50">
-                                        Similaridade: {{ item.similaridade }}
-                                    </small>
-                                </td>
-
-                                <!-- CHECK -->
-                                <td>
-                                    <div class="form-check">
-                                        <input type="hidden" name="check_{{ loop.index0 }}" value="0">
-                                        <input class="form-check-input" type="checkbox" name="check_{{ loop.index0 }}" value="1" checked>
-                                    </div>
-                                </td>
-
-                            </tr>
-
-                        {% endfor %}
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-                <!-- TOTAL FIXO -->
-                <div class="d-flex justify-content-between mt-3">
-
-                    <h5 class="text-white">
-                        Total itens: {{ total_itens }}
-                    </h5>
-
-                    <button type="submit"
-                            class="btn btn-success px-4 fw-bold">
-                        💾 Confirmar Entrada no Estoque
                     </button>
 
-                </div>
+                </form>
 
             </div>
 
         </div>
 
-    </form>
+    </div>
 
 </div>
-
-<style>
-
-table input {
-    border-radius: 6px !important;
-}
-
-.card {
-    border-radius: 16px;
-}
-
-tr:hover {
-    background: rgba(255,255,255,0.05);
-}
-
-</style>
 
 {% endblock %}

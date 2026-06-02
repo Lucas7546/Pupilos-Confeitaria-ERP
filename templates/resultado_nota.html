@@ -2,182 +2,211 @@
 
 {% block content %}
 
-<div class="container py-5 animate-in">
+<div class="text-center mb-4">
 
-    <!-- HEADER -->
-    <div class="text-center mb-4">
-        <h2 class="fw-bold text-warning">🧠 Conferência Inteligente</h2>
-        <p class="text-white-50">
-            Revise os itens detectados pela IA antes de confirmar a entrada no estoque
-        </p>
-    </div>
+    <h2 class="fw-bold text-warning">
+        🧾 Conferência Inteligente
+    </h2>
 
-    <div class="card bg-dark text-white border-0 shadow-lg rounded-4">
+    <p class="text-white-50">
+        Revise os itens encontrados antes de atualizar o estoque
+    </p>
 
-        <div class="card-body p-4">
+</div>
 
-            <form id="formConfirmacao"
-                  action="{{ url_for('compras.confirmar_nota') }}"
-                  method="POST">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<form
+    method="POST"
+    action="{{ url_for('compras.confirmar_nota') }}"
+    id="formConfirmacao">
 
-                <!-- RESUMO -->
-                <div class="row mb-4 text-center">
+    <input type="hidden"
+           name="csrf_token"
+           value="{{ csrf_token() }}">
 
-                    <div class="col-md-6">
-                        <div class="p-3 bg-black bg-opacity-25 rounded-3">
-                            <h4 class="text-success mb-0">{{ itens|length }}</h4>
-                            <small class="text-white-50">Itens detectados</small>
-                        </div>
-                    </div>
+    <input type="hidden"
+           name="total_itens"
+           value="{{ total_itens }}">
 
-                    <div class="col-md-6">
-                        <div class="p-3 bg-black bg-opacity-25 rounded-3">
-                            <h4 class="text-warning mb-0">IA OCR</h4>
-                            <small class="text-white-50">Processamento automático</small>
-                        </div>
-                    </div>
+    <div class="row mb-4">
 
-                </div>
+        <div class="col-md-4">
 
-                <!-- TABELA -->
-                <div class="table-responsive">
+            <div class="card bg-success border-0">
 
-                    <table class="table table-dark table-hover align-middle">
+                <div class="card-body text-center">
 
-                        <thead class="table-head">
-                            <tr>
-                                <th>Produto</th>
-                                <th>Qtd</th>
-                                <th>Valor Unit.</th>
-                            </tr>
-                        </thead>
+                    <h2>{{ total_itens }}</h2>
 
-                        <tbody>
-
-                            {% for item in itens or [] %}
-
-                            <tr class="item-row"
-                                style="animation-delay: {{ loop.index0 * 0.05 }}s">
-                                
-
-                                <td>
-                                    <input type="text"
-                                           name="nome_{{ loop.index0 }}"
-                                           value="{{ item.produto }}"
-                                           class="form-control bg-dark text-white border-secondary"
-                                           required>
-                                </td>
-
-                                <td>
-                                    <input type="number"
-                                           step="0.01"
-                                           name="qtd_{{ loop.index0 }}"
-                                           value="{{ item.quantidade }}"
-                                           class="form-control bg-dark text-white border-secondary"
-                                           required>
-                                </td>
-
-                                <td colspan="3" class="text-center text-white-50 py-4">
-                                    Nenhum item detectado
-                                </td>
-
-                                <td>
-                                    <input type="number"
-                                           step="0.01"
-                                           name="preco_{{ loop.index0 }}"
-                                           value="{{ item.valor_unitario }}"
-                                           class="form-control bg-dark text-white border-secondary"
-                                           required>
-                                </td>
-
-                            </tr>
-
-                            {% endfor %}
-
-                        </tbody>
-
-                    </table>
+                    <small>
+                        Itens Detectados
+                    </small>
 
                 </div>
 
-                <input type="hidden" name="total_itens" value="{{ itens|length }}">
+            </div>
 
-                <!-- AÇÕES -->
-                <div class="mt-4">
+        </div>
 
-                    <button type="submit"
-                            class="btn btn-success w-100 py-3 fw-bold shadow btn-confirm">
+        <div class="col-md-8">
 
-                        ✅ Confirmar e Atualizar Estoque
+            <div class="card bg-dark border-0">
 
-                    </button>
+                <div class="card-body">
 
-                    <a href="{{ url_for('compras.compras_inteligentes') }}"
-                       class="btn btn-link text-white-50 w-100 mt-2">
-
-                        ← Voltar e refazer análise
-
-                    </a>
+                    <span class="text-warning">
+                        OCR concluído com sucesso
+                    </span>
 
                 </div>
 
-            </form>
+            </div>
 
         </div>
 
     </div>
 
-</div>
+    <div class="card bg-dark border-0 shadow-lg">
 
-<!-- STYLE SaaS -->
-<style>
+        <div class="card-body">
 
-    .animate-in {
-        animation: fadeUp 0.5s ease;
-    }
+            <div class="table-responsive">
 
-    @keyframes fadeUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
+                <table class="table table-dark table-hover align-middle">
 
-    /* tabela mais limpa */
-    .table-head th {
-        color: #9ca3af;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
+                    <thead>
 
-    /* linhas animadas */
-    .item-row {
-        animation: fadeUp 0.4s ease forwards;
-        opacity: 0;
-    }
+                        <tr>
+                            <th>Produto</th>
+                            <th>Qtd</th>
+                            <th>Preço</th>
+                            <th>Status</th>
+                            <th>Importar</th>
+                        </tr>
 
-    /* inputs mais SaaS */
-    .form-control:focus {
-        border-color: #f59e0b;
-        box-shadow: 0 0 0 0.2rem rgba(245, 158, 11, 0.15);
-    }
+                    </thead>
 
-    /* botão premium */
-    .btn-confirm {
-        transition: 0.3s ease;
-    }
+                    <tbody>
 
-    .btn-confirm:hover {
-        transform: translateY(-2px);
-        filter: brightness(1.05);
-    }
+                    {% if itens %}
 
-</style>
+                        {% for item in itens %}
+
+                        <tr>
+
+                            <td>
+
+                                <input
+                                    type="text"
+                                    name="nome_{{ loop.index0 }}"
+                                    value="{{ item.nome }}"
+                                    class="form-control bg-secondary text-white border-0">
+
+                            </td>
+
+                            <td>
+
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    name="qtd_{{ loop.index0 }}"
+                                    value="{{ item.quantidade }}"
+                                    class="form-control bg-secondary text-white border-0">
+
+                            </td>
+
+                            <td>
+
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    name="preco_{{ loop.index0 }}"
+                                    value="{{ item.valor_unitario or 0 }}"
+                                    class="form-control bg-secondary text-white border-0">
+
+                            </td>
+
+                            <td>
+
+                                {% if item.status == "existente" %}
+
+                                    <span class="badge bg-success">
+                                        ✔ Existente
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-warning text-dark">
+                                        ✨ Novo
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+
+                                <input type="hidden"
+                                       name="check_{{ loop.index0 }}"
+                                       value="0">
+
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    name="check_{{ loop.index0 }}"
+                                    value="1"
+                                    checked>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    {% else %}
+
+                        <tr>
+
+                            <td colspan="5"
+                                class="text-center py-5 text-white-50">
+
+                                Nenhum item encontrado
+
+                            </td>
+
+                        </tr>
+
+                    {% endif %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+
+                <a href="{{ url_for('compras.compras_inteligentes') }}"
+                   class="btn btn-outline-light">
+
+                    ← Nova Nota
+
+                </a>
+
+                <button
+                    type="submit"
+                    class="btn btn-success fw-bold px-5"
+                    id="btnConfirmar">
+
+                    💾 Confirmar Entrada
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</form>
 
 {% endblock %}

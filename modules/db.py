@@ -74,6 +74,7 @@ def init_db():
     try:
         with get_conn() as conn:
             with conn.cursor() as cur:
+                # Tabela de logs (que você já tem)
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS logs (
                         id SERIAL PRIMARY KEY,
@@ -84,7 +85,19 @@ def init_db():
                         data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
+                
+                # ADICIONE ESTE BLOCO PARA A TABELA FALTANTE
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS movimentacao_produtos (
+                        id SERIAL PRIMARY KEY,
+                        produto_id INTEGER NOT NULL,
+                        quantidade NUMERIC(12, 2) NOT NULL,
+                        tipo VARCHAR(20) NOT NULL,
+                        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
             conn.commit()
-        print("✔ Tabela de logs verificada.")
+        print("✔ Tabelas verificadas/criadas com sucesso.")
     except Exception as e:
-        print(f"❌ Erro ao inicializar tabela de logs: {e}")
+        print(f"❌ Erro ao inicializar tabelas: {e}")

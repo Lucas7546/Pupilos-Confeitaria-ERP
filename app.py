@@ -1,4 +1,5 @@
 import os
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 from flask import Flask, redirect, url_for
 from ape.extensions import init_extensions
 # Importando seus Blueprints organizados
@@ -27,6 +28,11 @@ from modules.db import init_db
 def create_app():
     app = Flask(__name__)
 
+
+    csrf = CSRFProtect(app)
+    @app.context_processor
+    def inject_csrf_token():
+        return dict(csrf_token=generate_csrf)
     # Carrega configurações
     app.config.from_object('ape.config.Config')
     

@@ -1,10 +1,10 @@
 
-from modules.db import get_conn
 from werkzeug.security import generate_password_hash, check_password_hash
 from psycopg2.extras import DictCursor
 from utils.logger import log_info, log_erro
+from modules.db import get_conn
  
- 
+
 def buscar_usuario(username: str):
     try:
         with get_conn() as conn:

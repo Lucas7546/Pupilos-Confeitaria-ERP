@@ -28,15 +28,17 @@ from modules.db import init_db
 def create_app():
     app = Flask(__name__)
 
-
+    # 1. Carrega as configurações PRIMEIRO, para garantir que SECRET_KEY exista
+    app.config.from_object('ape.config.Config')
+    
+    # 2. Inicializa o CSRF depois de ter as configurações carregadas
     csrf = CSRFProtect(app)
+    
     @app.context_processor
     def inject_csrf_token():
         return dict(csrf_token=generate_csrf)
-    # Carrega configurações
-    app.config.from_object('ape.config.Config')
     
-    # Inicializa as extensões
+    # 3. Inicializa as extensões (que podem depender da config)
     init_extensions(app)
     
     # Registro dos Blueprints

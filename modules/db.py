@@ -2,6 +2,8 @@ import os
 import time
 from contextlib import contextmanager
 from psycopg2 import pool
+from flask import g
+from modules.db import get_conn
  
 import logging
  
@@ -12,7 +14,21 @@ import logging
 # consome uma conexão por request autenticado.
 # =========================================================
 _pool: pool.ThreadedConnectionPool | None = None
- 
+
+
+
+
+
+def query(sql, params=()):
+    empresa_id = getattr(g, "empresa_id", None)
+
+    if empresa_id:
+        sql = sql.replace("/*empresa*/", f"id_empresa = {empresa_id}")
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, params)
+            return cur.fetchall() 
  
 def _get_pool() -> pool.ThreadedConnectionPool:
     global _pool

@@ -344,7 +344,8 @@ def fechamento_diario():
 @login_required
 @acesso_requerido("estoque")
 def balanco_diario_page():
-
+    print("BALANCO_DIARIO_VERSAO_NOVA")
+    
     try:
 
         data_param = request.args.get("data", "").strip()
@@ -397,12 +398,12 @@ def balanco_diario_page():
 
                 cur.execute("""
                     SELECT
-                        id_produto,
+                        produto_id,
                         COALESCE(SUM(quantidade),0)
                     FROM movimentacao_produtos
-                    WHERE tipo_movimento = 'entrada'
-                    AND DATE(data_movimento) = %s
-                    GROUP BY id_produto
+                    WHERE tipo = 'entrada'
+                    AND DATE(data) = %s
+                    GROUP BY produto_id
                 """, (hoje_str,))
 
                 producao_dia = {
@@ -422,7 +423,7 @@ def balanco_diario_page():
                         COALESCE(
                             SUM(
                                 CASE
-                                    WHEN mp.tipo_movimento = 'entrada'
+                                    WHEN mp.tipo = 'entrada'
                                         THEN mp.quantidade
                                     ELSE 0
                                 END
@@ -432,7 +433,7 @@ def balanco_diario_page():
                         COALESCE(
                             SUM(
                                 CASE
-                                    WHEN mp.tipo_movimento = 'saida'
+                                    WHEN mp.tipo = 'saida'
                                         THEN mp.quantidade
                                     ELSE 0
                                 END
@@ -442,7 +443,7 @@ def balanco_diario_page():
                     FROM produtos p
 
                     LEFT JOIN movimentacao_produtos mp
-                        ON p.id_produto = mp.id_produto
+                        ON p.id_produto = mp.produto_id
 
                     GROUP BY
                         p.id_produto,

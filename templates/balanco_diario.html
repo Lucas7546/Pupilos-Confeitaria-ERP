@@ -116,13 +116,6 @@ document.getElementById('buscaBalancoItem').addEventListener('keyup', function()
     document.getElementById('contadorItens').textContent = visiveis;
 });
 
-// Filtro por alteração de data (Recarrega a rota passando a data escolhida como parâmetro)
-document.getElementById('filtroDataBalanco').addEventListener('change', function() {
-    let dataSelecionada = this.value;
-    if (dataSelecionada) {
-        window.location.href = "{{ url_for('estoque.balanco_diario_page') }}?data=" + dataSelecionada;
-    }
-});
 
 document.getElementById('filtroDataBalanco').addEventListener('change', function() {
     let dataSelecionada = this.value;

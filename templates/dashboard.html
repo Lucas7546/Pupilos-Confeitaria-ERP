@@ -69,7 +69,7 @@
                 <h4 class="text-success fw-bold mb-0">
 
                     R$
-                    {{ "%.2f"|format(diario.faturamento|float if diario and diario.faturamento else 0) }}
+                    {{ diario.faturamento | default(0) | float | round(2) }}
 
                 </h4>
 
@@ -406,8 +406,7 @@
 
 document.addEventListener("DOMContentLoaded", function () {
 
-    const chartData =
-        {{ (semana.valores_grafico if semana and semana.valores_grafico else [0,0,0,0,0,0,0]) | tojson }};
+    const chartData = {{ semana.valores_grafico | default([0,0,0,0,0,0,0]) | tojson }};
 
     const chartLabels =
         {{ (semana.dias_grafico if semana and semana.dias_grafico else ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']) | tojson }};

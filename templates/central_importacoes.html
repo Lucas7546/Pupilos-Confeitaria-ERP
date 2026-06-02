@@ -40,7 +40,7 @@
 </head>
 
 <body>
-
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <div class="container py-5">
 
     <h2 class="mb-4">📦 Central de Importações</h2>
@@ -170,7 +170,7 @@ document.getElementById("formUpload").addEventListener("submit", async function(
             <tr>
                 <td>${p.nome}</td>
                 <td>${p.quantidade || 0}</td>
-                <td>R$ ${(p.valor_unitario || 0).toFixed(2)}</td>
+                <td>R$ ${Number(p.valor_unitario || 0).toFixed(2)}</td>
                 <td>${badge}</td>
             </tr>
         `;
@@ -190,14 +190,14 @@ document.getElementById("btnConfirmar").addEventListener("click", async function
         return;
     }
 
-    const res = await fetch("/importacao-confirmar", {
+    const csrf = document.querySelector('meta[name="csrf-token"]').content;
+
+    const res = await fetch("/importacao-preview", {
         method: "POST",
         headers: {
-            "Content-Type": "application/json"
+            "X-CSRFToken": csrf
         },
-        body: JSON.stringify({
-            vendas: previewData.vendas
-        })
+        body: formData
     });
 
     const data = await res.json();
@@ -211,6 +211,6 @@ document.getElementById("btnConfirmar").addEventListener("click", async function
 });
 
 </script>
-
+   
 </body>
 </html>

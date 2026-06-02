@@ -252,7 +252,7 @@
 
                                     </a>
                                     <a href="{{ url_for('usuarios.toggle_usuario', id_usuario=user[0]) }}"
-                                        class="btn btn-sm btn-outline-warning">
+                                        class="btn btn-sm btn-outline-warning"
                                         title="{{ 'Desativar usuário' if user[3] == 1 else 'Ativar usuário' }}">
 
                                          {% if user[3] == 1 %}
@@ -264,6 +264,7 @@
 
                                     <form method="POST" 
                                         action="{{ url_for('usuarios.deletar_user', id=user[0]) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-sm btn-outline-warning" title="Alternar status">
                                             <i class="bi {{ 'bi-lock-fill' if user[3] == 1 else 'bi-unlock-fill' }}"></i>
                                         </button>

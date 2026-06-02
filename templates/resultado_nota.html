@@ -19,6 +19,7 @@
             <form id="formConfirmacao"
                   action="{{ url_for('compras.confirmar_nota') }}"
                   method="POST">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <!-- RESUMO -->
                 <div class="row mb-4 text-center">
@@ -54,10 +55,11 @@
 
                         <tbody>
 
-                            {% for item in itens %}
+                            {% for item in itens or [] %}
 
                             <tr class="item-row"
                                 style="animation-delay: {{ loop.index0 * 0.05 }}s">
+                                
 
                                 <td>
                                     <input type="text"
@@ -74,6 +76,10 @@
                                            value="{{ item.quantidade }}"
                                            class="form-control bg-dark text-white border-secondary"
                                            required>
+                                </td>
+
+                                <td colspan="3" class="text-center text-white-50 py-4">
+                                    Nenhum item detectado
                                 </td>
 
                                 <td>

@@ -29,7 +29,7 @@
             <div class="card bg-dark-card border-0 p-4 metric-card">
                 <small class="text-white-50">Faturamento</small>
                 <h2 class="text-success fw-bold mt-2">
-                    R$ {{ "%.2f"|format(faturamento) }}
+                    R${{ "%.2f"|format(faturamento or 0) }} 
                 </h2>
                 <div class="text-white-50 small">Total bruto no período</div>
             </div>
@@ -87,7 +87,7 @@
 
                 <tbody>
 
-                {% for s in simulacoes %}
+                {% for s in simulacoes or [] %}
                     <tr class="transition-row">
 
                         <td class="text-warning fw-bold">

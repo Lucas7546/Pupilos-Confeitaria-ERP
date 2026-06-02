@@ -13,6 +13,7 @@
             <div class="card bg-dark-card border-0 shadow-lg rounded-4 overflow-hidden mb-4">
                 <div class="card-body p-4 p-md-5">
                     <form action="{{ url_for('insumos.rota_registrar_compra') }}" method="POST" id="formCompra">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         
                         <div class="mb-4">
                             <label class="form-label text-white-50 fw-bold small text-uppercase">Ingrediente:</label>
@@ -83,65 +84,72 @@
 </style>
 
 <script>
-    const form = document.getElementById('formCompra');
-    const inputQtd = document.getElementById('inputQtd');
-    const inputPreco = document.getElementById('inputPreco');
-    const selectInsumo = document.getElementById('selectInsumo');
-    const previewCusto = document.getElementById('previewCusto');
-    const avisoPreco = document.getElementById('avisoPreco');
+const form = document.getElementById('formCompra');
+const inputQtd = document.getElementById('inputQtd');
+const inputPreco = document.getElementById('inputPreco');
+const selectInsumo = document.getElementById('selectInsumo');
+const previewCusto = document.getElementById('previewCusto');
+const avisoPreco = document.getElementById('avisoPreco');
 
-    function addQtd(valor) {
-        inputQtd.value = (parseFloat(inputQtd.value || 0) + valor).toFixed(3);
-        calcularPreview();
-    }
+function addQtd(valor) {
+    inputQtd.value = (parseFloat(inputQtd.value || 0) + valor).toFixed(3);
+    calcularPreview();
+}
 
-    function calcularPreview() {
-        const qtd = parseFloat(inputQtd.value) || 0;
-        const preco = parseFloat(inputPreco.value) || 0;
-        const opt = selectInsumo.options[selectInsumo.selectedIndex];
-        const custoAnterior = parseFloat(opt.dataset.custo) || 0;
+function calcularPreview() {
+    const qtd = parseFloat(inputQtd.value) || 0;
+    const preco = parseFloat(inputPreco.value) || 0;
+    const opt = selectInsumo.options[selectInsumo.selectedIndex];
+    const custoAnterior = parseFloat(opt?.dataset?.custo) || 0;
 
-        if (qtd > 0 && preco > 0) {
-            const unit = preco / qtd;
-            previewCusto.textContent = `R$ ${unit.toFixed(2)}`;
-            
-            // Alerta de variação de preço
-            if (custoAnterior > 0) {
-                const variacao = ((unit - custoAnterior) / custoAnterior) * 100;
-                avisoPreco.textContent = Math.abs(variacao) > 30 
-                    ? `⚠️ Atenção: Preço ${variacao > 0 ? 'acima' : 'abaixo'} ${Math.abs(variacao).toFixed(0)}% do normal!` 
-                    : "";
-            }
-        } else {
-            previewCusto.textContent = "R$ 0,00";
-            avisoPreco.textContent = "";
+    if (qtd > 0 && preco > 0) {
+        const unit = preco / qtd;
+        previewCusto.textContent = `R$ ${unit.toFixed(2)}`;
+
+        if (custoAnterior > 0) {
+            const variacao = ((unit - custoAnterior) / custoAnterior) * 100;
+
+            avisoPreco.textContent = Math.abs(variacao) > 30
+                ? `⚠️ Atenção: Preço ${variacao > 0 ? 'acima' : 'abaixo'} ${Math.abs(variacao).toFixed(0)}% do normal!`
+                : "";
         }
+    } else {
+        previewCusto.textContent = "R$ 0,00";
+        avisoPreco.textContent = "";
     }
+}
 
-    inputQtd.addEventListener('input', calcularPreview);
-    inputPreco.addEventListener('input', calcularPreview);
-    selectInsumo.addEventListener('change', (e) => {
-        document.getElementById('unitLabel').textContent = e.target.options[e.target.selectedIndex].dataset.unidade;
-        calcularPreview();
-    });
+inputQtd.addEventListener('input', calcularPreview);
+inputPreco.addEventListener('input', calcularPreview);
 
-    form.addEventListener('submit', async (e) => {
+selectInsumo.addEventListener('change', (e) => {
+    document.getElementById('unitLabel').textContent =
+        e.target.options[e.target.selectedIndex].dataset.unidade;
+
+    calcularPreview();
+});
+
+form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const btn = document.getElementById('btnSubmit');
     btn.disabled = true;
     btn.textContent = "PROCESSANDO...";
 
+    const csrf = document.querySelector('input[name="csrf_token"]').value;
+
     try {
         const response = await fetch(form.action, {
             method: 'POST',
+            headers: {
+                "X-CSRFToken": csrf
+            },
             body: new FormData(form)
         });
 
         const data = await response.json().catch(() => null);
 
         if (response.ok) {
-
             btn.textContent = "✔ CONCLUÍDO";
 
             setTimeout(() => {

@@ -21,6 +21,7 @@
     </div>
 
     <form method="POST" action="{{ url_for('compras.confirmar_nota') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <input type="hidden" name="total_itens" value="{{ total_itens }}">
 
@@ -96,10 +97,8 @@
                                 <!-- CHECK -->
                                 <td>
                                     <div class="form-check">
-                                        <input class="form-check-input"
-                                               type="checkbox"
-                                               checked
-                                               name="check_{{ loop.index0 }}">
+                                        <input type="hidden" name="check_{{ loop.index0 }}" value="0">
+                                        <input class="form-check-input" type="checkbox" name="check_{{ loop.index0 }}" value="1" checked>
                                     </div>
                                 </td>
 

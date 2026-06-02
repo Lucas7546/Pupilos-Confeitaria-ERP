@@ -203,7 +203,8 @@
     <div class="modal-dialog">
 
         <form method="POST"
-              action="{{ url_for('produtos.editar_item_ficha', id_produto=produto[0]) }}">
+              action="{{ url_for('produtos.editar_item_ficha', id_produto=produto[0]) }}" class="form-action">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <div class="modal-content bg-dark text-white">
 
@@ -226,7 +227,7 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn btn-success">Salvar</button>
+                    <button type="submit" class="btn btn-success form-action">Salvar</button>
                 </div>
 
             </div>

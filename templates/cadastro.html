@@ -177,7 +177,8 @@
                     <h4 class="fw-bold text-warning mb-0"><i class="bi bi-tools me-2"></i>Composição de Subproduto (Ficha Técnica da Matéria-Base)</h4>
                 </div>
                 <div class="card-body px-4 py-4">
-                    <form ction="{{ url_for('vinculos.vincular_receita_subproduto') }}" method="POST" class="row g-3 align-items-end">
+                    <form action="{{ url_for('vinculos.vincular_receita_subproduto') }}" method="POST" class="row g-3 align-items-end">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="col-md-4">
                             <label class="form-label text-white-50 small fw-bold">SUBPRODUTO ALVO</label>
                             <select name="id_subproduto" class="form-select custom-input" required>

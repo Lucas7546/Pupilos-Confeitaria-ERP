@@ -3,8 +3,6 @@ import time
 from contextlib import contextmanager
 from psycopg2 import pool
 from flask import g
-from modules.db import get_conn
- 
 import logging
  
 # =========================================================

@@ -18,3 +18,5 @@ with get_conn() as conn:
 
         for linha in cur.fetchall():
             print(linha)
+
+{{ EMPRESA }}

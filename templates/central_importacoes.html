@@ -1,107 +1,47 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Central de Importações</title>
+{% extends "base.html" %}
 
-    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+{% block title %}Central de Importações{% endblock %}
 
-    <style>
-        .card { background: #111827; border: 1px solid #1f2937; }
-        .muted { color: #94a3b8; }
-        .table { color: white; }
-        .hidden { display: none; }
-    </style>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-</head>
-
-<body>
+{% block content %}
 <div class="container py-5">
-
     <h2 class="mb-4">📦 Central de Importações</h2>
 
-    <!-- ========================= -->
-    <!-- UPLOAD CARD -->
-    <!-- ========================= -->
     <div class="card p-3 mb-4">
-
         <h5>Upload de Arquivo</h5>
-
         <form id="formUpload" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="file" name="arquivo" class="form-control mb-3" required>
-
-            <button type="submit" class="btn btn-primary">
-                Gerar Preview IA
-            </button>
+            <button type="submit" class="btn btn-primary">Gerar Preview IA</button>
         </form>
-
-        <small class="muted">
-            iFood / Keeta / 99 Delivery
-        </small>
+        <small class="text-muted">iFood / Keeta / 99 Delivery</small>
     </div>
 
-    <!-- ========================= -->
-    <!-- RESUMO -->
-    <!-- ========================= -->
-    <div id="resumoCard" class="card p-3 mb-4 hidden">
-
+    <div id="resumoCard" class="card p-3 mb-4 d-none">
         <h5>📊 Resumo da Importação</h5>
-
         <div class="row">
-            <div class="col-md-3">
-                <div>Total Itens</div>
-                <h4 id="totalItens">0</h4>
-            </div>
-
-            <div class="col-md-3">
-                <div>Faturamento</div>
-                <h4 id="faturamento">R$ 0</h4>
-            </div>
-
-            <div class="col-md-3">
-                <div>Taxas</div>
-                <h4 id="taxas">R$ 0</h4>
-            </div>
-
-            <div class="col-md-3">
-                <div>Repasse</div>
-                <h4 id="repasse">R$ 0</h4>
-            </div>
+            <div class="col-md-3"><div>Total Itens</div><h4 id="totalItens">0</h4></div>
+            <div class="col-md-3"><div>Faturamento</div><h4 id="faturamento">R$ 0</h4></div>
+            <div class="col-md-3"><div>Taxas</div><h4 id="taxas">R$ 0</h4></div>
+            <div class="col-md-3"><div>Repasse</div><h4 id="repasse">R$ 0</h4></div>
         </div>
-
-        <button id="btnConfirmar" class="btn btn-success mt-3">
-            Confirmar Importação
-        </button>
+        <button id="btnConfirmar" class="btn btn-success mt-3">Confirmar Importação</button>
     </div>
 
-    <!-- ========================= -->
-    <!-- PRODUTOS PREVIEW -->
-    <!-- ========================= -->
-    <div id="produtosCard" class="card p-3 hidden">
-
+    <div id="produtosCard" class="card p-3 d-none">
         <h5>🧾 Produtos Detectados</h5>
-
         <table class="table table-dark table-striped mt-3">
             <thead>
-                <tr>
-                    <th>Produto</th>
-                    <th>Qtd</th>
-                    <th>Valor Unit</th>
-                    <th>Status</th>
-                </tr>
+                <tr><th>Produto</th><th>Qtd</th><th>Valor Unit</th><th>Status</th></tr>
             </thead>
             <tbody id="tabelaProdutos"></tbody>
         </table>
-
     </div>
-
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
 let previewData = null;
-
-// Função para pegar o token CSRF das metas
-const getCsrf = () => document.querySelector('meta[name="csrf-token"]').content;
 
 // UPLOAD → PREVIEW IA
 document.getElementById("formUpload").addEventListener("submit", async function(e) {
@@ -110,7 +50,7 @@ document.getElementById("formUpload").addEventListener("submit", async function(
 
     const res = await fetch("/importacao-preview", {
         method: "POST",
-        headers: { "X-CSRFToken": getCsrf() }, // Adicionado header de segurança
+        headers: { "X-CSRFToken": "{{ csrf_token() }}" },
         body: formData
     });
 
@@ -118,7 +58,7 @@ document.getElementById("formUpload").addEventListener("submit", async function(
     if (!data.sucesso) { alert(data.erro || "Erro no preview"); return; }
 
     previewData = data;
-    document.getElementById("resumoCard").classList.remove("hidden");
+    document.getElementById("resumoCard").classList.remove("d-none");
     document.getElementById("totalItens").innerText = data.resumo.total_itens;
     document.getElementById("faturamento").innerText = "R$ " + data.resumo.faturamento.toFixed(2);
     document.getElementById("taxas").innerText = "R$ " + data.resumo.taxas.toFixed(2);
@@ -137,11 +77,11 @@ document.getElementById("formUpload").addEventListener("submit", async function(
 document.getElementById("btnConfirmar").addEventListener("click", async function() {
     if (!previewData) { alert("Faça o preview primeiro."); return; }
 
-    const res = await fetch("/importacao-confirmar", { // Ajuste a rota se necessário
+    const res = await fetch("/importacao-confirmar", { 
         method: "POST",
         headers: { 
             "Content-Type": "application/json",
-            "X-CSRFToken": getCsrf() 
+            "X-CSRFToken": "{{ csrf_token() }}"
         },
         body: JSON.stringify(previewData)
     });
@@ -155,6 +95,4 @@ document.getElementById("btnConfirmar").addEventListener("click", async function
     }
 });
 </script>
-   
-</body>
-</html>
+{% endblock %}

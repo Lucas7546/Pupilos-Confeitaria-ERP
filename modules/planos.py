@@ -4,24 +4,38 @@ from functools import wraps
 
 
 def get_plano_empresa():
-    empresa_id = getattr(g, "empresa_id", None)
 
-    if not empresa_id:
+    try:
+
+        empresa_id = getattr(g, "empresa_id", None)
+
+        if empresa_id is None:
+            return "basic"
+
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+
+                cur.execute(
+                    """
+                    SELECT plano
+                    FROM empresa_planos
+                    WHERE id_empresa = %s
+                    AND ativo = TRUE
+                    ORDER BY id DESC
+                    LIMIT 1
+                    """,
+                    (empresa_id,)
+                )
+
+                row = cur.fetchone()
+
+        if not row:
+            return "basic"
+
+        return row[0]
+
+    except Exception:
         return "basic"
-
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT plano
-                FROM empresa_planos
-                WHERE id_empresa = %s
-                AND ativo = TRUE
-                ORDER BY id DESC
-                LIMIT 1
-            """, (empresa_id,))
-            row = cur.fetchone()
-
-    return row[0] if row else "basic"
 
 def plano_requerido(plano_minimo):
     

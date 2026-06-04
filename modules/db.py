@@ -18,11 +18,6 @@ _pool: pool.ThreadedConnectionPool | None = None
 
 
 def query(sql, params=()):
-    empresa_id = getattr(g, "empresa_id", None)
-
-    if empresa_id:
-        sql = sql.replace("/*empresa*/", f"id_empresa = {empresa_id}")
-
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, params)

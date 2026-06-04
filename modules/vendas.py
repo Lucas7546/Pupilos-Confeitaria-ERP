@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
-
+from modules.receitas import calcular_custo_receita
 from modules.db import get_conn
 from utils.logger import log_info, log_erro
+from flask_login import current_user
 
 
 # =========================================================
@@ -9,40 +10,49 @@ from utils.logger import log_info, log_erro
 # =========================================================
 def obter_resumo_periodo(dias: int = 7) -> dict:
     try:
+
         data_inicio = datetime.now() - timedelta(days=dias)
+        id_empresa = current_user.id_empresa
+
         with get_conn() as conn:
             with conn.cursor() as cur:
-                
-                # --- AQUI ESTAVA FALTANDO ESTA QUERY ---
+
                 cur.execute(
                     """
-                    SELECT 
+                    SELECT
                         COALESCE(SUM(valor_total), 0),
                         COUNT(id_venda),
                         COALESCE(SUM(lucro), 0)
                     FROM vendas
                     WHERE data_venda >= %s
+                    AND id_empresa = %s
                     """,
-                    (data_inicio,),
+                    (data_inicio, id_empresa),
                 )
-                faturamento, total_vendas, lucro = cur.fetchone()
-                # ----------------------------------------
 
-                # Query para o gráfico
+                faturamento, total_vendas, lucro = cur.fetchone()
+
                 cur.execute(
                     """
-                    SELECT 
-                        TO_CHAR(d.data, 'DD/MM'), 
+                    SELECT
+                        TO_CHAR(d.data, 'DD/MM'),
                         COALESCE(SUM(v.valor_total), 0)
                     FROM (
-                        SELECT generate_series(CURRENT_DATE - %s, CURRENT_DATE, '1 day'::interval)::date AS data
+                        SELECT generate_series(
+                            CURRENT_DATE - %s,
+                            CURRENT_DATE,
+                            '1 day'::interval
+                        )::date AS data
                     ) d
-                    LEFT JOIN vendas v ON DATE(v.data_venda) = d.data
+                    LEFT JOIN vendas v
+                        ON DATE(v.data_venda) = d.data
+                        AND v.id_empresa = %s
                     GROUP BY d.data
                     ORDER BY d.data
                     """,
-                    (dias - 1,),
+                    (dias - 1, id_empresa),
                 )
+
                 grafico = cur.fetchall()
 
         return {
@@ -52,8 +62,10 @@ def obter_resumo_periodo(dias: int = 7) -> dict:
             "dias_grafico": [l[0] for l in grafico],
             "valores_grafico": [float(l[1]) for l in grafico],
         }
+
     except Exception as e:
         log_erro(f"Erro ao obter resumo de vendas: {e}")
+
         return {
             "faturamento": 0.0,
             "total_vendas": 0,
@@ -76,9 +88,11 @@ def registrar_venda(
     usuario: str = "Sistema",
 ) -> bool:
 
-    from modules.receitas import calcular_custo_receita
+
 
     try:
+
+        id_empresa = current_user.id_empresa
 
         custo_unitario = calcular_custo_receita(id_produto)
 
@@ -102,13 +116,15 @@ def registrar_venda(
                         valor_total,
                         lucro,
                         canal_venda,
-                        usuario
+                        usuario,
+                        id_empresa
                     )
                     VALUES
                     (
                         %s,
                         %s,
                         'Sistema',
+                        %s,
                         %s
                     )
                     RETURNING id_venda
@@ -116,7 +132,8 @@ def registrar_venda(
                     (
                         valor_total,
                         lucro_total,
-                        usuario
+                        usuario,
+                        id_empresa
                     )
                 )
 
@@ -131,8 +148,12 @@ def registrar_venda(
                     SELECT preco_venda
                     FROM produtos
                     WHERE id_produto = %s
+                    AND id_empresa = %s
                     """,
-                    (id_produto,)
+                    (
+                        id_produto,
+                        id_empresa
+                    )
                 )
 
                 row = cur.fetchone()
@@ -155,10 +176,12 @@ def registrar_venda(
                         id_venda,
                         id_produto,
                         quantidade,
-                        valor_unitario
+                        valor_unitario,
+                        id_empresa
                     )
                     VALUES
                     (
+                        %s,
                         %s,
                         %s,
                         %s,
@@ -169,12 +192,13 @@ def registrar_venda(
                         id_venda,
                         id_produto,
                         quantidade,
-                        preco_unitario
+                        preco_unitario,
+                        id_empresa
                     )
                 )
 
                 # =====================================
-                # SAÍDA DO PRODUTO FINAL
+                # SAÍDA PRODUTO FINAL
                 # =====================================
 
                 cur.execute(
@@ -184,12 +208,14 @@ def registrar_venda(
                         id_produto,
                         tipo_movimento,
                         quantidade,
-                        observacao
+                        observacao,
+                        id_empresa
                     )
                     VALUES
                     (
                         %s,
                         'saida',
+                        %s,
                         %s,
                         %s
                     )
@@ -197,12 +223,13 @@ def registrar_venda(
                     (
                         id_produto,
                         quantidade,
-                        f"Venda ID {id_venda}"
+                        f"Venda ID {id_venda}",
+                        id_empresa
                     )
                 )
 
                 # =====================================
-                # BUSCA RECEITA
+                # RECEITA
                 # =====================================
 
                 cur.execute(
@@ -213,8 +240,12 @@ def registrar_venda(
                         quantidade_utilizada
                     FROM receitas
                     WHERE id_produto = %s
+                    AND id_empresa = %s
                     """,
-                    (id_produto,)
+                    (
+                        id_produto,
+                        id_empresa
+                    )
                 )
 
                 ingredientes = cur.fetchall()
@@ -235,7 +266,7 @@ def registrar_venda(
                     )
 
                     # -----------------------------
-                    # MATÉRIA-PRIMA
+                    # MATÉRIA PRIMA
                     # -----------------------------
 
                     if id_materia_prima:
@@ -247,12 +278,14 @@ def registrar_venda(
                                 id_materia_prima,
                                 tipo_movimento,
                                 quantidade,
-                                observacao
+                                observacao,
+                                id_empresa
                             )
                             VALUES
                             (
                                 %s,
                                 'saida',
+                                %s,
                                 %s,
                                 %s
                             )
@@ -260,7 +293,8 @@ def registrar_venda(
                             (
                                 id_materia_prima,
                                 qtd_baixa,
-                                f"Venda ID {id_venda}"
+                                f"Venda ID {id_venda}",
+                                id_empresa
                             )
                         )
 
@@ -277,12 +311,14 @@ def registrar_venda(
                                 id_subproduto,
                                 tipo_movimento,
                                 quantidade,
-                                observacao
+                                observacao,
+                                id_empresa
                             )
                             VALUES
                             (
                                 %s,
                                 'saida',
+                                %s,
                                 %s,
                                 %s
                             )
@@ -290,14 +326,15 @@ def registrar_venda(
                             (
                                 id_subproduto,
                                 qtd_baixa,
-                                f"Venda ID {id_venda}"
+                                f"Venda ID {id_venda}",
+                                id_empresa
                             )
                         )
 
             conn.commit()
 
         log_info(
-            f"Venda {id_venda} registrada - Produto {id_produto}"
+            f"Venda {id_venda} registrada - Empresa {id_empresa}"
         )
 
         return True
@@ -308,7 +345,6 @@ def registrar_venda(
             f"Erro ao registrar venda (Prod {id_produto}): {e}"
         )
 
-        
         return False
 
 
@@ -316,20 +352,32 @@ def registrar_venda(
 # LISTAR VENDAS RECENTES
 # =========================================================
 def listar_vendas_recentes(limite: int = 10) -> list[dict]:
+    d_empresa = current_user.id_empresa
     try:
         with get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    """
-                    SELECT v.id_venda, p.nome, iv.quantidade, v.valor_total, v.data_venda
-                    FROM vendas v
-                    JOIN itens_venda iv ON iv.id_venda = v.id_venda
-                    JOIN produtos p ON p.id_produto = iv.id_produto
-                    ORDER BY v.data_venda DESC
-                    LIMIT %s
-                    """,
-                    (limite,),
-                )
+    """
+    SELECT
+        v.id_venda,
+        p.nome,
+        iv.quantidade,
+        v.valor_total,
+        v.data_venda
+    FROM vendas v
+    JOIN itens_venda iv
+        ON iv.id_venda = v.id_venda
+    JOIN produtos p
+        ON p.id_produto = iv.id_produto
+    WHERE v.id_empresa = %s
+    ORDER BY v.data_venda DESC
+    LIMIT %s
+    """,
+    (
+        id_empresa,
+        limite
+    ),
+)
                 rows = cur.fetchall()
 
         return [

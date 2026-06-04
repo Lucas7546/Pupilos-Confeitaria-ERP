@@ -132,14 +132,32 @@ def criar_usuario(username: str, senha: str, nivel: str = "colaborador") -> bool
         return False
  
  
-def listar_usuarios() -> list:
+def listar_usuarios():
+
     try:
+
+        id_empresa = current_user.id_empresa
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(
-                    "SELECT id_usuario, username, nivel, ativo, data_cadastro FROM usuarios ORDER BY id_usuario DESC"
+                    """
+                    SELECT
+                        id_usuario,
+                        username,
+                        nivel,
+                        ativo,
+                        data_cadastro
+                    FROM usuarios
+                    WHERE id_empresa = %s
+                    ORDER BY id_usuario DESC
+                    """,
+                    (id_empresa,)
                 )
+
                 return cur.fetchall()
+
     except Exception as e:
         log_erro(f"Erro ao listar usuários: {e}")
         return []

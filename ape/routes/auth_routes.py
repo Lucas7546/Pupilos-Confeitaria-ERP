@@ -8,7 +8,6 @@ from utils.logger import log_erro
 from modules.permissoes import acesso_requerido
 from ape.extensions import limiter
 from ape.services.log_service import registrar_log
-from flask_wtf.csrf import csrf_exempt
 
 
 auth_bp = Blueprint("auth", __name__)
@@ -17,7 +16,6 @@ auth_bp = Blueprint("auth", __name__)
 # =============================================================
 # LOGIN
 # =============================================================
-@csrf_exempt
 @auth_bp.route("/login", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def login():

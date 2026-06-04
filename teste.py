@@ -1,13 +1,26 @@
 from dotenv import load_dotenv
-from modules.usuarios import buscar_usuario
+from modules.db import get_conn
 
 load_dotenv()
 
-user_data = buscar_usuario("admin")
+with get_conn() as conn:
+    with conn.cursor() as cur:
 
-u = User(user_data)
+        cur.execute("""
+            SELECT
+                table_name,
+                column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+            ORDER BY table_name, ordinal_position
+        """)
 
-print(u.id)
-print(u.username)
-print(u.nivel)
-print(u.id_empresa)
+        atual = ""
+
+        for tabela, coluna in cur.fetchall():
+
+            if tabela != atual:
+                print(f"\n[{tabela}]")
+                atual = tabela
+
+            print(" -", coluna)

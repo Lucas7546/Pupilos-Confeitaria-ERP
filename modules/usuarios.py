@@ -35,9 +35,17 @@ def buscar_usuario(username: str):
                     (username.strip(),)
                 )
 
-    user = cur.fetchone()
+                user = cur.fetchone()
 
-    return user
+                return user
+
+    except Exception as e:
+
+        log_erro(
+            f"Erro ao buscar usuário {username}: {e}"
+        )
+
+        return None
 
  
 

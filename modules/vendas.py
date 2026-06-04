@@ -357,27 +357,16 @@ def listar_vendas_recentes(limite: int = 10) -> list[dict]:
         with get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-    """
-    SELECT
-        v.id_venda,
-        p.nome,
-        iv.quantidade,
-        v.valor_total,
-        v.data_venda
-    FROM vendas v
-    JOIN itens_venda iv
-        ON iv.id_venda = v.id_venda
-    JOIN produtos p
-        ON p.id_produto = iv.id_produto
-    WHERE v.id_empresa = %s
-    ORDER BY v.data_venda DESC
-    LIMIT %s
-    """,
-    (
-        id_empresa,
-        limite
-    ),
-)
+                    """
+                    SELECT v.id_venda, p.nome, iv.quantidade, v.valor_total, v.data_venda
+                    FROM vendas v
+                    JOIN itens_venda iv ON iv.id_venda = v.id_venda
+                    JOIN produtos p ON p.id_produto = iv.id_produto
+                    ORDER BY v.data_venda DESC
+                    LIMIT %s
+                    """,
+                    (limite,),
+                )
                 rows = cur.fetchall()
 
         return [

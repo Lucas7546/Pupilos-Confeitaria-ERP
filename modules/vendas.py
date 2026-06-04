@@ -352,21 +352,37 @@ def registrar_venda(
 # LISTAR VENDAS RECENTES
 # =========================================================
 def listar_vendas_recentes(limite: int = 10) -> list[dict]:
-    d_empresa = current_user.id_empresa
+
+    id_empresa = current_user.id_empresa
+
     try:
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(
                     """
-                    SELECT v.id_venda, p.nome, iv.quantidade, v.valor_total, v.data_venda
+                    SELECT
+                        v.id_venda,
+                        p.nome,
+                        iv.quantidade,
+                        v.valor_total,
+                        v.data_venda
                     FROM vendas v
-                    JOIN itens_venda iv ON iv.id_venda = v.id_venda
-                    JOIN produtos p ON p.id_produto = iv.id_produto
+                    JOIN itens_venda iv
+                        ON iv.id_venda = v.id_venda
+                    JOIN produtos p
+                        ON p.id_produto = iv.id_produto
+                    WHERE v.id_empresa = %s
                     ORDER BY v.data_venda DESC
                     LIMIT %s
                     """,
-                    (limite,),
+                    (
+                        id_empresa,
+                        limite
+                    ),
                 )
+
                 rows = cur.fetchall()
 
         return [
@@ -379,10 +395,12 @@ def listar_vendas_recentes(limite: int = 10) -> list[dict]:
             }
             for r in rows
         ]
-    except Exception as e:
-        log_erro(f"Erro ao listar vendas recentes: {e}")
-        return []
 
+    except Exception as e:
+
+        log_erro(f"Erro ao listar vendas recentes: {e}")
+
+        return []
 
 # =========================================================
 # EXCLUIR / ESTORNAR VENDA
@@ -391,21 +409,41 @@ def excluir_venda(id_venda: int) -> bool:
 
     try:
 
+        id_empresa = current_user.id_empresa
+
         with get_conn() as conn:
 
             with conn.cursor() as cur:
 
-                # Verifica se existe
+                # =====================================
+                # VERIFICA SE A VENDA EXISTE
+                # =====================================
+
                 cur.execute(
-                    "SELECT 1 FROM vendas WHERE id_venda = %s",
-                    (id_venda,)
+                    """
+                    SELECT 1
+                    FROM vendas
+                    WHERE id_venda = %s
+                    AND id_empresa = %s
+                    """,
+                    (
+                        id_venda,
+                        id_empresa
+                    )
                 )
 
                 if not cur.fetchone():
-                    log_info(f"Venda {id_venda} não encontrada.")
+
+                    log_info(
+                        f"Venda {id_venda} não encontrada para empresa {id_empresa}."
+                    )
+
                     return False
 
-                # Busca itens vendidos
+                # =====================================
+                # BUSCA ITENS VENDIDOS
+                # =====================================
+
                 cur.execute(
                     """
                     SELECT
@@ -413,8 +451,12 @@ def excluir_venda(id_venda: int) -> bool:
                         quantidade
                     FROM itens_venda
                     WHERE id_venda = %s
+                    AND id_empresa = %s
                     """,
-                    (id_venda,)
+                    (
+                        id_venda,
+                        id_empresa
+                    )
                 )
 
                 itens = cur.fetchall()
@@ -433,8 +475,12 @@ def excluir_venda(id_venda: int) -> bool:
                             quantidade_utilizada
                         FROM receitas
                         WHERE id_produto = %s
+                        AND id_empresa = %s
                         """,
-                        (id_produto,)
+                        (
+                            id_produto,
+                            id_empresa
+                        )
                     )
 
                     ingredientes = cur.fetchall()
@@ -450,9 +496,9 @@ def excluir_venda(id_venda: int) -> bool:
                             * float(quantidade_vendida)
                         )
 
-                        # -------------------------
+                        # =================================
                         # DEVOLVE MATÉRIA-PRIMA
-                        # -------------------------
+                        # =================================
 
                         if id_mp:
 
@@ -463,12 +509,14 @@ def excluir_venda(id_venda: int) -> bool:
                                     id_materia_prima,
                                     tipo_movimento,
                                     quantidade,
-                                    observacao
+                                    observacao,
+                                    id_empresa
                                 )
                                 VALUES
                                 (
                                     %s,
                                     'entrada',
+                                    %s,
                                     %s,
                                     %s
                                 )
@@ -476,13 +524,14 @@ def excluir_venda(id_venda: int) -> bool:
                                 (
                                     id_mp,
                                     quantidade_estorno,
-                                    f"ESTORNO VENDA {id_venda}"
+                                    f"ESTORNO VENDA {id_venda}",
+                                    id_empresa
                                 )
                             )
 
-                        # -------------------------
+                        # =================================
                         # DEVOLVE SUBPRODUTO
-                        # -------------------------
+                        # =================================
 
                         if id_subproduto:
 
@@ -493,12 +542,14 @@ def excluir_venda(id_venda: int) -> bool:
                                     id_subproduto,
                                     tipo_movimento,
                                     quantidade,
-                                    observacao
+                                    observacao,
+                                    id_empresa
                                 )
                                 VALUES
                                 (
                                     %s,
                                     'entrada',
+                                    %s,
                                     %s,
                                     %s
                                 )
@@ -506,28 +557,47 @@ def excluir_venda(id_venda: int) -> bool:
                                 (
                                     id_subproduto,
                                     quantidade_estorno,
-                                    f"ESTORNO VENDA {id_venda}"
+                                    f"ESTORNO VENDA {id_venda}",
+                                    id_empresa
                                 )
                             )
+
+                # =====================================
+                # REMOVE ITENS
+                # =====================================
+
+                cur.execute(
+                    """
+                    DELETE FROM itens_venda
+                    WHERE id_venda = %s
+                    AND id_empresa = %s
+                    """,
+                    (
+                        id_venda,
+                        id_empresa
+                    )
+                )
 
                 # =====================================
                 # REMOVE VENDA
                 # =====================================
 
                 cur.execute(
-                    "DELETE FROM itens_venda WHERE id_venda = %s",
-                    (id_venda,)
-                )
-
-                cur.execute(
-                    "DELETE FROM vendas WHERE id_venda = %s",
-                    (id_venda,)
+                    """
+                    DELETE FROM vendas
+                    WHERE id_venda = %s
+                    AND id_empresa = %s
+                    """,
+                    (
+                        id_venda,
+                        id_empresa
+                    )
                 )
 
             conn.commit()
 
         log_info(
-            f"Venda {id_venda} excluída com estorno de estoque."
+            f"Venda {id_venda} excluída com estorno de estoque. Empresa: {id_empresa}"
         )
 
         return True
@@ -541,20 +611,47 @@ def excluir_venda(id_venda: int) -> bool:
         return False
 
 
+
 # =========================================================
 # CUSTO TOTAL DAS VENDAS
 # =========================================================
 def obter_custo_total_vendas(dias: int = 30) -> float:
+
     try:
+
+        id_empresa = current_user.id_empresa
+
         data_inicio = datetime.now() - timedelta(days=dias)
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(
-                    "SELECT COALESCE(SUM(lucro), 0), COALESCE(SUM(valor_total), 0) FROM vendas WHERE data_venda >= %s",
-                    (data_inicio,),
+                    """
+                    SELECT
+                        COALESCE(SUM(lucro), 0),
+                        COALESCE(SUM(valor_total), 0)
+                    FROM vendas
+                    WHERE data_venda >= %s
+                    AND id_empresa = %s
+                    """,
+                    (
+                        data_inicio,
+                        id_empresa
+                    ),
                 )
+
                 lucro_total, faturamento = cur.fetchone()
-        return round(float(faturamento) - float(lucro_total), 2)
+
+        return round(
+            float(faturamento) - float(lucro_total),
+            2
+        )
+
     except Exception as e:
-        log_erro(f"Erro ao calcular custo total das vendas: {e}")
+
+        log_erro(
+            f"Erro ao calcular custo total das vendas: {e}"
+        )
+
         return 0.0

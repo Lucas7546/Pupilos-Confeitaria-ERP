@@ -1,22 +1,13 @@
 from dotenv import load_dotenv
-from modules.db import get_conn
+from modules.usuarios import buscar_usuario
 
 load_dotenv()
 
+user_data = buscar_usuario("admin")
 
+u = User(user_data)
 
-
-with get_conn() as conn:
-    with conn.cursor() as cur:
-
-        cur.execute("""
-            SELECT
-                id_produto,
-                nome
-            FROM produtos
-        """)
-
-        for linha in cur.fetchall():
-            print(linha)
-
-{{ EMPRESA }}
+print(u.id)
+print(u.username)
+print(u.nivel)
+print(u.id_empresa)

@@ -8,62 +8,62 @@ from werkzeug.security import check_password_hash
 # USER MODEL
 # =============================================================
 class User(UserMixin):
-    def __init__(self, id_usuario: int, username: str, nivel: str):
-        self.id = id_usuario
-        self.username = username
-        self.nivel = nivel
+    def __init__(self, user_data):
+        self.id = str(user_data['id_usuario'])
+        self.username = user_data['username']
+        self.nivel = user_data['nivel']
+        self.ativo = user_data['ativo']
+        # MULTIEMPRESA
+        self.id_empresa = user_data('id_empresa')
 
 
 # =============================================================
 # FLASK-LOGIN LOADER
 # =============================================================
 def load_user(user_id: str):
-    """
-    Reconstrói usuário sem bater no banco em toda request.
-
-    Estratégia:
-    1. Usa session (rápido)
-    2. Fallback no banco (caso session expire)
-    """
 
     if not user_id:
         return None
 
     username = session.get("username")
     nivel = session.get("nivel")
+    id_empresa = session.get("id_empresa")
 
     # =========================================================
     # FAST PATH (SEM BANCO)
     # =========================================================
-    if username and nivel:
-        return User(int(user_id), username, nivel)
+    if username and nivel and id_empresa:
+
+        return User(
+            int(user_id),
+            username,
+            nivel,
+            id_empresa
+        )
 
     # =========================================================
     # FALLBACK (BANCO)
     # =========================================================
     try:
+
         usuario = buscar_usuario_id(int(user_id))
+
         if not usuario:
             return None
 
-        # Caso retorno seja dict
         if hasattr(usuario, "keys"):
+
             if not usuario.get("ativo"):
                 return None
 
             return User(
                 usuario["id_usuario"],
                 usuario["username"],
-                usuario["nivel"]
+                usuario["nivel"],
+                usuario["id_empresa"]
             )
 
-        # Caso retorno seja tuple
-        id_u, username_db, _senha, nivel_db, ativo = usuario[:5]
-
-        if not ativo:
-            return None
-
-        return User(id_u, username_db, nivel_db)
+        return None
 
     except Exception:
         return None
@@ -73,10 +73,6 @@ def load_user(user_id: str):
 # VALIDAR LOGIN
 # =============================================================
 def validar_login(username: str, senha: str):
-    """
-    Valida credenciais no login.
-    Retorna User ou None.
-    """
 
     usuario = buscar_usuario(username)
 
@@ -84,7 +80,14 @@ def validar_login(username: str, senha: str):
         return None
 
     try:
-        id_user, username_db, senha_db, nivel_db, ativo = usuario[:5]
+
+        id_user = usuario["id_usuario"]
+        username_db = usuario["username"]
+        senha_db = usuario["senha"]
+        nivel_db = usuario["nivel"]
+        ativo = usuario["ativo"]
+        id_empresa = usuario["id_empresa"]
+
     except Exception:
         return None
 
@@ -94,4 +97,9 @@ def validar_login(username: str, senha: str):
     if not check_password_hash(senha_db, senha):
         return None
 
-    return User(id_user, username_db, nivel_db)
+    return User(
+        id_user,
+        username_db,
+        nivel_db,
+        id_empresa
+    )

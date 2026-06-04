@@ -12,9 +12,11 @@ def obter_resumo_periodo(dias: int = 7) -> dict:
         data_inicio = datetime.now() - timedelta(days=dias)
         with get_conn() as conn:
             with conn.cursor() as cur:
+                
+                # --- AQUI ESTAVA FALTANDO ESTA QUERY ---
                 cur.execute(
                     """
-                    SELECT
+                    SELECT 
                         COALESCE(SUM(valor_total), 0),
                         COUNT(id_venda),
                         COALESCE(SUM(lucro), 0)
@@ -24,16 +26,22 @@ def obter_resumo_periodo(dias: int = 7) -> dict:
                     (data_inicio,),
                 )
                 faturamento, total_vendas, lucro = cur.fetchone()
+                # ----------------------------------------
 
+                # Query para o gráfico
                 cur.execute(
                     """
-                    SELECT TO_CHAR(DATE(data_venda), 'DD/MM'), COALESCE(SUM(valor_total), 0)
-                    FROM vendas
-                    WHERE data_venda >= %s
-                    GROUP BY DATE(data_venda)
-                    ORDER BY DATE(data_venda)
+                    SELECT 
+                        TO_CHAR(d.data, 'DD/MM'), 
+                        COALESCE(SUM(v.valor_total), 0)
+                    FROM (
+                        SELECT generate_series(CURRENT_DATE - %s, CURRENT_DATE, '1 day'::interval)::date AS data
+                    ) d
+                    LEFT JOIN vendas v ON DATE(v.data_venda) = d.data
+                    GROUP BY d.data
+                    ORDER BY d.data
                     """,
-                    (data_inicio,),
+                    (dias - 1,),
                 )
                 grafico = cur.fetchall()
 

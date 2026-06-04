@@ -5,10 +5,11 @@ from modules.usuarios import buscar_usuario_id
 
 class User(UserMixin):
     def __init__(self, user_data):
-        self.id = str(user_data['id_usuario'])
-        self.username = user_data['username']
-        self.nivel = user_data['nivel']
-        self.ativo = user_data['ativo']
+        self.id = str(user_data["id_usuario"])
+        self.username = user_data["username"]
+        self.nivel = user_data["nivel"]
+        self.ativo = user_data["ativo"]
+        self.id_empresa = user_data["id_empresa"]
 
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
@@ -60,3 +61,4 @@ def get_rate_limit_key():
         pass
 
     return get_remote_address()
+

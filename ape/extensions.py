@@ -3,6 +3,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from modules.usuarios import buscar_usuario_id 
 
+
 class User(UserMixin):
     def __init__(self, user_data):
         self.id = str(user_data["id_usuario"])
@@ -25,22 +26,19 @@ def load_user(user_id):
         pass # Se não for um ID válido, simplesmente não carrega o usuário
     return None
 
-
+# =============================================================
+# RATE LIMIT
+# =============================================================
 def rate_limit_key():
-    """
-    Rate limit por usuário autenticado, fallback para IP.
-    """
-    # Proteção: só tente acessar o id se o user_loader estiver configurado
-    try:
-        if current_user and current_user.is_authenticated:
-            return str(current_user.id)
-    except:
-        pass
+    # Proteção: Verifica se o user está logado e se tem ID
+    if current_user and current_user.is_authenticated:
+        return f"u:{current_user.id}"
     return get_remote_address()
 
 limiter = Limiter(
     key_func=rate_limit_key,
-    default_limits=["200 per day", "50 per hour"]
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
 )
 # =============================================================
 # INIT APP
@@ -49,16 +47,7 @@ def init_extensions(app):
     login_manager.init_app(app)
     limiter.init_app(app)
 
-# =============================================================
-# RATE LIMIT
-# =============================================================
-
-def get_rate_limit_key():
-    try:
-        if current_user.is_authenticated:
-            return f"user:{current_user.id}"
-    except Exception:
-        pass
-
-    return get_remote_address()
-
+@limiter.request_filter
+def handle_ratelimit_error(e):
+    # Isso será disparado quando alguém for bloqueado
+    print(f"Bloqueado pelo Limiter: {e.description}")

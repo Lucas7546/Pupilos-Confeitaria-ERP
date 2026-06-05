@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required
+from flask_login import login_required, current_user
 from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
+from ape.extensions import limiter
 from modules import financeiro as financeiro_service
 from utils.helpers import _parse_float
 
@@ -39,6 +40,8 @@ def relatorio_financeiro():
 @financeiro_bp.route("/despesas", methods=["GET", "POST"])
 @login_required
 @acesso_requerido("financeiro")
+@limiter.limit("10 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def despesas():
 
     if request.method == "POST":
@@ -72,6 +75,8 @@ def despesas():
 @financeiro_bp.route("/fluxo-caixa", methods=["GET"])
 @login_required
 @acesso_requerido("financeiro")
+@limiter.limit("15 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def fluxo_caixa():
 
     dados = financeiro_service.get_fluxo_caixa() or {}

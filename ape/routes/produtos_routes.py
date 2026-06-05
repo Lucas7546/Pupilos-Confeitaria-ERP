@@ -7,11 +7,14 @@ from utils.helpers import _parse_float
 from modules.db import get_conn
 from modules import produtos, estoque
 from psycopg2.extras import RealDictCursor
+from ape.extensions import limiter
 
 produtos_bp = Blueprint('produtos', __name__)
 
 @produtos_bp.route("/cadastrar-produto", methods=["POST"])
 @login_required
+@limiter.limit("15 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def cadastrar_produto_final():
     nome      = request.form.get("nome", "").strip()
     preco     = _parse_float(request.form.get("preco", ""))
@@ -30,6 +33,8 @@ def cadastrar_produto_final():
 
 @produtos_bp.route("/editar-produto/<int:id_produto>", methods=["POST"])
 @login_required
+@limiter.limit("15 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def atualizar_produto(id_produto):
     nome = request.form.get("nome", "").strip()
     preco = _parse_float(request.form.get("preco", "0").strip())
@@ -48,6 +53,8 @@ def atualizar_produto(id_produto):
 @produtos_bp.route("/excluir-produto/<int:id_produto>", methods=["POST"])
 @login_required
 @acesso_requerido("estoque")
+@limiter.limit("15 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def deletar_produto(id_produto):
     if produtos.excluir_produto(id_produto):
         registrar_log("DELETAR", "PRODUTOS", f"ID {id_produto} removido por '{current_user.username}'")
@@ -146,6 +153,8 @@ def ficha_tecnica(id_produto):
 
 @produtos_bp.route("/ficha-tecnica/editar-item/<int:id_produto>", methods=["POST"])
 @login_required
+@limiter.limit("15 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def editar_item_ficha(id_produto):
     id_vinculo_raw = request.form.get("id_vinculo")
     qtd_raw = request.form.get("quantidade", "0").strip()

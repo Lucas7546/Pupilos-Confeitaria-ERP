@@ -6,11 +6,14 @@ from utils.helpers import _parse_float
 from modules import estoque
 from utils.logger import log_erro
 from modules.db import get_conn
+from ape.extensions import limiter
 
 subprodutos_bp = Blueprint('subprodutos', __name__)
 
 @subprodutos_bp.route("/cadastrar-subproduto", methods=["POST"])
 @login_required
+@limiter.limit("15 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def cadastrar_subproduto():
     nome    = request.form.get("nome", "").strip()
     unidade = request.form.get("unidade", "").strip()
@@ -26,6 +29,8 @@ def cadastrar_subproduto():
 @subprodutos_bp.route("/excluir-subproduto/<int:id_subproduto>")
 @login_required
 @acesso_requerido("estoque")
+@limiter.limit("15 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def deletar_subproduto(id_subproduto):
     if estoque.excluir_subproduto_banco(id_subproduto):
         registrar_log("EXCLUIR", "SUBPRODUTO", f"ID {id_subproduto}")
@@ -34,6 +39,8 @@ def deletar_subproduto(id_subproduto):
 
 @subprodutos_bp.route("/subprodutos/registrar-lote", methods=["POST"])
 @login_required
+@limiter.limit("15 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def registrar_lote():
     nome_comercial   = request.form.get("nome", "").strip()
     preco_venda_raw  = request.form.get("preco", "").strip()

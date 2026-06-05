@@ -83,7 +83,8 @@ def buscar_usuario_id(id_usuario: int):
 
 def criar_usuario(username: str, senha: str, nivel: str = "colaborador") -> bool:
 
-
+    if current_user.nivel == "dono" and nivel.lower() == "admin":
+        return False
 
     username = username.strip().lower()
 
@@ -413,7 +414,17 @@ def atualizar_usuario(
 
 def excluir_usuario(id_usuario: int) -> bool:
 
-
+    # 1. Busca quem é o alvo primeiro
+    usuario_alvo = buscar_usuario_id(id_usuario)
+    if not usuario_alvo: return False
+    
+    # 2. Regra: O dono não pode excluir o ADMIN (você)
+    if usuario_alvo['nivel'] == 'admin':
+        return False
+        
+    # 3. Regra: O dono não pode se excluir (opcional, mas recomendado)
+    if int(id_usuario) == int(current_user.id):
+        return False
 
     try:
 
@@ -475,6 +486,16 @@ def excluir_usuario(id_usuario: int) -> bool:
 
 def atualizar_nivel(id_usuario: int, novo_nivel: str) -> bool:
 
+    # --- BLOQUEIO DE SEGURANÇA ---
+    # 1. Ninguém vira admin, exceto se já for admin
+    if novo_nivel.lower() == 'admin' and current_user.nivel != 'admin':
+        return False
+        
+    # 2. Impedir que o dono tente alterar o Admin (você)
+    usuario_alvo = buscar_usuario_id(id_usuario)
+    if usuario_alvo and usuario_alvo['nivel'] == 'admin' and current_user.nivel != 'admin':
+        return False
+    # -----------------------------
 
 
     try:

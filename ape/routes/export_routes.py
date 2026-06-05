@@ -25,7 +25,8 @@ export_bp = Blueprint("export", __name__)
 @export_bp.route("/exportar-previsao/csv")
 @login_required
 @acesso_requerido("estoque")
-@limiter.limit("10 per minute")
+@limiter.limit("10 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def exportar_previsao_csv():
 
     try:
@@ -96,7 +97,8 @@ def exportar_previsao_csv():
 @export_bp.route("/exportar-previsao/excel")
 @login_required
 @acesso_requerido("estoque")
-@limiter.limit("10 per minute")
+@limiter.limit("10 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def exportar_previsao_excel():
 
     try:
@@ -153,8 +155,8 @@ def exportar_previsao_excel():
 # =====================================================
 @export_bp.route("/exportar-previsao/pdf")
 @login_required
-@acesso_requerido("estoque")
-@limiter.limit("10 per minute")
+@limiter.limit("10 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def exportar_previsao_pdf():
 
     try:

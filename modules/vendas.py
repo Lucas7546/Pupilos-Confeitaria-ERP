@@ -3,6 +3,7 @@ from modules.receitas import calcular_custo_receita
 from modules.db import get_conn
 from utils.logger import log_info, log_erro
 from flask_login import current_user
+from modules.tenant import get_empresa_id
 
 
 # =========================================================
@@ -92,7 +93,7 @@ def registrar_venda(
 
     try:
 
-        id_empresa = current_user.id_empresa
+        id_empresa = get_empresa_id()
 
         custo_unitario = calcular_custo_receita(id_produto)
 

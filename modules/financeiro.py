@@ -1,40 +1,77 @@
 from modules.db import get_conn
 from utils.logger import log_info, log_erro
-
+from modules.auth import get_empresa_id
 # =========================================================
 # CONFIG EMPRESA
 # =========================================================
 def get_config_empresa() -> str:
+
     try:
+
+        empresa_id = get_empresa_id()
+
         with get_conn() as conn:
+
             with conn.cursor() as cur:
+
                 cur.execute(
-                    "SELECT regime_fiscal FROM empresa_config ORDER BY id ASC LIMIT 1"
+                    """
+                    SELECT regime_fiscal
+                    FROM empresa_config
+                    WHERE id_empresa = %s
+                    LIMIT 1
+                    """,
+                    (empresa_id,)
                 )
+
                 resultado = cur.fetchone()
+
         return resultado[0] if resultado else "MEI"
+
     except Exception as e:
-        log_erro(f"Erro ao buscar config empresa: {e}")
+
+        log_erro(
+            f"Erro ao buscar config empresa: {e}"
+        )
+
         return "MEI"
 
 
-def atualizar_regime_fiscal(novo_regime: str) -> None:
+def atualizar_regime_fiscal(
+    novo_regime: str
+) -> None:
+
     try:
+
+        empresa_id = get_empresa_id()
+
         with get_conn() as conn:
+
             with conn.cursor() as cur:
+
                 cur.execute(
                     """
                     UPDATE empresa_config
                     SET regime_fiscal = %s
-                    WHERE id = (SELECT id FROM empresa_config ORDER BY id ASC LIMIT 1)
+                    WHERE id_empresa = %s
                     """,
-                    (novo_regime,),
+                    (
+                        novo_regime,
+                        empresa_id
+                    )
                 )
-            conn.commit()
-        log_info(f"Regime fiscal atualizado para: {novo_regime}")
-    except Exception as e:
-        log_erro(f"Erro ao atualizar regime fiscal: {e}")
 
+            conn.commit()
+
+        log_info(
+            f"Regime fiscal atualizado empresa {empresa_id}"
+        )
+
+    except Exception as e:
+
+        log_erro(
+            f"Erro ao atualizar regime fiscal: {e}"
+        )
 
 # =========================================================
 # CÁLCULO DE IMPOSTO
@@ -51,63 +88,118 @@ def calcular_imposto(faturamento: float, regime: str | None = None) -> float:
 
 # =========================================================
 # BASE FINANCEIRA OPERACIONAL
-# Bug corrigido: a query de custo de insumos estava fazendo JOIN
-# em itens_venda.id_produto com materia_prima.id_materia_prima —
-# tipos diferentes que nunca vão cruzar. Corrigido via receitas.
-# calcular_financeiro (duplicata) foi removido — use esta função.
 # =========================================================
 def financeiro_operacional(periodo_dias: int = 30) -> dict:
+
     try:
+
+        empresa_id = get_empresa_id()
+
         with get_conn() as conn:
+
             with conn.cursor() as cur:
-                # Faturamento do período
+
+                # Faturamento
+
                 cur.execute(
                     """
-                    SELECT COALESCE(SUM(valor_total), 0)
+                    SELECT COALESCE(
+                        SUM(valor_total),
+                        0
+                    )
                     FROM vendas
                     WHERE data_venda >= CURRENT_DATE - CAST(%s AS INTERVAL)
+                    AND id_empresa = %s
                     """,
-                    (f"{periodo_dias} days",),
+                    (
+                        f"{periodo_dias} days",
+                        empresa_id
+                    ),
                 )
-                faturamento = float(cur.fetchone()[0])
 
-                # Custo de insumos: quantidade vendida × qtd na receita × preço da MP
-                # Corrigido: percorre vendas → itens_venda → receitas → materia_prima
+                faturamento = float(
+                    cur.fetchone()[0]
+                )
+
+                # Custo dos insumos
+
                 cur.execute(
                     """
-                    SELECT COALESCE(SUM(iv.quantidade * r.quantidade_utilizada * mp.preco_unitario), 0)
+                    SELECT COALESCE(
+                        SUM(
+                            iv.quantidade
+                            * r.quantidade_utilizada
+                            * mp.preco_unitario
+                        ),
+                        0
+                    )
                     FROM vendas v
-                    JOIN itens_venda iv ON iv.id_venda = v.id_venda
-                    JOIN receitas r ON r.id_produto = iv.id_produto
-                    JOIN materia_prima mp ON mp.id_materia_prima = r.id_materia_prima
+                    JOIN itens_venda iv
+                        ON iv.id_venda = v.id_venda
+                    JOIN receitas r
+                        ON r.id_produto = iv.id_produto
+                    JOIN materia_prima mp
+                        ON mp.id_materia_prima = r.id_materia_prima
                     WHERE v.data_venda >= CURRENT_DATE - CAST(%s AS INTERVAL)
+                    AND v.id_empresa = %s
                     """,
-                    (f"{periodo_dias} days",),
+                    (
+                        f"{periodo_dias} days",
+                        empresa_id
+                    ),
                 )
-                custo_insumos = float(cur.fetchone()[0])
 
-                # Despesas do período
+                custo_insumos = float(
+                    cur.fetchone()[0]
+                )
+
+                # Despesas
+
                 cur.execute(
                     """
-                    SELECT COALESCE(SUM(valor), 0)
+                    SELECT COALESCE(
+                        SUM(valor),
+                        0
+                    )
                     FROM despesas
                     WHERE data_despesa >= CURRENT_DATE - CAST(%s AS INTERVAL)
+                    AND id_empresa = %s
                     """,
-                    (f"{periodo_dias} days",),
+                    (
+                        f"{periodo_dias} days",
+                        empresa_id
+                    ),
                 )
-                total_fixas = float(cur.fetchone()[0])
 
-        lucro_base = faturamento - custo_insumos - total_fixas
+                total_fixas = float(
+                    cur.fetchone()[0]
+                )
+
+        lucro_base = (
+            faturamento
+            - custo_insumos
+            - total_fixas
+        )
+
         return {
             "faturamento": faturamento,
             "custo_insumos": custo_insumos,
             "total_fixas": total_fixas,
             "lucro_base": lucro_base,
         }
-    except Exception as e:
-        log_erro(f"Erro no cálculo financeiro operacional: {e}")
-        return {"faturamento": 0.0, "custo_insumos": 0.0, "total_fixas": 0.0, "lucro_base": 0.0}
 
+    except Exception as e:
+
+        log_erro(
+            f"Erro no cálculo financeiro operacional: {e}"
+        )
+
+        return {
+            "faturamento": 0.0,
+            "custo_insumos": 0.0,
+            "total_fixas": 0.0,
+            "lucro_base": 0.0,
+        }
 
 # =========================================================
 # RELATÓRIO FISCAL COM SIMULAÇÕES DE REGIME
@@ -159,68 +251,147 @@ def calcular_financeiro_com_imposto(periodo_dias: int = 30) -> dict:
     }
 
 
-def registrar_despesa(descricao, valor):
+def registrar_despesa(
+    descricao,
+    valor
+):
+
     try:
+
+        empresa_id = get_empresa_id()
+
         with get_conn() as con:
+
             with con.cursor() as cur:
+
                 cur.execute(
-                    "INSERT INTO despesas (descricao, valor, data_despesa) VALUES (%s,%s,CURRENT_DATE)",
-                    (descricao, valor)
+                    """
+                    INSERT INTO despesas
+                    (
+                        descricao,
+                        valor,
+                        data_despesa,
+                        id_empresa
+                    )
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        CURRENT_DATE,
+                        %s
+                    )
+                    """,
+                    (
+                        descricao,
+                        valor,
+                        empresa_id
+                    )
                 )
+
             con.commit()
+
         return True
+
     except Exception as e:
-        log_erro(f"Erro ao salvar despesa: {e}")
+
+        log_erro(
+            f"Erro ao salvar despesa: {e}"
+        )
+
         return False
 
 def listar_despesas():
+
     try:
+
+        empresa_id = get_empresa_id()
+
         with get_conn() as con:
+
             with con.cursor() as cur:
-                cur.execute("""
-                    SELECT id_despesa, descricao, valor, TO_CHAR(data_despesa,'DD/MM/YYYY')
-                    FROM despesas ORDER BY data_despesa DESC
-                """)
+
+                cur.execute(
+                    """
+                    SELECT
+                        id_despesa,
+                        descricao,
+                        valor,
+                        TO_CHAR(
+                            data_despesa,
+                            'DD/MM/YYYY'
+                        )
+                    FROM despesas
+                    WHERE id_empresa = %s
+                    ORDER BY data_despesa DESC
+                    """,
+                    (empresa_id,)
+                )
+
                 return cur.fetchall() or []
+
     except Exception as e:
-        log_erro(f"Erro ao listar despesas: {e}")
+
+        log_erro(
+            f"Erro ao listar despesas: {e}"
+        )
+
         return []
     
 
 
-def get_fluxo_caixa(periodo_dias: int = 30) -> dict:
-    base = financeiro_operacional(periodo_dias)
+def get_fluxo_caixa(
+    periodo_dias: int = 30
+) -> dict:
+
+    base = financeiro_operacional(
+        periodo_dias
+    )
 
     try:
+
+        empresa_id = get_empresa_id()
+
         with get_conn() as conn:
+
             with conn.cursor() as cur:
 
-                # movimentações reais (vendas + despesas)
-                cur.execute("""
-                    SELECT data_venda as data,
-                           'Venda' as descricao,
-                           'ENTRADA' as tipo,
-                           valor_total as valor,
-                           'VENDAS' as categoria,
-                           'PIX' as metodo,
-                           'CONFIRMADO' as status
+                cur.execute(
+                    """
+                    SELECT
+                        data_venda AS data,
+                        'Venda' AS descricao,
+                        'ENTRADA' AS tipo,
+                        valor_total AS valor,
+                        'VENDAS' AS categoria,
+                        'PIX' AS metodo,
+                        'CONFIRMADO' AS status
                     FROM vendas
-                    WHERE data_venda >= CURRENT_DATE - INTERVAL '%s days'
+                    WHERE data_venda >= CURRENT_DATE - CAST(%s AS INTERVAL)
+                    AND id_empresa = %s
 
                     UNION ALL
 
-                    SELECT data_despesa,
-                           descricao,
-                           'SAIDA',
-                           valor,
-                           'DESPESA',
-                           'BOLETO',
-                           'CONFIRMADO'
+                    SELECT
+                        data_despesa,
+                        descricao,
+                        'SAIDA',
+                        valor,
+                        'DESPESA',
+                        'BOLETO',
+                        'CONFIRMADO'
                     FROM despesas
-                    WHERE data_despesa >= CURRENT_DATE - INTERVAL '%s days'
+                    WHERE data_despesa >= CURRENT_DATE - CAST(%s AS INTERVAL)
+                    AND id_empresa = %s
 
                     ORDER BY data DESC
-                """, (periodo_dias, periodo_dias))
+                    """,
+                    (
+                        f"{periodo_dias} days",
+                        empresa_id,
+                        f"{periodo_dias} days",
+                        empresa_id
+                    )
+                )
 
                 movimentacoes = cur.fetchall()
 
@@ -241,5 +412,12 @@ def get_fluxo_caixa(periodo_dias: int = 30) -> dict:
         }
 
     except Exception as e:
-        log_erro(f"Erro fluxo caixa: {e}")
-        return {**base, "movimentacoes": []}
+
+        log_erro(
+            f"Erro fluxo caixa: {e}"
+        )
+
+        return {
+            **base,
+            "movimentacoes": []
+        }

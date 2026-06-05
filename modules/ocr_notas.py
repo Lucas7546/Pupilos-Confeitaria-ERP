@@ -2,8 +2,9 @@ import json
 import mimetypes
 from modules.db import get_conn
 from ape.services.ai_client import client
- 
+from difflib import SequenceMatcher
 from utils.logger import log_info, log_erro
+from flask_login import current_user
  
  
 # Prompt detalhado — quanto mais específico, mais consistente o JSON retornado
@@ -146,37 +147,75 @@ def _to_float(valor, default: float = 0.0) -> float:
     
 
 def enriquecer_itens_nota(itens):
-    """
-    adiciona inteligência de estoque antes do HTML
-    """
-    from difflib import SequenceMatcher
 
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT id_materia_prima, nome FROM materia_prima")
-            materias = cur.fetchall()
+    try:
 
-    resultado = []
+        id_empresa = current_user.id_empresa
 
-    for item in itens:
+        with get_conn() as conn:
 
-        nome = item.get("nome", "")
+            with conn.cursor() as cur:
 
-        melhor_id = None
-        melhor_score = 0
+                cur.execute(
+                    """
+                    SELECT
+                        id_materia_prima,
+                        nome
+                    FROM materia_prima
+                    WHERE id_empresa = %s
+                    """,
+                    (id_empresa,)
+                )
 
-        for id_m, nome_m in materias:
-            score = SequenceMatcher(None, nome.lower(), nome_m.lower()).ratio()
+                materias = cur.fetchall()
 
-            if score > melhor_score:
-                melhor_score = score
-                melhor_id = id_m
+        resultado = []
 
-        resultado.append({
-            **item,
-            "id_materia_prima": melhor_id,
-            "status": "existente" if melhor_score > 0.65 else "novo",
-            "similaridade": round(melhor_score, 2)
-        })
+        for item in itens:
 
-    return resultado
+            nome = item.get(
+                "nome",
+                ""
+            )
+
+            melhor_id = None
+            melhor_score = 0
+
+            for id_m, nome_m in materias:
+
+                score = SequenceMatcher(
+                    None,
+                    nome.lower(),
+                    nome_m.lower()
+                ).ratio()
+
+                if score > melhor_score:
+
+                    melhor_score = score
+                    melhor_id = id_m
+
+            resultado.append(
+                {
+                    **item,
+                    "id_materia_prima": melhor_id,
+                    "status": (
+                        "existente"
+                        if melhor_score > 0.65
+                        else "novo"
+                    ),
+                    "similaridade": round(
+                        melhor_score,
+                        2
+                    )
+                }
+            )
+
+        return resultado
+
+    except Exception as e:
+
+        log_erro(
+            f"Erro ao enriquecer itens OCR: {e}"
+        )
+
+        return itens

@@ -55,6 +55,8 @@ def buscar_usuario_id(id_usuario: int):
 
     try:
 
+        id_empresa = current_user.id_empresa
+
         with get_conn() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
 
@@ -70,15 +72,23 @@ def buscar_usuario_id(id_usuario: int):
                         data_cadastro
                     FROM usuarios
                     WHERE id_usuario = %s
+                    AND id_empresa = %s
                     LIMIT 1
                     """,
-                    (id_usuario,)
+                    (
+                        id_usuario,
+                        id_empresa
+                    )
                 )
 
                 return cur.fetchone()
 
     except Exception as e:
-        log_erro(f"Erro ao buscar usuário ID {id_usuario}: {e}")
+
+        log_erro(
+            f"Erro ao buscar usuário ID {id_usuario}: {e}"
+        )
+
         return None
 
 def criar_usuario(username: str, senha: str, nivel: str = "colaborador") -> bool:

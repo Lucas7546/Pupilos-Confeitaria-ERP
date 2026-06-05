@@ -1,6 +1,6 @@
 from modules.db import get_conn
 from utils.logger import log_info, log_erro
-from modules.auth import get_empresa_id
+from modules.tenant import get_empresa_id
 # =========================================================
 # CONFIG EMPRESA
 # =========================================================

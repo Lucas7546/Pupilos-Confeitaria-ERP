@@ -25,9 +25,6 @@ def limpar_numero(valor) -> float:
 
 # =========================================================
 # LEITURA DE ARQUIVO
-# Bug corrigido: a função recebia um caminho (str) após o save
-# temporário em app.py, mas tentava usar .filename (attr de FileStorage).
-# Agora aceita tanto string quanto FileStorage.
 # =========================================================
 def ler_arquivo(arquivo) -> pd.DataFrame:
     # Se vier um objeto FileStorage do Flask, pega o nome e lê diretamente
@@ -40,7 +37,7 @@ def ler_arquivo(arquivo) -> pd.DataFrame:
         else:
             raise ValueError(f"Formato não suportado: {nome}")
     else:
-        # Veio como caminho de string (após tempfile.save)
+        
         caminho = str(arquivo).lower()
         if caminho.endswith(".csv"):
             df = pd.read_csv(arquivo)
@@ -79,12 +76,12 @@ def interpretar_relatorio_com_ia(df: pd.DataFrame) -> list[dict]:
         )
 
         prompt = f"""
-Você é um sistema de análise de delivery.
-Retorne SOMENTE JSON válido em formato de lista.
-Campos: produto, quantidade, valor_unitario, valor_total, taxa, repasse, data, canal_delivery
-Dados:
-{payload}
-"""
+        Você é um sistema de análise de delivery.
+        Retorne SOMENTE JSON válido em formato de lista.
+        Campos: produto, quantidade, valor_unitario, valor_total, taxa, repasse, data, canal_delivery
+        Dados:
+        {payload}
+        """
         resposta = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
         texto = (resposta.text or "").replace("```json", "").replace("```", "").strip()
         dados = json.loads(texto)
@@ -125,34 +122,44 @@ def normalizar_vendas(dados: list[dict]) -> list[dict]:
 # SALVAR VENDAS DELIVERY
 # =========================================================
 def registrar_vendas_importadas(vendas_importadas):
-    
+
     processadas = 0
 
     for venda in vendas_importadas:
 
-        id_produto = venda.get("id_produto")
+        try:
 
-        if not id_produto:
-            continue
+            id_produto = venda.get("id_produto")
 
-        quantidade = int(venda.get("quantidade", 0))
+            if not id_produto:
+                continue
 
-        if quantidade <= 0:
-            continue
+            quantidade = int(
+                venda.get("quantidade") or 0
+            )
 
-        valor_total = float(
-            venda.get("valor_total") or 0
-        )
+            if quantidade <= 0:
+                continue
 
-        sucesso = vendas.registrar_venda(
-            id_produto=id_produto,
-            quantidade=quantidade,
-            valor_total=valor_total,
-            usuario="IMPORTADOR_IA"
-        )
+            valor_total = float(
+                venda.get("valor_total") or 0
+            )
 
-        if sucesso:
-            processadas += 1
+            sucesso = vendas.registrar_venda(
+                id_produto=id_produto,
+                quantidade=quantidade,
+                valor_total=valor_total,
+                usuario="IMPORTADOR_IA"
+            )
+
+            if sucesso:
+                processadas += 1
+
+        except Exception as e:
+
+            log_erro(
+                f"Erro ao registrar venda importada: {e}"
+            )
 
     return processadas
 
@@ -171,42 +178,53 @@ def gerar_financeiro(vendas: list[dict]) -> dict:
 # =========================================================
 # ORQUESTRAÇÃO DO PIPELINE COMPLETO
 # =========================================================
-def processar_relatorio_delivery(arquivo):
+def processar_relatorio_delivery_commit(vendas_norm):
 
     try:
 
-        log_info(
-            "Iniciando processamento de relatório delivery."
-        )
+        processadas = 0
 
-        df = ler_arquivo(arquivo)
+        for v in vendas_norm:
 
-        dados = interpretar_relatorio_com_ia(df)
+            try:
 
-        vendas_normalizadas = normalizar_vendas(dados)
+                if not v.get("id_produto"):
+                    continue
 
-        quantidade_processadas = registrar_vendas_importadas(
-            vendas_normalizadas
-        )
+                qtd = int(
+                    v.get("quantidade") or 0
+                )
 
-        financeiro = gerar_financeiro(
-            vendas_normalizadas
-        )
+                if qtd <= 0:
+                    continue
 
-        log_info(
-            f"{quantidade_processadas} vendas importadas."
-        )
+                sucesso = vendas.registrar_venda(
+                    id_produto=v["id_produto"],
+                    quantidade=qtd,
+                    valor_total=float(
+                        v.get("valor_total") or 0
+                    ),
+                    usuario="IMPORTADOR_IA"
+                )
+
+                if sucesso:
+                    processadas += 1
+
+            except Exception as e:
+
+                log_erro(
+                    f"Erro ao processar item importado: {e}"
+                )
 
         return {
             "sucesso": True,
-            "quantidade_vendas": quantidade_processadas,
-            "financeiro": financeiro
+            "processadas": processadas
         }
 
     except Exception as e:
 
         log_erro(
-            f"Erro pipeline delivery: {e}"
+            f"Erro commit delivery: {e}"
         )
 
         return {
@@ -219,25 +237,44 @@ def processar_relatorio_delivery(arquivo):
 # LOCALIZAÇÃO DE PRODUTO NO ERP (COM APRENDIZADO DE ALIASES)
 # =========================================================
 def localizar_produto_erp(nome_produto: str) -> int | None:
+
     if not nome_produto:
         return None
 
-    nome_produto = nome_produto.lower().strip()
+    nome_produto = str(nome_produto).strip().lower()
+
+    if not nome_produto:
+        return None
 
     try:
+
         with get_conn() as conn:
             with conn.cursor() as cur:
-                # Tenta alias direto primeiro
+
                 cur.execute(
-                    "SELECT id_produto FROM aliases_produtos WHERE LOWER(nome_delivery) = %s LIMIT 1",
+                    """
+                    SELECT id_produto
+                    FROM aliases_produtos
+                    WHERE LOWER(nome_delivery) = %s
+                    LIMIT 1
+                    """,
                     (nome_produto,),
                 )
+
                 alias = cur.fetchone()
+
                 if alias:
                     return alias[0]
 
-                # Busca por similaridade
-                cur.execute("SELECT id_produto, nome FROM produtos WHERE ativo = 1")
+                cur.execute(
+                    """
+                    SELECT id_produto, nome
+                    FROM produtos
+                    WHERE ativo = 1
+                    AND id_empresa = %s
+                    """
+                )
+
                 produtos = cur.fetchall()
 
             melhor_id = None
@@ -245,31 +282,56 @@ def localizar_produto_erp(nome_produto: str) -> int | None:
             LIMIAR = 0.60
 
             for id_p, nome in produtos:
+
                 if not nome:
                     continue
-                score = SequenceMatcher(None, nome_produto, nome.lower()).ratio()
+
+                score = SequenceMatcher(
+                    None,
+                    nome_produto,
+                    nome.lower()
+                ).ratio()
+
                 if score > melhor_score:
                     melhor_score = score
                     melhor_id = id_p
 
             if melhor_id and melhor_score >= LIMIAR:
+
                 with conn.cursor() as cur:
+
                     cur.execute(
                         """
-                        INSERT INTO aliases_produtos (nome_delivery, id_produto)
-                        VALUES (%s, %s)
+                        INSERT INTO aliases_produtos
+                        (
+                            nome_delivery,
+                            id_produto
+                        )
+                        VALUES
+                        (
+                            %s,
+                            %s
+                        )
                         ON CONFLICT DO NOTHING
                         """,
-                        (nome_produto, melhor_id),
+                        (
+                            nome_produto,
+                            melhor_id
+                        )
                     )
+
                 conn.commit()
-                log_info(f"Alias aprendido: '{nome_produto}' → ID {melhor_id} ({melhor_score:.2f})")
+
                 return melhor_id
 
-        log_erro(f"Produto não encontrado no ERP: '{nome_produto}'")
         return None
+
     except Exception as e:
-        log_erro(f"Erro ao localizar produto no ERP: {e}")
+
+        log_erro(
+            f"Erro ao localizar produto ERP: {e}"
+        )
+
         return None
 
 
@@ -277,32 +339,68 @@ def garantir_produto_erp(nome: str, preco_sugerido=0.0):
     if not nome:
         return None
 
-    with get_conn() as conn:
-        with conn.cursor() as cur:
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
 
-            cur.execute("""
-                SELECT id_produto
-                FROM produtos
-                WHERE LOWER(nome) = LOWER(%s)
-                LIMIT 1
-            """, (nome,))
+                cur.execute(
+                    """
+                    SELECT id_produto
+                    FROM produtos
+                    WHERE LOWER(nome) = LOWER(%s)
+                    AND id_empresa = %s
+                    LIMIT 1
+                    """,
+                    (nome.strip(),),
+                )
 
-            row = cur.fetchone()
+                row = cur.fetchone()
 
-            if row:
-                return row[0]
+                if row:
+                    return row[0]
 
-            # cria produto automaticamente vindo do delivery
-            cur.execute("""
-                INSERT INTO produtos (nome, preco_venda, categoria)
-                VALUES (%s, %s, 'IMPORTADO')
-                RETURNING id_produto
-            """, (nome, preco_sugerido))
+                cur.execute(
+                    """
+                    INSERT INTO produtos
+                    (
+                        id_empresa,
+                        nome,
+                        preco_venda,
+                        categoria,
+                        ativo
+                    )
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        'IMPORTADO',
+                        1
+                    )
+                    RETURNING id_produto
+                    """,
+                    (
+                        nome.strip(),
+                        float(preco_sugerido or 0),
+                    ),
+                )
 
-            id_produto = cur.fetchone()[0]
+                id_produto = cur.fetchone()[0]
+
             conn.commit()
 
-            return id_produto
+        log_info(
+            f"Produto criado automaticamente pelo importador: {nome}"
+        )
+
+        return id_produto
+
+    except Exception as e:
+
+        log_erro(
+            f"Erro ao garantir produto ERP '{nome}': {e}"
+        )
+
+        return None
 
 
 def processar_relatorio_delivery_preview(arquivo):

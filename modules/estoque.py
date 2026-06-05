@@ -1,32 +1,66 @@
 
-from datetime import datetime, timedelta  # timedelta estava faltando
- 
+from datetime import datetime, timedelta 
 from modules.db import get_conn
 from utils.logger import log_info, log_erro
+from modules.tenant import get_empresa_id
  
  
 # =========================================================
 # ENTRADA DE ESTOQUE
 # =========================================================
-def entrada_estoque(materia_prima_id: int, quantidade: float) -> bool:
+def entrada_estoque(
+    materia_prima_id: int,
+    quantidade: float
+) -> bool:
+
     try:
+
+        empresa_id = get_empresa_id()
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(
                     """
                     INSERT INTO movimentacao_estoque
-                        (id_materia_prima, tipo_movimento, quantidade, observacao)
-                    VALUES (%s, 'entrada', %s, 'Movimentação manual')
+                    (
+                        id_empresa,
+                        id_materia_prima,
+                        tipo_movimento,
+                        quantidade,
+                        observacao
+                    )
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        'entrada',
+                        %s,
+                        'Movimentação manual'
+                    )
                     """,
-                    (materia_prima_id, float(quantidade)),
+                    (
+                        empresa_id,
+                        materia_prima_id,
+                        float(quantidade)
+                    ),
                 )
+
             conn.commit()
-        log_info(f"Entrada estoque MP {materia_prima_id} | Qtd: {quantidade}")
+
+        log_info(
+            f"Entrada estoque MP {materia_prima_id} | Empresa {empresa_id}"
+        )
+
         return True
+
     except Exception as e:
-        log_erro(f"Erro entrada_estoque: {e}")
+
+        log_erro(
+            f"Erro entrada_estoque: {e}"
+        )
+
         return False
- 
  
 # =========================================================
 # SAÍDA DE ESTOQUE
@@ -36,49 +70,110 @@ def saida_estoque(
     quantidade: float,
     observacao: str = "Movimentação manual",
 ) -> bool:
+
     try:
+
+        empresa_id = get_empresa_id()
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(
                     """
                     INSERT INTO movimentacao_estoque
-                        (id_materia_prima, tipo_movimento, quantidade, observacao)
-                    VALUES (%s, 'saida', %s, %s)
+                    (
+                        id_empresa,
+                        id_materia_prima,
+                        tipo_movimento,
+                        quantidade,
+                        observacao
+                    )
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        'saida',
+                        %s,
+                        %s
+                    )
                     """,
-                    (materia_prima_id, float(quantidade), observacao),
+                    (
+                        empresa_id,
+                        materia_prima_id,
+                        float(quantidade),
+                        observacao
+                    ),
                 )
+
             conn.commit()
-        log_info(f"Saída estoque MP {materia_prima_id} | Qtd: {quantidade}")
+
         return True
+
     except Exception as e:
-        log_erro(f"Erro saida_estoque: {e}")
+
+        log_erro(
+            f"Erro saida_estoque: {e}"
+        )
+
         return False
  
  
 # =========================================================
 # CALCULAR SALDO ATUAL
 # =========================================================
-def calcular_estoque(materia_prima_id: int) -> float:
-    """Retorna o saldo atual de uma matéria-prima calculado pela movimentação."""
+def calcular_estoque(
+    materia_prima_id: int
+) -> float:
+
     try:
+
+        empresa_id = get_empresa_id()
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(
                     """
                     SELECT
-                        COALESCE(SUM(CASE WHEN tipo_movimento IN ('entrada','ajuste')
-                                         THEN quantidade ELSE 0 END), 0)
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN tipo_movimento IN ('entrada','ajuste')
+                                    THEN quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        )
                         -
-                        COALESCE(SUM(CASE WHEN tipo_movimento = 'saida'
-                                         THEN quantidade ELSE 0 END), 0)
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN tipo_movimento = 'saida'
+                                    THEN quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        )
                     FROM movimentacao_estoque
-                    WHERE id_materia_prima = %s
+                    WHERE id_empresa = %s
+                    AND id_materia_prima = %s
                     """,
-                    (materia_prima_id,),
+                    (
+                        empresa_id,
+                        materia_prima_id
+                    ),
                 )
+
                 return float(cur.fetchone()[0] or 0)
+
     except Exception as e:
-        log_erro(f"Erro calcular_estoque: {e}")
+
+        log_erro(
+            f"Erro calcular_estoque: {e}"
+        )
+
         return 0.0
  
  
@@ -86,9 +181,14 @@ def calcular_estoque(materia_prima_id: int) -> float:
 # LISTAR MATÉRIAS-PRIMAS
 # =========================================================
 def listar_materia_prima() -> list[tuple]:
+
     try:
+
+        empresa_id = get_empresa_id()
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(
                     """
                     SELECT
@@ -97,29 +197,81 @@ def listar_materia_prima() -> list[tuple]:
                         m.unidade_medida,
                         m.estoque_minimo,
                         m.preco_unitario,
-                        COALESCE(SUM(CASE WHEN mov.tipo_movimento IN ('entrada','ajuste')
-                                         THEN mov.quantidade ELSE 0 END), 0)
-                        - COALESCE(SUM(CASE WHEN mov.tipo_movimento = 'saida'
-                                           THEN mov.quantidade ELSE 0 END), 0) AS saldo
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN mov.tipo_movimento IN ('entrada','ajuste')
+                                    THEN mov.quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        )
+                        -
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN mov.tipo_movimento = 'saida'
+                                    THEN mov.quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        ) AS saldo
                     FROM materia_prima m
+
                     LEFT JOIN movimentacao_estoque mov
-                        ON m.id_materia_prima = mov.id_materia_prima
+                        ON mov.id_materia_prima = m.id_materia_prima
+                        AND mov.id_empresa = m.id_empresa
+
+                    WHERE m.id_empresa = %s
+
                     GROUP BY
-                        m.id_materia_prima, m.nome, m.unidade_medida,
-                        m.estoque_minimo, m.preco_unitario
-                    ORDER BY m.nome ASC
-                    """
+                        m.id_materia_prima,
+                        m.nome,
+                        m.unidade_medida,
+                        m.estoque_minimo,
+                        m.preco_unitario
+
+                    ORDER BY m.nome
+                    """,
+                    (empresa_id,),
                 )
+
                 rows = cur.fetchall()
- 
+
         resultado = []
+
         for m in rows:
+
             saldo = float(m[5])
-            status = "BAIXO" if saldo <= float(m[3] or 0) else "OK"
-            resultado.append((m[0], m[1], m[2], m[3], saldo, status, float(m[4] or 0)))
+
+            status = (
+                "BAIXO"
+                if saldo <= float(m[3] or 0)
+                else "OK"
+            )
+
+            resultado.append(
+                (
+                    m[0],
+                    m[1],
+                    m[2],
+                    m[3],
+                    saldo,
+                    status,
+                    float(m[4] or 0),
+                )
+            )
+
         return resultado
+
     except Exception as e:
-        log_erro(f"Erro listar_materia_prima: {e}")
+
+        log_erro(
+            f"Erro listar_materia_prima: {e}"
+        )
+
         return []
  
  
@@ -133,67 +285,165 @@ def cadastrar_materia(
     estoque_inicial: float,
     estoque_minimo: float,
 ) -> bool:
+
     try:
+
+        empresa_id = get_empresa_id()
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(
                     """
                     INSERT INTO materia_prima
-                        (nome, unidade_medida, preco_unitario, estoque_minimo)
-                    VALUES (%s, %s, %s, %s)
+                    (
+                        id_empresa,
+                        nome,
+                        unidade_medida,
+                        preco_unitario,
+                        estoque_minimo
+                    )
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s
+                    )
                     RETURNING id_materia_prima
                     """,
-                    (nome, unidade, preco, estoque_minimo),
+                    (
+                        empresa_id,
+                        nome,
+                        unidade,
+                        preco,
+                        estoque_minimo
+                    ),
                 )
+
                 id_mp = cur.fetchone()[0]
- 
+
                 if estoque_inicial > 0:
+
                     cur.execute(
                         """
                         INSERT INTO movimentacao_estoque
-                            (id_materia_prima, tipo_movimento, quantidade, observacao)
-                        VALUES (%s, 'entrada', %s, 'Estoque inicial')
+                        (
+                            id_empresa,
+                            id_materia_prima,
+                            tipo_movimento,
+                            quantidade,
+                            observacao
+                        )
+                        VALUES
+                        (
+                            %s,
+                            %s,
+                            'entrada',
+                            %s,
+                            'Estoque inicial'
+                        )
                         """,
-                        (id_mp, estoque_inicial),
+                        (
+                            empresa_id,
+                            id_mp,
+                            estoque_inicial
+                        ),
                     )
+
             conn.commit()
-        log_info(f"Matéria-prima cadastrada: {nome} (ID: {id_mp})")
+
         return True
+
     except Exception as e:
-        log_erro(f"Erro ao cadastrar matéria-prima '{nome}': {e}")
+
+        log_erro(
+            f"Erro cadastrar_materia: {e}"
+        )
+
         return False
  
  
 # =========================================================
 # REGISTRAR COMPRA (ENTRADA + ATUALIZA PREÇO MÉDIO)
 # =========================================================
-def registrar_compra_estoque(id_materia_prima, quantidade_comprada, valor_total_pago):
+def registrar_compra_estoque(
+    empresa_id: int,
+    id_materia_prima: int,
+    quantidade_comprada,
+    valor_total_pago
+):
     try:
-        # CONVERSÕES SEGURAS
         qtd = float(quantidade_comprada)
         total = float(valor_total_pago)
-        
+
         if qtd <= 0 or total <= 0:
             log_erro("Tentativa de registro com valor ou qtd zerados/negativos")
             return False
-            
+
         novo_preco = total / qtd
-        
+
         with get_conn() as conn:
             with conn.cursor() as cur:
-                # 1. Atualiza preço unitário
+
                 cur.execute(
-                    "UPDATE materia_prima SET preco_unitario = %s WHERE id_materia_prima = %s",
-                    (novo_preco, id_materia_prima)
+                    """
+                    SELECT 1
+                    FROM materia_prima mp
+                    WHERE mp.id_materia_prima = %s
+                      AND mp.empresa_id = %s
+                    """,
+                    (id_materia_prima, empresa_id)
                 )
-                # 2. Insere movimentação
+
+                if not cur.fetchone():
+                    return False
+
                 cur.execute(
-                    """INSERT INTO movimentacao_estoque (id_materia_prima, tipo_movimento, quantidade, observacao) 
-                       VALUES (%s, 'entrada', %s, 'Compra registrada')""",
-                    (id_materia_prima, qtd)
+                    """
+                    UPDATE materia_prima
+                    SET preco_unitario = %s
+                    WHERE id_materia_prima = %s
+                      AND empresa_id = %s
+                    """,
+                    (
+                        novo_preco,
+                        id_materia_prima,
+                        empresa_id
+                    )
                 )
+
+                cur.execute(
+                    """
+                    INSERT INTO movimentacao_estoque
+                    (
+                        empresa_id,
+                        id_materia_prima,
+                        tipo_movimento,
+                        quantidade,
+                        observacao
+                    )
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        'entrada',
+                        %s,
+                        'Compra registrada'
+                    )
+                    """,
+                    (
+                        empresa_id,
+                        id_materia_prima,
+                        qtd
+                    )
+                )
+
             conn.commit()
+
         return True
+
     except Exception as e:
         log_erro(f"Erro crítico ao processar compra: {e}")
         return False
@@ -201,145 +451,337 @@ def registrar_compra_estoque(id_materia_prima, quantidade_comprada, valor_total_
  
 # =========================================================
 # AJUSTE MANUAL DE ESTOQUE
-# Bug corrigido: agora retorna bool para o chamador saber se teve sucesso.
 # =========================================================
-def ajustar_estoque(id_mp: int, novo_valor: float) -> bool:
+def ajustar_estoque(
+    empresa_id: int,
+    id_mp: int,
+    novo_valor: float
+) -> bool:
     try:
         with get_conn() as conn:
             with conn.cursor() as cur:
+
+                cur.execute(
+                    """
+                    SELECT 1
+                    FROM materia_prima
+                    WHERE id_materia_prima = %s
+                      AND empresa_id = %s
+                    """,
+                    (id_mp, empresa_id)
+                )
+
+                if not cur.fetchone():
+                    return False
+
                 cur.execute(
                     """
                     INSERT INTO movimentacao_estoque
-                        (id_materia_prima, tipo_movimento, quantidade, observacao)
-                    VALUES (%s, 'ajuste', %s, 'Ajuste manual de estoque')
+                    (
+                        empresa_id,
+                        id_materia_prima,
+                        tipo_movimento,
+                        quantidade,
+                        observacao
+                    )
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        'ajuste',
+                        %s,
+                        'Ajuste manual de estoque'
+                    )
                     """,
-                    (id_mp, float(novo_valor)),
+                    (
+                        empresa_id,
+                        id_mp,
+                        float(novo_valor)
+                    )
                 )
+
             conn.commit()
-        log_info(f"Ajuste manual. ID MP: {id_mp}, Quantidade: {novo_valor}")
+
+        log_info(
+            f"Ajuste manual. Empresa {empresa_id} | MP {id_mp}"
+        )
+
         return True
+
     except Exception as e:
         log_erro(f"Erro ao ajustar estoque (ID MP: {id_mp}): {e}")
         return False
- 
  
 # =========================================================
 # ATUALIZAR MATÉRIA-PRIMA
 # =========================================================
 def atualizar_materia_prima(
-    id_mp: int, nome: str, preco: float, unidade: str, quantidade: float
+    empresa_id: int,
+    id_mp: int,
+    nome: str,
+    preco: float,
+    unidade: str,
+    quantidade: float
 ) -> bool:
     try:
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(
                     """
                     UPDATE materia_prima
-                    SET nome = %s, preco_unitario = %s, unidade_medida = %s
+                    SET
+                        nome = %s,
+                        preco_unitario = %s,
+                        unidade_medida = %s
                     WHERE id_materia_prima = %s
+                      AND empresa_id = %s
                     """,
-                    (nome, preco, unidade, id_mp),
+                    (
+                        nome,
+                        preco,
+                        unidade,
+                        id_mp,
+                        empresa_id
+                    )
                 )
+
                 if quantidade and float(quantidade) > 0:
+
                     cur.execute(
                         """
                         INSERT INTO movimentacao_estoque
-                            (id_materia_prima, tipo_movimento, quantidade, observacao)
-                        VALUES (%s, 'entrada', %s, 'Ajuste manual de estoque')
+                        (
+                            empresa_id,
+                            id_materia_prima,
+                            tipo_movimento,
+                            quantidade,
+                            observacao
+                        )
+                        VALUES
+                        (
+                            %s,
+                            %s,
+                            'entrada',
+                            %s,
+                            'Ajuste manual de estoque'
+                        )
                         """,
-                        (id_mp, quantidade),
+                        (
+                            empresa_id,
+                            id_mp,
+                            quantidade
+                        )
                     )
+
             conn.commit()
-        log_info(f"Matéria-prima ID {id_mp} atualizada.")
+
+        log_info(
+            f"Matéria-prima ID {id_mp} atualizada."
+        )
+
         return True
+
     except Exception as e:
-        log_erro(f"Erro ao atualizar matéria-prima ID {id_mp}: {e}")
+        log_erro(
+            f"Erro ao atualizar matéria-prima ID {id_mp}: {e}"
+        )
         return False
  
  
 # =========================================================
 # EXCLUIR MATÉRIA-PRIMA
 # =========================================================
-def excluir_materia_prima(id_mp: int) -> bool:
+def excluir_materia_prima(
+    empresa_id: int,
+    id_mp: int
+) -> bool:
     try:
         with get_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM receitas WHERE id_materia_prima = %s", (id_mp,))
+
                 cur.execute(
-                    "DELETE FROM movimentacao_estoque WHERE id_materia_prima = %s", (id_mp,)
+                    """
+                    DELETE FROM receitas
+                    WHERE id_materia_prima = %s
+                      AND empresa_id = %s
+                    """,
+                    (
+                        id_mp,
+                        empresa_id
+                    )
                 )
-                cur.execute("DELETE FROM materia_prima WHERE id_materia_prima = %s", (id_mp,))
+
+                cur.execute(
+                    """
+                    DELETE FROM movimentacao_estoque
+                    WHERE id_materia_prima = %s
+                      AND empresa_id = %s
+                    """,
+                    (
+                        id_mp,
+                        empresa_id
+                    )
+                )
+
+                cur.execute(
+                    """
+                    DELETE FROM materia_prima
+                    WHERE id_materia_prima = %s
+                      AND empresa_id = %s
+                    """,
+                    (
+                        id_mp,
+                        empresa_id
+                    )
+                )
+
             conn.commit()
-        log_info(f"Matéria-prima ID {id_mp} excluída.")
+
+        log_info(
+            f"Matéria-prima ID {id_mp} excluída."
+        )
+
         return True
+
     except Exception as e:
-        log_erro(f"Erro ao excluir matéria-prima ID {id_mp}: {e}")
+        log_erro(
+            f"Erro ao excluir matéria-prima ID {id_mp}: {e}"
+        )
         return False
  
  
 # =========================================================
 # PREVISÃO DE DEMANDA
-# Consolidada aqui — previsao.py será depreciado.
-# A lógica em app.py (rota /previsao-estoque) deve chamar esta função.
 # =========================================================
-def previsao_demanda() -> list[dict]:
+def previsao_demanda(
+    empresa_id: int
+) -> list[dict]:
     """
-    Calcula previsão de consumo para todas as matérias-primas com base
-    nos últimos 30 dias de movimentação de saída.
+    Calcula previsão de consumo para todas as matérias-primas
+    da empresa com base nos últimos 30 dias.
     """
+
     try:
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(
                     """
-                    SELECT id_materia_prima, nome, unidade_medida, estoque_minimo
+                    SELECT
+                        id_materia_prima,
+                        nome,
+                        unidade_medida,
+                        estoque_minimo
                     FROM materia_prima
+                    WHERE empresa_id = %s
                     ORDER BY nome ASC
-                    """
+                    """,
+                    (empresa_id,)
                 )
+
                 materias = cur.fetchall()
- 
+
                 previsoes: list[dict] = []
-                for id_mp, nome, unidade, estoque_minimo in materias:
-                    estoque_minimo = float(estoque_minimo or 0)
- 
-                    # Saldo atual
+
+                for (
+                    id_mp,
+                    nome,
+                    unidade,
+                    estoque_minimo
+                ) in materias:
+
+                    estoque_minimo = float(
+                        estoque_minimo or 0
+                    )
+
+                    # saldo atual
                     cur.execute(
                         """
                         SELECT
-                            COALESCE(SUM(CASE WHEN tipo_movimento IN ('entrada','ajuste')
-                                             THEN quantidade ELSE 0 END), 0)
-                            - COALESCE(SUM(CASE WHEN tipo_movimento = 'saida'
-                                               THEN quantidade ELSE 0 END), 0)
+                            COALESCE(
+                                SUM(
+                                    CASE
+                                        WHEN tipo_movimento IN ('entrada','ajuste')
+                                        THEN quantidade
+                                        ELSE 0
+                                    END
+                                ),
+                                0
+                            )
+                            -
+                            COALESCE(
+                                SUM(
+                                    CASE
+                                        WHEN tipo_movimento = 'saida'
+                                        THEN quantidade
+                                        ELSE 0
+                                    END
+                                ),
+                                0
+                            )
                         FROM movimentacao_estoque
                         WHERE id_materia_prima = %s
+                        AND empresa_id = %s
                         """,
-                        (id_mp,),
+                        (
+                            id_mp,
+                            empresa_id
+                        )
                     )
-                    estoque_atual = float(cur.fetchone()[0] or 0)
- 
-                    # Consumo últimos 30 dias
+
+                    estoque_atual = float(
+                        cur.fetchone()[0] or 0
+                    )
+
+                    # consumo últimos 30 dias
                     cur.execute(
                         """
-                        SELECT COALESCE(SUM(quantidade), 0)
+                        SELECT
+                            COALESCE(
+                                SUM(quantidade),
+                                0
+                            )
                         FROM movimentacao_estoque
                         WHERE id_materia_prima = %s
-                          AND tipo_movimento = 'saida'
-                          AND data_movimento >= CURRENT_DATE - INTERVAL '30 days'
+                        AND empresa_id = %s
+                        AND tipo_movimento = 'saida'
+                        AND data_movimento >= CURRENT_DATE - INTERVAL '30 days'
                         """,
-                        (id_mp,),
+                        (
+                            id_mp,
+                            empresa_id
+                        )
                     )
-                    total_consumido = float(cur.fetchone()[0] or 0)
- 
+
+                    total_consumido = float(
+                        cur.fetchone()[0] or 0
+                    )
+
                     media_diaria = total_consumido / 30.0
+
                     fator = 1.15
- 
-                    consumo_7d = round(media_diaria * 7 * fator, 2)
-                    consumo_15d = round(media_diaria * 15 * fator, 2)
-                    dias_restantes = (
-                        round(estoque_atual / media_diaria, 1) if media_diaria > 0 else 999.0
+
+                    consumo_7d = round(
+                        media_diaria * 7 * fator,
+                        2
                     )
- 
+
+                    consumo_15d = round(
+                        media_diaria * 15 * fator,
+                        2
+                    )
+
+                    dias_restantes = (
+                        round(
+                            estoque_atual / media_diaria,
+                            1
+                        )
+                        if media_diaria > 0
+                        else 999.0
+                    )
+
                     if dias_restantes <= 2:
                         risco = "CRÍTICO"
                     elif dias_restantes <= 5:
@@ -348,15 +790,28 @@ def previsao_demanda() -> list[dict]:
                         risco = "MODERADO"
                     else:
                         risco = "BAIXO"
- 
-                    sugestao = max(round(consumo_15d - estoque_atual, 2), 0.0)
- 
+
+                    sugestao = max(
+                        round(
+                            consumo_15d - estoque_atual,
+                            2
+                        ),
+                        0.0
+                    )
+
                     previsoes.append(
                         {
                             "materia_prima": nome,
                             "unidade": unidade,
-                            "estoque_atual": round(estoque_atual, 2),
-                            "media_diaria": round(media_diaria, 2),
+                            "estoque_atual": round(
+                                estoque_atual,
+                                2
+                            ),
+                            "estoque_minimo": estoque_minimo,
+                            "media_diaria": round(
+                                media_diaria,
+                                2
+                            ),
                             "consumo_previsto": consumo_7d,
                             "consumo_15d": consumo_15d,
                             "dias_restantes": dias_restantes,
@@ -364,21 +819,32 @@ def previsao_demanda() -> list[dict]:
                             "sugestao_compra": sugestao,
                         }
                     )
- 
-        previsoes.sort(key=lambda x: x["dias_restantes"])
+
+        previsoes.sort(
+            key=lambda x: x["dias_restantes"]
+        )
+
         return previsoes
+
     except Exception as e:
-        log_erro(f"Erro na previsão de demanda: {e}")
+
+        log_erro(
+            f"Erro na previsão de demanda: {e}"
+        )
+
         return []
- 
  
 # =========================================================
 # HISTÓRICO DE MOVIMENTAÇÕES
 # =========================================================
-def obter_historico_movimentacoes() -> list[dict]:
+def obter_historico_movimentacoes(
+    empresa_id: int
+) -> list[dict]:
     try:
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(
                     """
                     SELECT
@@ -393,17 +859,29 @@ def obter_historico_movimentacoes() -> list[dict]:
                         END AS tipo_item,
                         mov.tipo_movimento,
                         mov.quantidade,
-                        COALESCE(mp.unidade_medida, s.unidade_medida, 'un') AS unidade,
+                        COALESCE(
+                            mp.unidade_medida,
+                            s.unidade_medida,
+                            'un'
+                        ) AS unidade,
                         mov.observacao
                     FROM movimentacao_estoque mov
-                    LEFT JOIN materia_prima mp ON mov.id_materia_prima = mp.id_materia_prima
-                    LEFT JOIN subprodutos s ON mov.id_subproduto = s.id_subproduto
-                    LEFT JOIN produtos p ON mov.id_produto = p.id_produto
-                    ORDER BY mov.data_movimento DESC, mov.id_movimento DESC
-                    """
+                    LEFT JOIN materia_prima mp
+                        ON mov.id_materia_prima = mp.id_materia_prima
+                    LEFT JOIN subprodutos s
+                        ON mov.id_subproduto = s.id_subproduto
+                    LEFT JOIN produtos p
+                        ON mov.id_produto = p.id_produto
+                    WHERE mov.empresa_id = %s
+                    ORDER BY
+                        mov.data_movimento DESC,
+                        mov.id_movimento DESC
+                    """,
+                    (empresa_id,)
                 )
+
                 rows = cur.fetchall()
- 
+
         return [
             {
                 "id": r[0],
@@ -417,6 +895,7 @@ def obter_historico_movimentacoes() -> list[dict]:
             }
             for r in rows
         ]
+
     except Exception as e:
         log_erro(f"Erro ao obter histórico de movimentações: {e}")
         return []
@@ -425,10 +904,15 @@ def obter_historico_movimentacoes() -> list[dict]:
 # =========================================================
 # SUBPRODUTOS — funções que estavam perdidas no app.py
 # =========================================================
-def listar_subprodutos() -> list[tuple]:
+def listar_subprodutos(
+    empresa_id: int
+) -> list[tuple]:
+
     try:
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(
                     """
                     SELECT
@@ -437,133 +921,396 @@ def listar_subprodutos() -> list[tuple]:
                         s.unidade_medida,
                         COALESCE(s.estoque_minimo, 0),
                         COALESCE(s.preco_custo_unidade, 0.0),
-                        COALESCE(SUM(CASE WHEN mov.tipo_movimento IN ('entrada','ajuste')
-                                         THEN mov.quantidade ELSE 0 END), 0)
-                        - COALESCE(SUM(CASE WHEN mov.tipo_movimento = 'saida'
-                                           THEN mov.quantidade ELSE 0 END), 0) AS saldo
+
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN mov.tipo_movimento IN ('entrada','ajuste')
+                                    THEN mov.quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        )
+
+                        -
+
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN mov.tipo_movimento = 'saida'
+                                    THEN mov.quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        ) AS saldo
+
                     FROM subprodutos s
-                    LEFT JOIN movimentacao_estoque mov ON s.id_subproduto = mov.id_subproduto
-                    WHERE s.ativo = 1
-                    GROUP BY s.id_subproduto, s.nome, s.unidade_medida,
-                             s.estoque_minimo, s.preco_custo_unidade
+
+                    LEFT JOIN movimentacao_estoque mov
+                        ON s.id_subproduto = mov.id_subproduto
+                       AND mov.empresa_id = s.empresa_id
+
+                    WHERE
+                        s.ativo = 1
+                        AND s.empresa_id = %s
+
+                    GROUP BY
+                        s.id_subproduto,
+                        s.nome,
+                        s.unidade_medida,
+                        s.estoque_minimo,
+                        s.preco_custo_unidade
+
                     ORDER BY s.nome ASC
-                    """
+                    """,
+                    (empresa_id,)
                 )
+
                 rows = cur.fetchall()
- 
+
         resultado = []
+
         for s in rows:
+
             estoque_min = float(s[3] or 0)
             saldo = float(s[5] or 0)
             preco = float(s[4] or 0)
-            status = "BAIXO" if saldo <= estoque_min else "OK"
-            resultado.append((s[0], s[1], s[2], estoque_min, saldo, status, preco))
+
+            status = (
+                "BAIXO"
+                if saldo <= estoque_min
+                else "OK"
+            )
+
+            resultado.append(
+                (
+                    s[0],
+                    s[1],
+                    s[2],
+                    estoque_min,
+                    saldo,
+                    status,
+                    preco
+                )
+            )
+
         return resultado
+
     except Exception as e:
+
         log_erro(f"Erro ao listar subprodutos: {e}")
+
         return []
  
  
-def cadastrar_subproduto_banco(nome: str, unidade: str, estoque_minimo: float) -> bool:
+def cadastrar_subproduto_banco(
+    empresa_id: int,
+    nome: str,
+    unidade: str,
+    estoque_minimo: float
+) -> bool:
+
     if not nome or not str(nome).strip():
         return False
+
     try:
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(
                     """
-                    INSERT INTO subprodutos (nome, unidade_medida, estoque_minimo, ativo)
-                    VALUES (%s, %s, %s, 1)
+                    INSERT INTO subprodutos
+                    (
+                        empresa_id,
+                        nome,
+                        unidade_medida,
+                        estoque_minimo,
+                        ativo
+                    )
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        1
+                    )
                     """,
-                    (nome.strip(), unidade, float(estoque_minimo or 0)),
+                    (
+                        empresa_id,
+                        nome.strip(),
+                        unidade,
+                        float(estoque_minimo or 0)
+                    )
                 )
+
             conn.commit()
+
         return True
+
     except Exception as e:
+
         log_erro(f"Erro ao cadastrar subproduto: {e}")
+
         return False
  
  
 def vincular_insumo_subproduto(
-    id_subproduto: int, id_materia_prima: int, quantidade: float
+    empresa_id: int,
+    id_subproduto: int,
+    id_materia_prima: int,
+    quantidade: float
 ) -> bool:
+
     try:
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
+                cur.execute(
+                    """
+                    SELECT 1
+                    FROM subprodutos
+                    WHERE id_subproduto = %s
+                      AND empresa_id = %s
+                    """,
+                    (
+                        id_subproduto,
+                        empresa_id
+                    )
+                )
+
+                if not cur.fetchone():
+                    return False
+
+                cur.execute(
+                    """
+                    SELECT 1
+                    FROM materia_prima
+                    WHERE id_materia_prima = %s
+                      AND empresa_id = %s
+                    """,
+                    (
+                        id_materia_prima,
+                        empresa_id
+                    )
+                )
+
+                if not cur.fetchone():
+                    return False
+
                 cur.execute(
                     """
                     INSERT INTO receitas_subprodutos
-                        (id_subproduto, id_materia_prima, quantidade_utilizada)
-                    VALUES (%s, %s, %s)
+                    (
+                        empresa_id,
+                        id_subproduto,
+                        id_materia_prima,
+                        quantidade_utilizada
+                    )
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        %s,
+                        %s
+                    )
                     """,
-                    (int(id_subproduto), int(id_materia_prima), float(quantidade)),
+                    (
+                        empresa_id,
+                        int(id_subproduto),
+                        int(id_materia_prima),
+                        float(quantidade)
+                    )
                 )
+
             conn.commit()
+
         return True
+
     except Exception as e:
-        log_erro(f"Erro ao vincular insumo ao subproduto: {e}")
+
+        log_erro(
+            f"Erro ao vincular insumo ao subproduto: {e}"
+        )
+
         return False
  
  
-def excluir_subproduto_banco(id_subproduto: int) -> bool:
-    """Soft delete — mantém histórico fiscal."""
+def excluir_subproduto_banco(
+    empresa_id: int,
+    id_subproduto: int
+) -> bool:
+    """
+    Soft delete — mantém histórico fiscal.
+    """
+
     try:
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(
-                    "UPDATE subprodutos SET ativo = 0 WHERE id_subproduto = %s",
-                    (int(id_subproduto),),
+                    """
+                    UPDATE subprodutos
+                    SET ativo = 0
+                    WHERE id_subproduto = %s
+                      AND empresa_id = %s
+                    """,
+                    (
+                        int(id_subproduto),
+                        empresa_id
+                    )
                 )
+
             conn.commit()
+
         return True
+
     except Exception as e:
-        log_erro(f"Erro ao desativar subproduto: {e}")
+
+        log_erro(
+            f"Erro ao desativar subproduto: {e}"
+        )
+
         return False
- 
  
 # =========================================================
 # ENTRADA DE SUBPRODUTO (chamada em /registrar-producao)
 # =========================================================
-def entrada_subproduto(id_subproduto: int, quantidade: float) -> bool:
-    """Registra entrada de subproduto produzido e baixa os insumos da receita."""
+def entrada_subproduto(
+    empresa_id: int,
+    id_subproduto: int,
+    quantidade: float
+) -> bool:
+    """
+    Registra entrada de subproduto produzido
+    e baixa os insumos da receita.
+    """
+
     try:
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
+                # valida subproduto da empresa
+                cur.execute(
+                    """
+                    SELECT 1
+                    FROM subprodutos
+                    WHERE id_subproduto = %s
+                    AND empresa_id = %s
+                    """,
+                    (
+                        id_subproduto,
+                        empresa_id
+                    )
+                )
+
+                if not cur.fetchone():
+                    return False
+
                 # Entrada no estoque do subproduto
                 cur.execute(
                     """
                     INSERT INTO movimentacao_estoque
-                        (id_subproduto, tipo_movimento, quantidade, observacao)
-                    VALUES (%s, 'entrada', %s, 'Produção registrada')
+                    (
+                        empresa_id,
+                        id_subproduto,
+                        tipo_movimento,
+                        quantidade,
+                        observacao
+                    )
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        'entrada',
+                        %s,
+                        'Produção registrada'
+                    )
                     """,
-                    (id_subproduto, float(quantidade)),
+                    (
+                        empresa_id,
+                        id_subproduto,
+                        float(quantidade)
+                    )
                 )
-                # Baixa os insumos usados na receita do subproduto
+
+                # Busca insumos da receita
                 cur.execute(
-                    "SELECT id_materia_prima, quantidade_utilizada FROM receitas_subprodutos WHERE id_subproduto = %s",
-                    (id_subproduto,),
+                    """
+                    SELECT
+                        rs.id_materia_prima,
+                        rs.quantidade_utilizada
+                    FROM receitas_subprodutos rs
+                    INNER JOIN materia_prima mp
+                        ON mp.id_materia_prima = rs.id_materia_prima
+                    WHERE rs.id_subproduto = %s
+                    AND mp.empresa_id = %s
+                    """,
+                    (
+                        id_subproduto,
+                        empresa_id
+                    )
                 )
+
                 for id_mp, qtd_receita in cur.fetchall():
+
                     cur.execute(
                         """
                         INSERT INTO movimentacao_estoque
-                            (id_materia_prima, tipo_movimento, quantidade, observacao)
-                        VALUES (%s, 'saida', %s, 'Baixa por produção de subproduto')
+                        (
+                            empresa_id,
+                            id_materia_prima,
+                            tipo_movimento,
+                            quantidade,
+                            observacao
+                        )
+                        VALUES
+                        (
+                            %s,
+                            %s,
+                            'saida',
+                            %s,
+                            'Baixa por produção de subproduto'
+                        )
                         """,
-                        (id_mp, float(qtd_receita) * float(quantidade)),
+                        (
+                            empresa_id,
+                            id_mp,
+                            float(qtd_receita) * float(quantidade)
+                        )
                     )
+
             conn.commit()
-        log_info(f"Entrada subproduto ID {id_subproduto} | Qtd {quantidade}")
+
+        log_info(
+            f"Entrada subproduto ID {id_subproduto} | Empresa {empresa_id} | Qtd {quantidade}"
+        )
+
         return True
+
     except Exception as e:
-        log_erro(f"Erro entrada_subproduto ID {id_subproduto}: {e}")
+
+        log_erro(
+            f"Erro entrada_subproduto ID {id_subproduto}: {e}"
+        )
+
         return False
  
  
 # =========================================================
 # ENTRADA DE PRODUTO FINAL (chamada em /registrar-producao)
 # =========================================================
-def entrada_produto(id_produto: int, quantidade: float) -> bool:
+def entrada_produto(
+    empresa_id: int,
+    id_produto: int,
+    quantidade: float
+) -> bool:
     """
     Registra produção de produto final
     e baixa automaticamente os insumos da receita.
@@ -574,11 +1321,29 @@ def entrada_produto(id_produto: int, quantidade: float) -> bool:
         with get_conn() as conn:
             with conn.cursor() as cur:
 
+                # valida produto da empresa
+                cur.execute(
+                    """
+                    SELECT 1
+                    FROM produtos
+                    WHERE id_produto = %s
+                    AND empresa_id = %s
+                    """,
+                    (
+                        id_produto,
+                        empresa_id
+                    )
+                )
+
+                if not cur.fetchone():
+                    return False
+
                 # Entrada do produto final
                 cur.execute(
                     """
                     INSERT INTO movimentacao_estoque
                     (
+                        empresa_id,
                         id_produto,
                         tipo_movimento,
                         quantidade,
@@ -587,12 +1352,14 @@ def entrada_produto(id_produto: int, quantidade: float) -> bool:
                     VALUES
                     (
                         %s,
+                        %s,
                         'entrada',
                         %s,
                         'Produção registrada'
                     )
                     """,
                     (
+                        empresa_id,
                         id_produto,
                         float(quantidade)
                     )
@@ -602,24 +1369,30 @@ def entrada_produto(id_produto: int, quantidade: float) -> bool:
                 cur.execute(
                     """
                     SELECT
-                        id_materia_prima,
-                        quantidade_utilizada
-                    FROM receitas
-                    WHERE id_produto = %s
-                    AND id_materia_prima IS NOT NULL
+                        r.id_materia_prima,
+                        r.quantidade_utilizada
+                    FROM receitas r
+                    INNER JOIN materia_prima mp
+                        ON mp.id_materia_prima = r.id_materia_prima
+                    WHERE r.id_produto = %s
+                    AND r.id_materia_prima IS NOT NULL
+                    AND mp.empresa_id = %s
                     """,
-                    (id_produto,)
+                    (
+                        id_produto,
+                        empresa_id
+                    )
                 )
 
                 ingredientes = cur.fetchall()
 
-                # Baixa matéria-prima
                 for id_mp, qtd_receita in ingredientes:
 
                     cur.execute(
                         """
                         INSERT INTO movimentacao_estoque
                         (
+                            empresa_id,
                             id_materia_prima,
                             tipo_movimento,
                             quantidade,
@@ -628,12 +1401,14 @@ def entrada_produto(id_produto: int, quantidade: float) -> bool:
                         VALUES
                         (
                             %s,
+                            %s,
                             'saida',
                             %s,
                             'Baixa por produção'
                         )
                         """,
                         (
+                            empresa_id,
                             id_mp,
                             float(qtd_receita) * float(quantidade)
                         )
@@ -642,7 +1417,7 @@ def entrada_produto(id_produto: int, quantidade: float) -> bool:
             conn.commit()
 
         log_info(
-            f"Produto produzido ID {id_produto} | Qtd {quantidade}"
+            f"Produto produzido ID {id_produto} | Empresa {empresa_id} | Qtd {quantidade}"
         )
 
         return True
@@ -659,43 +1434,251 @@ def entrada_produto(id_produto: int, quantidade: float) -> bool:
 # =========================================================
 # BALANÇO DIÁRIO (chamada em /estoque/fechamento)
 # =========================================================
-def obter_balanco_diario() -> list[dict]:
-    """Retorna fabricado x vendido x sobra de hoje para cada produto."""
+def obter_balanco_diario(
+    empresa_id: int
+) -> list[dict]:
+    """
+    Retorna fabricado x vendido x sobra de hoje
+    para cada produto da empresa.
+    """
+
     try:
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(
                     """
                     SELECT
                         p.id_produto,
                         p.nome,
-                        COALESCE(SUM(CASE WHEN mov.tipo_movimento = 'entrada'
-                                         THEN mov.quantidade ELSE 0 END), 0) AS fabricado,
-                        COALESCE(SUM(iv.quantidade), 0) AS vendido
+
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN mov.tipo_movimento = 'entrada'
+                                    THEN mov.quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        ) AS fabricado,
+
+                        COALESCE(
+                            SUM(iv.quantidade),
+                            0
+                        ) AS vendido
+
                     FROM produtos p
+
                     LEFT JOIN movimentacao_estoque mov
                         ON mov.id_produto = p.id_produto
+                        AND mov.empresa_id = p.empresa_id
                         AND DATE(mov.data_movimento) = CURRENT_DATE
-                    LEFT JOIN itens_venda iv ON iv.id_produto = p.id_produto
-                        AND iv.id_venda IN (
-                            SELECT id_venda FROM vendas WHERE DATE(data_venda) = CURRENT_DATE
-                        )
-                    GROUP BY p.id_produto, p.nome
-                    ORDER BY p.nome ASC
-                    """
+
+                    LEFT JOIN itens_venda iv
+                        ON iv.id_produto = p.id_produto
+
+                    LEFT JOIN vendas v
+                        ON v.id_venda = iv.id_venda
+                        AND v.empresa_id = p.empresa_id
+                        AND DATE(v.data_venda) = CURRENT_DATE
+
+                    WHERE p.empresa_id = %s
+
+                    GROUP BY
+                        p.id_produto,
+                        p.nome
+
+                    ORDER BY
+                        p.nome ASC
+                    """,
+                    (empresa_id,)
                 )
+
                 rows = cur.fetchall()
- 
+
         return [
             {
                 "id": r[0],
                 "nome": r[1],
-                "fabricado": float(r[2]),
-                "vendido": float(r[3]),
-                "sobrou": float(r[2]) - float(r[3]),
+                "fabricado": float(r[2] or 0),
+                "vendido": float(r[3] or 0),
+                "sobrou": float(r[2] or 0) - float(r[3] or 0),
             }
             for r in rows
         ]
+
     except Exception as e:
-        log_erro(f"Erro ao obter balanço diário: {e}")
+
+        log_erro(
+            f"Erro ao obter balanço diário: {e}"
+        )
+
         return []
+    
+
+def obter_saldo_produto(id_produto: int) -> float:
+
+    try:
+
+        empresa_id = get_empresa_id()
+
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+
+                cur.execute(
+                    """
+                    SELECT
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN tipo_movimento IN ('entrada','ajuste')
+                                    THEN quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        )
+                        -
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN tipo_movimento = 'saida'
+                                    THEN quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        )
+                    FROM movimentacao_estoque
+                    WHERE id_produto = %s
+                    AND id_empresa = %s
+                    """,
+                    (
+                        id_produto,
+                        empresa_id
+                    )
+                )
+
+                saldo = cur.fetchone()[0]
+
+        return float(saldo or 0)
+
+    except Exception as e:
+
+        log_erro(
+            f"Erro ao consultar saldo produto {id_produto}: {e}"
+        )
+
+        return 0
+    
+def obter_saldo_materia_prima(id_mp: int) -> float:
+
+    try:
+
+        empresa_id = get_empresa_id()
+
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+
+                cur.execute(
+                    """
+                    SELECT
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN tipo_movimento IN ('entrada','ajuste')
+                                    THEN quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        )
+                        -
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN tipo_movimento = 'saida'
+                                    THEN quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        )
+                    FROM movimentacao_estoque
+                    WHERE id_materia_prima = %s
+                    AND id_empresa = %s
+                    """,
+                    (
+                        id_mp,
+                        empresa_id
+                    )
+                )
+
+                saldo = cur.fetchone()[0]
+
+        return float(saldo or 0)
+
+    except Exception as e:
+
+        log_erro(
+            f"Erro ao consultar MP {id_mp}: {e}"
+        )
+
+        return 0
+    
+def obter_saldo_subproduto(id_subproduto: int) -> float:
+
+    try:
+
+        empresa_id = get_empresa_id()
+
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+
+                cur.execute(
+                    """
+                    SELECT
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN tipo_movimento IN ('entrada','ajuste')
+                                    THEN quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        )
+                        -
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN tipo_movimento = 'saida'
+                                    THEN quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        )
+                    FROM movimentacao_estoque
+                    WHERE id_subproduto = %s
+                    AND id_empresa = %s
+                    """,
+                    (
+                        id_subproduto,
+                        empresa_id
+                    )
+                )
+
+                saldo = cur.fetchone()[0]
+
+        return float(saldo or 0)
+
+    except Exception as e:
+
+        log_erro(
+            f"Erro ao consultar subproduto {id_subproduto}: {e}"
+        )
+
+        return 0

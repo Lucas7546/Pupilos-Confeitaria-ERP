@@ -4,6 +4,7 @@ from modules.db import get_conn
 from utils.logger import log_info, log_erro
 from flask_login import current_user
 from modules.tenant import get_empresa_id
+from modules.estoque import obter_saldo_subproduto, obter_saldo_materia_prima, obter_saldo_produto
 
 
 # =========================================================
@@ -78,9 +79,9 @@ def obter_resumo_periodo(dias: int = 7) -> dict:
 
 # =========================================================
 # REGISTRAR VENDA
-# Bug corrigido: toda a operação ocorre num único bloco com o mesmo
-# cursor — o cursor original não é reaproveitado após fetchall interno.
-# O rollback é feito automaticamente pelo get_conn() em caso de erro.
+# =========================================================
+# =========================================================
+# REGISTRAR VENDA
 # =========================================================
 def registrar_venda(
     id_produto: int,
@@ -89,22 +90,113 @@ def registrar_venda(
     usuario: str = "Sistema",
 ) -> bool:
 
-
-
     try:
 
         id_empresa = get_empresa_id()
 
-        custo_unitario = calcular_custo_receita(id_produto)
+        custo_unitario = calcular_custo_receita(
+            id_produto
+        )
 
         lucro_total = (
             float(valor_total)
-            - (float(custo_unitario) * float(quantidade))
+            - (
+                float(custo_unitario)
+                * float(quantidade)
+            )
         )
 
         with get_conn() as conn:
 
             with conn.cursor() as cur:
+
+                # =====================================
+                # BUSCA RECEITA
+                # =====================================
+
+                cur.execute(
+                    """
+                    SELECT
+                        id_materia_prima,
+                        id_subproduto,
+                        quantidade_utilizada
+                    FROM receitas
+                    WHERE id_produto = %s
+                    AND id_empresa = %s
+                    """,
+                    (
+                        id_produto,
+                        id_empresa
+                    )
+                )
+
+                ingredientes = cur.fetchall()
+
+                # =====================================
+                # VALIDA ESTOQUE PRODUTO FINAL
+                # =====================================
+
+                saldo_produto = obter_saldo_produto(
+                    id_produto
+                )
+
+                if saldo_produto < quantidade:
+
+                    raise ValueError(
+                        f"Produto sem estoque suficiente. "
+                        f"Disponível: {saldo_produto}"
+                    )
+
+                # =====================================
+                # VALIDA INSUMOS
+                # =====================================
+
+                for (
+                    id_materia_prima,
+                    id_subproduto,
+                    quantidade_utilizada
+                ) in ingredientes:
+
+                    qtd_necessaria = (
+                        float(quantidade_utilizada)
+                        * float(quantidade)
+                    )
+
+                    # -----------------------------
+                    # MATÉRIA PRIMA
+                    # -----------------------------
+
+                    if id_materia_prima:
+
+                        saldo_mp = obter_saldo_materia_prima(
+                            id_materia_prima
+                        )
+
+                        if saldo_mp < qtd_necessaria:
+
+                            raise ValueError(
+                                f"Matéria-prima sem estoque. "
+                                f"Necessário: {qtd_necessaria} "
+                                f"Disponível: {saldo_mp}"
+                            )
+
+                    # -----------------------------
+                    # SUBPRODUTO
+                    # -----------------------------
+
+                    if id_subproduto:
+
+                        saldo_sub = obter_saldo_subproduto(
+                            id_subproduto
+                        )
+
+                        if saldo_sub < qtd_necessaria:
+
+                            raise ValueError(
+                                f"Subproduto sem estoque. "
+                                f"Necessário: {qtd_necessaria} "
+                                f"Disponível: {saldo_sub}"
+                            )
 
                 # =====================================
                 # REGISTRA VENDA
@@ -160,11 +252,14 @@ def registrar_venda(
                 row = cur.fetchone()
 
                 if not row:
+
                     raise ValueError(
                         f"Produto ID {id_produto} não encontrado."
                     )
 
-                preco_unitario = float(row[0])
+                preco_unitario = float(
+                    row[0]
+                )
 
                 # =====================================
                 # ITEM DA VENDA
@@ -228,28 +323,6 @@ def registrar_venda(
                         id_empresa
                     )
                 )
-
-                # =====================================
-                # RECEITA
-                # =====================================
-
-                cur.execute(
-                    """
-                    SELECT
-                        id_materia_prima,
-                        id_subproduto,
-                        quantidade_utilizada
-                    FROM receitas
-                    WHERE id_produto = %s
-                    AND id_empresa = %s
-                    """,
-                    (
-                        id_produto,
-                        id_empresa
-                    )
-                )
-
-                ingredientes = cur.fetchall()
 
                 # =====================================
                 # BAIXA INSUMOS

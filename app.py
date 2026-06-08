@@ -21,7 +21,6 @@ from ape.routes.insumos_routes import insumos_bp
 from ape.routes.produtos_routes import produtos_bp
 from ape.routes.vinculos_routes import vinculos_bp
 from ape.routes.subprodutos_routes import subprodutos_bp
-from modules.db import init_db
 
 
 
@@ -64,9 +63,6 @@ def create_app():
     @app.route('/')
     def index():
         return redirect(url_for('auth.login'))
-
-    with app.app_context():
-        init_db()
 
     return app
 

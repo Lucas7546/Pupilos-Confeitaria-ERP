@@ -8,6 +8,7 @@ from utils.logger import log_info, log_erro
 
 from modules.db import get_conn
 
+
  
 
 
@@ -629,14 +630,15 @@ def criar_usuario_empresa(
     username,
     senha,
     nivel,
-    id_empresa
+    id_empresa,
+    conn=None
 ):
 
-    with get_conn() as conn:
+    if conn:
+
         with conn.cursor() as cur:
 
-            cur.execute(
-                """
+            cur.execute("""
                 INSERT INTO usuarios
                 (
                     username,
@@ -653,16 +655,45 @@ def criar_usuario_empresa(
                     1,
                     %s
                 )
+            """,
+            (
+                username.lower().strip(),
+                generate_password_hash(senha),
+                nivel,
+                id_empresa
+            ))
+
+    else:
+
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    INSERT INTO usuarios
+                    (
+                        username,
+                        senha,
+                        nivel,
+                        ativo,
+                        id_empresa
+                    )
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        %s,
+                        1,
+                        %s
+                    )
                 """,
                 (
                     username.lower().strip(),
                     generate_password_hash(senha),
                     nivel,
                     id_empresa
-                )
-            )
+                ))
 
-        conn.commit()
+            conn.commit()
 
     return True
  

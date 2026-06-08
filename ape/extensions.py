@@ -72,6 +72,6 @@ def init_extensions(app):
 # ERROR HANDLER RATE LIMIT
 # =============================================================
 @limiter.request_filter
-def handle_ratelimit_error(request):
+def handle_ratelimit_error(*args, **kwargs):
     # aqui NÃO é erro, é filtro
     return False

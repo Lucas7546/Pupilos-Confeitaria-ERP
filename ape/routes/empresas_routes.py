@@ -1,15 +1,14 @@
 from flask import Blueprint, request, redirect, flash, url_for
 
 from modules.db import get_conn
-from modules.empresas import (
-    criar_empresa,
-    buscar_empresa_nome
-)
+from modules.empresas import criar_empresa
 from modules.usuarios import (
     criar_usuario_empresa,
     buscar_usuario
 )
+
 from utils.logger import log_erro
+
 
 empresas_bp = Blueprint(
     "empresas",
@@ -59,17 +58,6 @@ def cadastro_empresa():
             url_for("auth.login")
         )
 
-    if len(nome_empresa) < 3:
-
-        flash(
-            "Nome da empresa inválido.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("auth.login")
-        )
-
     if not responsavel:
 
         flash(
@@ -92,21 +80,10 @@ def cadastro_empresa():
             url_for("auth.login")
         )
 
-    if len(username) < 3:
-
-        flash(
-            "Usuário inválido.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("auth.login")
-        )
-
     if len(senha) < 6:
 
         flash(
-            "Senha deve ter no mínimo 6 caracteres.",
+            "Senha deve ter pelo menos 6 caracteres.",
             "danger"
         )
 
@@ -117,18 +94,7 @@ def cadastro_empresa():
     if buscar_usuario(username):
 
         flash(
-            "Usuário já cadastrado.",
-            "warning"
-        )
-
-        return redirect(
-            url_for("auth.login")
-        )
-
-    if buscar_empresa_nome(nome_empresa):
-
-        flash(
-            "Empresa já cadastrada.",
+            "Usuário já existe.",
             "warning"
         )
 
@@ -143,9 +109,9 @@ def cadastro_empresa():
         with conn:
 
             id_empresa = criar_empresa(
-                nome_empresa,
-                responsavel,
-                plano,
+                nome=nome_empresa,
+                responsavel=responsavel,
+                plano=plano,
                 conn=conn
             )
 

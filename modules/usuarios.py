@@ -634,6 +634,8 @@ def criar_usuario_empresa(
     conn=None
 ):
 
+    senha_hash = generate_password_hash(senha)
+
     if conn:
 
         with conn.cursor() as cur:
@@ -658,7 +660,7 @@ def criar_usuario_empresa(
             """,
             (
                 username.lower().strip(),
-                generate_password_hash(senha),
+                senha_hash,
                 nivel,
                 id_empresa
             ))
@@ -666,6 +668,7 @@ def criar_usuario_empresa(
     else:
 
         with get_conn() as conn:
+
             with conn.cursor() as cur:
 
                 cur.execute("""
@@ -688,7 +691,7 @@ def criar_usuario_empresa(
                 """,
                 (
                     username.lower().strip(),
-                    generate_password_hash(senha),
+                    senha_hash,
                     nivel,
                     id_empresa
                 ))

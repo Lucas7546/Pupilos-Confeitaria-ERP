@@ -7,9 +7,6 @@ import logging
  
 # =========================================================
 # POOL DE CONEXÕES
-# Render free tier: limite de 25 conexões simultâneas no Postgres.
-# Usamos maxconn=5 para guardar margem — o load_user do Flask-Login
-# consome uma conexão por request autenticado.
 # =========================================================
 _pool: pool.ThreadedConnectionPool | None = None
 
@@ -29,44 +26,39 @@ def _get_pool() -> pool.ThreadedConnectionPool:
         database_url = os.getenv("DATABASE_URL")
         if not database_url:
             raise RuntimeError("Variável DATABASE_URL não encontrada.")
+        
+        # FIX: O Supabase recomenda usar a porta 6543 (Transaction Pooler)
+        # Se sua URL ainda estiver com 5432, altere para 6543
+        if ":5432/" in database_url:
+            database_url = database_url.replace(":5432/", ":6543/")
+            
+        # Adicionar o parâmetro para forçar IPv4 se necessário
+        # Algumas versões do psycopg2 aceitam 'options' para forçar o IP
         _pool = pool.ThreadedConnectionPool(
             minconn=1,
-            maxconn=5,  # Render free: 25 total; guardamos margem para outros processos
+            maxconn=5,
             dsn=database_url,
-            sslmode="require",
+            # Remova o sslmode daqui se ele já estiver na sua DATABASE_URL
+            # Se você usa dsn=url, o sslmode deve estar na string da URL
         )
     return _pool
  
  
 @contextmanager
 def get_conn():
-    """
-    Context manager que pega uma conexão do pool e a devolve ao final.
- 
-    Se o pool estiver esgotado, tenta por até 3 segundos antes de
-    lançar RuntimeError — evita que o Render derrube o processo por
-    timeout enquanto espera indefinidamente.
- 
-    Uso:
-        with get_conn() as conn:
-            with conn.cursor() as cur:
-                cur.execute(...)
-            conn.commit()
-    """
     p = _get_pool()
     conn = None
-    deadline = time.monotonic() + 3.0  # espera no máximo 3s
+    deadline = time.monotonic() + 5.0  # Aumentei para 5s, rede instável no Render
     while conn is None:
         try:
             conn = p.getconn()
-        except pool.PoolError:
+        except Exception: # Captura erro de pool genérico
             if time.monotonic() > deadline:
-                raise RuntimeError(
-                    "Pool de conexões esgotado. Tente novamente em instantes."
-                )
-            time.sleep(0.1)
+                raise RuntimeError("Pool de conexões esgotado.")
+            time.sleep(0.5)
     try:
         yield conn
+        conn.commit() # Adicionei o commit automático aqui para simplificar
     except Exception:
         conn.rollback()
         raise
@@ -78,35 +70,3 @@ def get_conn():
 # O conn.close() devolve ao pool, não fecha a conexão de verdade.
 def conectar():
     return _get_pool().getconn()
-
-def init_db():
-    try:
-        with get_conn() as conn:
-            with conn.cursor() as cur:
-                # Tabela de logs (que você já tem)
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS logs (
-                        id SERIAL PRIMARY KEY,
-                        usuario TEXT,
-                        acao TEXT,
-                        modulo TEXT,
-                        detalhe TEXT,
-                        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                
-                # ADICIONE ESTE BLOCO PARA A TABELA FALTANTE
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS movimentacao_produtos (
-                        id SERIAL PRIMARY KEY,
-                        produto_id INTEGER NOT NULL,
-                        quantidade NUMERIC(12, 2) NOT NULL,
-                        tipo VARCHAR(20) NOT NULL,
-                        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                
-            conn.commit()
-        print("✔ Tabelas verificadas/criadas com sucesso.")
-    except Exception as e:
-        print(f"❌ Erro ao inicializar tabelas: {e}")

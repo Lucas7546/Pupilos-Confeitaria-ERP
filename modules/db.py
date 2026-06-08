@@ -5,7 +5,6 @@ from psycopg2 import pool
 
 _pool = None
 
-
 def _get_pool():
     global _pool
 
@@ -15,10 +14,9 @@ def _get_pool():
         if not database_url:
             raise RuntimeError("DATABASE_URL não encontrada no ambiente")
 
-        # ⚠️ IMPORTANTE: NÃO usar IPv6 direto do Supabase
-        # Use sempre pooler (6543)
-        if ":5432" in database_url:
-            database_url = database_url.replace(":5432", ":6543")
+        # força SSL (Supabase exige em muitos casos)
+        if "sslmode" not in database_url:
+            database_url += "?sslmode=require"
 
         _pool = pool.ThreadedConnectionPool(
             minconn=1,
@@ -59,7 +57,6 @@ def query(sql, params=()):
         with conn.cursor() as cur:
             cur.execute(sql, params)
             return cur.fetchall()
-
  
 # Alias de compatibilidade — mantido para módulos ainda não migrados.
 # O conn.close() devolve ao pool, não fecha a conexão de verdade.

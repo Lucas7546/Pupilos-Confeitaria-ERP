@@ -9,23 +9,44 @@ from utils.logger import log_erro
 auditoria_bp = Blueprint('auditoria', __name__)
 
 # Helper interno - pode ficar aqui ou ser movido para app/services/log_service.py
-def _listar_logs(limite=100, usuario=None, acao=None, modulo=None, 
-                  data_inicio=None, data_fim=None) -> list:
-    query = "SELECT usuario, acao, modulo, detalhe, data FROM logs WHERE 1=1"
-    params = []
+def _listar_logs(
+    limite=100,
+    usuario=None,
+    acao=None,
+    modulo=None,
+    data_inicio=None,
+    data_fim=None
+) -> list:
+
+    query = """
+        SELECT
+            usuario,
+            acao,
+            modulo,
+            detalhe,
+            data
+        FROM logs
+        WHERE id_empresa = %s
+    """
+
+    params = [current_user.id_empresa]
 
     if usuario:
         query += " AND LOWER(usuario) LIKE LOWER(%s)"
         params.append(f"%{usuario}%")
+
     if acao:
         query += " AND acao = %s"
         params.append(acao)
+
     if modulo:
         query += " AND modulo = %s"
         params.append(modulo)
+
     if data_inicio:
         query += " AND DATE(data) >= %s"
         params.append(data_inicio)
+
     if data_fim:
         query += " AND DATE(data) <= %s"
         params.append(data_fim)
@@ -34,12 +55,18 @@ def _listar_logs(limite=100, usuario=None, acao=None, modulo=None,
     params.append(limite)
 
     try:
+
         with get_conn() as conn:
             with conn.cursor() as cur:
+
                 cur.execute(query, params)
+
                 return cur.fetchall()
+
     except Exception as e:
+
         log_erro(f"Erro ao consultar logs: {e}")
+
         return []
 
 @auditoria_bp.route("/auditoria")
@@ -93,10 +120,19 @@ def exportar_logs():
 def limpar_logs():
 
     try:
+
         with get_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM logs")
-                conn.commit()
+
+                cur.execute(
+                    """
+                    DELETE FROM logs
+                    WHERE id_empresa = %s
+                    """,
+                    (current_user.id_empresa,)
+                )
+
+            conn.commit()
 
         registrar_log(
             "DELETE",
@@ -107,7 +143,9 @@ def limpar_logs():
         flash("Logs limpos com sucesso.", "success")
 
     except Exception as e:
+
         log_erro(f"Erro ao limpar logs: {e}")
+
         flash("Erro ao limpar logs.", "danger")
 
     return redirect(url_for("auditoria.auditoria"))

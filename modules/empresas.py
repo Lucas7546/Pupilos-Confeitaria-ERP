@@ -1,23 +1,57 @@
 from modules.db import get_conn
 
-def criar_empresa(nome, plano="basic"):
+
+def criar_empresa(
+    nome,
+    responsavel,
+    plano="basic"
+):
 
     with get_conn() as conn:
         with conn.cursor() as cur:
 
-            # 1. cria empresa
             cur.execute("""
-                INSERT INTO empresas (nome, plano)
-                VALUES (%s, %s)
+                INSERT INTO empresas
+                (
+                    nome,
+                    responsavel,
+                    plano
+                )
+                VALUES
+                (
+                    %s,
+                    %s,
+                    %s
+                )
                 RETURNING id_empresa
-            """, (nome, plano))
+            """,
+            (
+                nome,
+                responsavel,
+                plano
+            ))
 
             id_empresa = cur.fetchone()[0]
 
-            # 2. cria plano ativo (controle SaaS)
             cur.execute("""
-                INSERT INTO empresa_planos (id_empresa, plano, ativo)
-                VALUES (%s, %s, TRUE)
-            """, (id_empresa, plano))
+                INSERT INTO empresa_planos
+                (
+                    id_empresa,
+                    plano,
+                    ativo
+                )
+                VALUES
+                (
+                    %s,
+                    %s,
+                    TRUE
+                )
+            """,
+            (
+                id_empresa,
+                plano
+            ))
 
         conn.commit()
+
+    return id_empresa

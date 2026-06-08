@@ -11,6 +11,7 @@ from modules.db import get_conn
 
 from modules.ocr_notas import analisar_nota, limpar_e_parsear_json
 from utils.helpers import validar_imagem_segura
+from modules.ocr_notas import enriquecer_itens_nota
 
 
 compras_bp = Blueprint("compras", __name__)
@@ -22,6 +23,8 @@ compras_bp = Blueprint("compras", __name__)
 @compras_bp.route("/compras-inteligentes")
 @login_required
 @acesso_requerido("estoque")
+@limiter.limit("10 per minute") # Limite do usuário
+@limiter.limit("50 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def compras_inteligentes():
     return render_template("compras_inteligentes.html")
 
@@ -32,7 +35,8 @@ def compras_inteligentes():
 @compras_bp.route("/processar-nota", methods=["POST"])
 @login_required
 @acesso_requerido("estoque")
-@limiter.limit("5 per minute")
+@limiter.limit("10 per minute") # Limite do usuário
+@limiter.limit("50 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def processar_nota():
 
     caminho_imagem = None
@@ -79,6 +83,8 @@ def processar_nota():
 
         itens = limpar_e_parsear_json(resposta_raw)
 
+        itens = enriquecer_itens_nota(itens)
+
         if not itens:
             log_erro(f"OCR inválido: {resposta_raw[:300]}")
             flash("Erro ao interpretar nota fiscal.", "danger")
@@ -113,6 +119,11 @@ def processar_nota():
 @compras_bp.route("/confirmar-nota", methods=["POST"])
 @login_required
 @acesso_requerido("estoque")
+@limiter.limit("10 per minute")
+@limiter.limit(
+    "50 per hour",
+    key_func=lambda: f"empresa:{current_user.id_empresa}"
+)
 def confirmar_nota():
 
     try:
@@ -135,17 +146,26 @@ def confirmar_nota():
 
             with conn.cursor() as cur:
 
-                for i in range(min(total, 100)):  # LIMITAÇÃO DE SEGURANÇA
+                for i in range(min(total, 100)):
 
                     nome = request.form.get(f"nome_{i}", "").strip()
 
                     try:
-                        qtd = float(request.form.get(f"qtd_{i}", 0) or 0)
-                        preco = float(request.form.get(f"preco_{i}", 0) or 0)
+                        qtd = float(
+                            request.form.get(f"qtd_{i}", 0) or 0
+                        )
+
+                        preco = float(
+                            request.form.get(f"preco_{i}", 0) or 0
+                        )
+
                     except:
                         continue
 
-                    unidade = request.form.get(f"unidade_{i}", "UN").upper()
+                    unidade = request.form.get(
+                        f"unidade_{i}",
+                        "UN"
+                    ).upper()
 
                     if not nome or qtd <= 0:
                         continue
@@ -153,14 +173,19 @@ def confirmar_nota():
                     # =========================
                     # BUSCA MATÉRIA PRIMA
                     # =========================
+
                     cur.execute(
                         """
                         SELECT id_materia_prima
                         FROM materia_prima
                         WHERE LOWER(nome) = LOWER(%s)
+                        AND id_empresa = %s
                         LIMIT 1
                         """,
-                        (nome,)
+                        (
+                            nome,
+                            current_user.id_empresa
+                        )
                     )
 
                     materia = cur.fetchone()
@@ -170,14 +195,21 @@ def confirmar_nota():
                         id_materia = materia[0]
 
                         if preco > 0:
+
                             cur.execute(
                                 """
                                 UPDATE materia_prima
                                 SET preco_unitario = %s,
                                     unidade_medida = %s
                                 WHERE id_materia_prima = %s
+                                AND id_empresa = %s
                                 """,
-                                (preco, unidade, id_materia)
+                                (
+                                    preco,
+                                    unidade,
+                                    id_materia,
+                                    current_user.id_empresa
+                                )
                             )
 
                     else:
@@ -185,11 +217,29 @@ def confirmar_nota():
                         cur.execute(
                             """
                             INSERT INTO materia_prima
-                            (nome, unidade_medida, preco_unitario, estoque_minimo)
-                            VALUES (%s, %s, %s, 0)
+                            (
+                                nome,
+                                unidade_medida,
+                                preco_unitario,
+                                estoque_minimo,
+                                id_empresa
+                            )
+                            VALUES
+                            (
+                                %s,
+                                %s,
+                                %s,
+                                0,
+                                %s
+                            )
                             RETURNING id_materia_prima
                             """,
-                            (nome, unidade, preco)
+                            (
+                                nome,
+                                unidade,
+                                preco,
+                                current_user.id_empresa
+                            )
                         )
 
                         id_materia = cur.fetchone()[0]
@@ -197,13 +247,34 @@ def confirmar_nota():
                     # =========================
                     # MOVIMENTAÇÃO ESTOQUE
                     # =========================
+
                     cur.execute(
                         """
                         INSERT INTO movimentacao_estoque
-                        (id_materia_prima, tipo_movimento, quantidade, observacao, usuario)
-                        VALUES (%s, 'entrada', %s, 'OCR nota fiscal', %s)
+                        (
+                            id_materia_prima,
+                            tipo_movimento,
+                            quantidade,
+                            observacao,
+                            usuario,
+                            id_empresa
+                        )
+                        VALUES
+                        (
+                            %s,
+                            'entrada',
+                            %s,
+                            'OCR nota fiscal',
+                            %s,
+                            %s
+                        )
                         """,
-                        (id_materia, qtd, current_user.username)
+                        (
+                            id_materia,
+                            qtd,
+                            current_user.username,
+                            current_user.id_empresa
+                        )
                     )
 
                     salvos += 1
@@ -217,11 +288,24 @@ def confirmar_nota():
             current_user.username
         )
 
-        flash(f"{salvos} itens adicionados com sucesso!", "success")
+        flash(
+            f"{salvos} itens adicionados com sucesso!",
+            "success"
+        )
 
-        return redirect(url_for("estoque.previsao_estoque"))
+        return redirect(
+            url_for("estoque.previsao_estoque")
+        )
 
     except Exception as e:
+
         log_erro(f"Erro confirmar nota: {e}")
-        flash("Erro ao salvar nota.", "danger")
-        return redirect(url_for("compras.compras_inteligentes"))
+
+        flash(
+            "Erro ao salvar nota.",
+            "danger"
+        )
+
+        return redirect(
+            url_for("compras.compras_inteligentes")
+        )

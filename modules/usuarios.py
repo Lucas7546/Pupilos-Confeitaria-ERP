@@ -622,6 +622,49 @@ def registrar_log_db(
 
     except Exception as e:
         log_erro(f"Erro ao registrar log: {e}")
+
+
+
+def criar_usuario_empresa(
+    username,
+    senha,
+    nivel,
+    id_empresa
+):
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+
+            cur.execute(
+                """
+                INSERT INTO usuarios
+                (
+                    username,
+                    senha,
+                    nivel,
+                    ativo,
+                    id_empresa
+                )
+                VALUES
+                (
+                    %s,
+                    %s,
+                    %s,
+                    1,
+                    %s
+                )
+                """,
+                (
+                    username.lower().strip(),
+                    generate_password_hash(senha),
+                    nivel,
+                    id_empresa
+                )
+            )
+
+        conn.commit()
+
+    return True
  
 
  

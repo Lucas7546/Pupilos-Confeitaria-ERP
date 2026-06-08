@@ -75,7 +75,7 @@ def precificacao():
                     FROM produtos p
                     LEFT JOIN receitas r ON p.id_produto = r.id_produto
                     LEFT JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
-                    WHERE p.ativo = 1
+                    WHERE p.ativo = 1 AND p.id_empresa = %s
                     GROUP BY p.id_produto, p.nome, p.preco_venda
                     ORDER BY p.nome ASC
                 """)
@@ -105,8 +105,8 @@ def ficha_tecnica(id_produto):
         with get_conn() as con:
             with con.cursor() as cur:
                 cur.execute(
-                    "SELECT id_produto, nome, preco_venda FROM produtos WHERE id_produto = %s",
-                    (id_produto,),
+                    "SELECT id_produto, nome, preco_venda FROM produtos WHERE id_produto = %s AND id_empresa = %s",
+                    (id_produto, current_user.id_empresa),
                 )
                 produto = cur.fetchone()
                 if not produto:

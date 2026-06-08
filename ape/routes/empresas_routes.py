@@ -16,98 +16,31 @@ empresas_bp = Blueprint(
 )
 
 
-@empresas_bp.route(
-    "/cadastro-empresa",
-    methods=["POST"]
-)
+@empresas_bp.route("/cadastro-empresa", methods=["POST"])
 def cadastro_empresa():
+    nome_empresa = request.form.get("empresa", "").strip()
+    responsavel = request.form.get("responsavel", "").strip()
+    username = request.form.get("username", "").strip().lower()
+    senha = request.form.get("senha", "").strip()
+    plano = request.form.get("plano", "basic")
 
-    nome_empresa = request.form.get(
-        "empresa",
-        ""
-    ).strip()
-
-    responsavel = request.form.get(
-        "responsavel",
-        ""
-    ).strip()
-
-    username = request.form.get(
-        "username",
-        ""
-    ).strip().lower()
-
-    senha = request.form.get(
-        "senha",
-        ""
-    ).strip()
-
-    plano = request.form.get(
-        "plano",
-        "basic"
-    )
-
-    if not nome_empresa:
-
-        flash(
-            "Informe o nome da empresa.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("auth.login")
-        )
-
-    if not responsavel:
-
-        flash(
-            "Informe o responsável.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("auth.login")
-        )
-
-    if not username:
-
-        flash(
-            "Informe o usuário.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("auth.login")
-        )
+    # Validações básicas
+    if not nome_empresa or not responsavel or not username:
+        flash("Preencha todos os campos obrigatórios.", "danger")
+        return redirect(url_for("auth.login"))
 
     if len(senha) < 6:
-
-        flash(
-            "Senha deve ter pelo menos 6 caracteres.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("auth.login")
-        )
+        flash("A senha deve ter pelo menos 6 caracteres.", "danger")
+        return redirect(url_for("auth.login"))
 
     if buscar_usuario(username):
+        flash("Este nome de usuário já está em uso.", "warning")
+        return redirect(url_for("auth.login"))
 
-        flash(
-            "Usuário já existe.",
-            "warning"
-        )
-
-        return redirect(
-            url_for("auth.login")
-        )
-
-    conn = get_conn()
-
+    # Execução da transação usando o context manager do seu db.py
     try:
-
-        with conn:
-
+        with get_conn() as conn:
+            # 1. Cria a empresa
             id_empresa = criar_empresa(
                 nome=nome_empresa,
                 responsavel=responsavel,
@@ -115,6 +48,7 @@ def cadastro_empresa():
                 conn=conn
             )
 
+            # 2. Cria o usuário vinculado
             criar_usuario_empresa(
                 username=username,
                 senha=senha,
@@ -122,31 +56,12 @@ def cadastro_empresa():
                 id_empresa=id_empresa,
                 conn=conn
             )
-
-        flash(
-            "Empresa criada com sucesso. Faça login.",
-            "success"
-        )
-
-        return redirect(
-            url_for("auth.login")
-        )
+        
+        # Se chegou aqui, o 'with' já deu o commit automático
+        flash("Empresa criada com sucesso. Faça seu login!", "success")
+        return redirect(url_for("auth.login"))
 
     except Exception as e:
-
-        log_erro(
-            f"Erro cadastro empresa: {e}"
-        )
-
-        flash(
-            "Erro ao criar empresa.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("auth.login")
-        )
-
-    finally:
-
-        conn.close()
+        log_erro(f"Erro no cadastro da empresa {nome_empresa}: {e}")
+        flash("Erro interno ao criar empresa. Tente novamente mais tarde.", "danger")
+        return redirect(url_for("auth.login"))

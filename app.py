@@ -7,6 +7,7 @@ from ape.extensions import init_extensions
 from ape.routes.auth_routes import auth_bp
 from ape.routes.estoque_routes import estoque_bp
 from ape.routes.compras_routes import compras_bp
+from ape.routes.empresas_routes import empresas_bp
 from ape.routes.export_routes import export_bp
 from ape.routes.main_routes import main_bp
 from ape.security.headers import aplicar_headers_seguranca
@@ -56,6 +57,7 @@ def create_app():
     app.register_blueprint(insumos_bp)
     app.register_blueprint(produtos_bp, url_prefix='/produtos')
     app.register_blueprint(vinculos_bp)
+    app.register_blueprint(empresas_bp)
     app.register_blueprint(subprodutos_bp)
     
     app.after_request(aplicar_headers_seguranca)

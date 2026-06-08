@@ -1,20 +1,24 @@
-import os
-import json
+from flask_login import current_user
+# Importe a função que cria a conexão, ex: get_conn
+from modules.db import get_conn 
 
 def inject_empresa():
-    cliente = os.getenv("CLIENTE", "").strip().lower()
-    
-    # Ajuste o caminho conforme a estrutura da sua pasta
-    # Usando o caminho absoluto do projeto facilita
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    config_path = os.path.join(base_dir, "clientes", cliente, "config.json")
-    
-    if os.path.exists(config_path):
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                config = json.load(f)
-                return {"EMPRESA": config.get("NOME_EMPRESA", "Nome Padrão")}
-        except (json.JSONDecodeError, Exception):
-            return {"EMPRESA": "Nome Padrão"}
-    
+    if not current_user.is_authenticated or not hasattr(current_user, 'id_empresa'):
+        return {"EMPRESA": "Confeitaria ERP"}
+
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                # Busca a empresa pelo ID do usuário logado
+                cur.execute("SELECT nome FROM empresas WHERE id_empresa = %s", (current_user.id_empresa,))
+                result = cur.fetchone()
+                
+                if result:
+                    return {
+                        "EMPRESA": result[0], # O primeiro campo da query (nome)
+                        "ID_EMPRESA": current_user.id_empresa
+                    }
+    except Exception as e:
+        print(f"Erro ao buscar empresa: {e}")
+
     return {"EMPRESA": "Nome Padrão"}

@@ -25,7 +25,6 @@ def cadastro_empresa():
     senha = request.form.get("senha", "").strip()
     plano = request.form.get("plano", "basic")
 
-    # Validações básicas
     if not nome_empresa or not responsavel or not username:
         flash("Preencha todos os campos obrigatórios.", "danger")
         return redirect(url_for("auth.login"))
@@ -39,14 +38,14 @@ def cadastro_empresa():
         return redirect(url_for("auth.login"))
 
     try:
-        # 1. Cria empresa
+        # 1. empresa
         id_empresa = criar_empresa(
             nome=nome_empresa,
             responsavel=responsavel,
             plano=plano
         )
 
-        # 2. Cria usuário vinculado
+        # 2. usuário dono
         criar_usuario_empresa(
             username=username,
             senha=senha,

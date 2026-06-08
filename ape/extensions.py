@@ -16,6 +16,7 @@ class AnonymousUser(AnonymousUserMixin):
 # =============================================================
 # USER MODEL
 # =============================================================
+
 class User(UserMixin):
     def __init__(self, user_data):
         self.id = str(user_data["id_usuario"])

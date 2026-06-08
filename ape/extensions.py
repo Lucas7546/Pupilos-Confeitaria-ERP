@@ -2,6 +2,7 @@ from flask_login import LoginManager, UserMixin, current_user, AnonymousUserMixi
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from modules.usuarios import buscar_usuario_id
+from flask import session
 from flask import request
 
 
@@ -36,16 +37,20 @@ login_manager.anonymous_user = AnonymousUser
 @login_manager.user_loader
 def load_user(user_id):
     try:
-        user_data = buscar_usuario_id(int(user_id))
+        id_empresa = session.get("id_empresa")
+
+        if not id_empresa:
+            return None
+
+        user_data = buscar_usuario_id(int(user_id), id_empresa)
 
         if user_data and user_data["ativo"]:
             return User(user_data)
 
-    except (ValueError, TypeError):
+    except Exception:
         pass
 
     return None
-
 
 # =============================================================
 # RATE LIMIT KEY (AGORA COM EMPRESA)

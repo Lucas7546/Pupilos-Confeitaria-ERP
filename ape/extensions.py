@@ -6,9 +6,9 @@ from flask import request
 
 
 
-=============================================================
-# HACK: AnonymousUser customizado
-# =============================================================
+#=============================================================
+#HACK: AnonymousUser customizado
+#=============================================================
 class AnonymousUser(AnonymousUserMixin):
     def __init__(self):
         super().__init__()

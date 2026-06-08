@@ -18,6 +18,7 @@ empresas_bp = Blueprint(
 
 @empresas_bp.route("/cadastro-empresa", methods=["POST"])
 def cadastro_empresa():
+
     nome_empresa = request.form.get("empresa", "").strip()
     responsavel = request.form.get("responsavel", "").strip()
     username = request.form.get("username", "").strip().lower()
@@ -37,27 +38,22 @@ def cadastro_empresa():
         flash("Este nome de usuário já está em uso.", "warning")
         return redirect(url_for("auth.login"))
 
-    # Execução da transação usando o context manager do seu db.py
     try:
-        with get_conn() as conn:
-            # 1. Cria a empresa
-            id_empresa = criar_empresa(
-                nome=nome_empresa,
-                responsavel=responsavel,
-                plano=plano,
-                conn=conn
-            )
+        # 1. Cria empresa
+        id_empresa = criar_empresa(
+            nome=nome_empresa,
+            responsavel=responsavel,
+            plano=plano
+        )
 
-            # 2. Cria o usuário vinculado
-            criar_usuario_empresa(
-                username=username,
-                senha=senha,
-                nivel="dono",
-                id_empresa=id_empresa,
-                conn=conn
-            )
-        
-        # Se chegou aqui, o 'with' já deu o commit automático
+        # 2. Cria usuário vinculado
+        criar_usuario_empresa(
+            username=username,
+            senha=senha,
+            nivel="dono",
+            id_empresa=id_empresa
+        )
+
         flash("Empresa criada com sucesso. Faça seu login!", "success")
         return redirect(url_for("auth.login"))
 

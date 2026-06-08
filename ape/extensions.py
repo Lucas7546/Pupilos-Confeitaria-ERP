@@ -1,8 +1,20 @@
-from flask_login import LoginManager, UserMixin, current_user
+from flask_login import LoginManager, UserMixin, current_user, AnonymousUserMixin
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from modules.usuarios import buscar_usuario_id
 from flask import request
+
+
+
+=============================================================
+# HACK: AnonymousUser customizado
+# =============================================================
+class AnonymousUser(AnonymousUserMixin):
+    def __init__(self):
+        super().__init__()
+        self.id_empresa = None 
+        self.id = None
+
 
 
 # =============================================================
@@ -16,12 +28,12 @@ class User(UserMixin):
         self.ativo = user_data["ativo"]
         self.id_empresa = user_data["id_empresa"]
 
-
 # =============================================================
 # LOGIN MANAGER
 # =============================================================
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
+login_manager.anonymous_user = AnonymousUser
 
 
 @login_manager.user_loader
@@ -42,16 +54,17 @@ def load_user(user_id):
 # RATE LIMIT KEY (AGORA COM EMPRESA)
 # =============================================================
 def rate_limit_key():
-
     try:
-        if current_user.is_authenticated:
-            # 🔥 IMPORTANTE: separa limite por usuário + empresa
-            return f"u:{current_user.id_empresa}:{current_user.id}"
+        # Verifica se o current_user existe e se ele tem o id_empresa
+        if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+            # Se for um usuário real e logado
+            if getattr(current_user, 'id_empresa', None):
+                return f"u:{current_user.id_empresa}:{current_user.id}"
     except Exception:
         pass
-
+    
+    # Fallback para visitantes
     return get_remote_address()
-
 
 limiter = Limiter(
     key_func=rate_limit_key,

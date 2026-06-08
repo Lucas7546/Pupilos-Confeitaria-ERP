@@ -5,7 +5,6 @@ from modules.usuarios import buscar_usuario_id
 from flask import request
 
 
-
 # =============================================================
 # HACK: AnonymousUser customizado
 # =============================================================
@@ -14,9 +13,6 @@ class AnonymousUser(AnonymousUserMixin):
         super().__init__()
         self.id_empresa = None 
         self.id = None
-
-
-
 # =============================================================
 # USER MODEL
 # =============================================================

@@ -1,9 +1,7 @@
-
-from datetime import datetime, timedelta 
-from modules.tenant_db import get_conn
 from utils.logger import log_info, log_erro
 from modules.tenant import get_empresa_id
- 
+from datetime import datetime, timedelta 
+from modules.tenant_db import get_conn 
  
 # =========================================================
 # ENTRADA DE ESTOQUE
@@ -649,8 +647,7 @@ def excluir_materia_prima(
             f"Erro ao excluir matéria-prima ID {id_mp}: {e}"
         )
         return False
- 
- 
+
 # =========================================================
 # PREVISÃO DE DEMANDA
 # =========================================================

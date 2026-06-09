@@ -3,6 +3,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_wtf.csrf import CSRFProtect
 from flask import Flask, redirect, url_for
 from ape.extensions import init_extensions
+from modules.tenant import set_empresa_context
 # Importando seus Blueprints organizados
 from ape.routes.auth_routes import auth_bp
 from ape.routes.estoque_routes import estoque_bp
@@ -35,8 +36,10 @@ def create_app():
     # 2. Inicializa o CSRF depois de ter as configurações carregadas
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     csrf.init_app(app)
-    
-    
+
+    @app.before_request
+    def before_request():
+        set_empresa_context()
     
     # 3. Inicializa as extensões (que podem depender da config)
     init_extensions(app)

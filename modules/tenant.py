@@ -1,35 +1,36 @@
-from flask import g
+from flask import g, request
 from flask_login import current_user
 from modules.tenant_db import get_conn as tenant_conn
 
 
 # =========================================================
-# CONTEXTO DA EMPRESA (REQUEST)
+# CONTEXTO DA EMPRESA (ÚNICO)
 # =========================================================
-def set_empresa_context():
-    """
-    Executado no before_request
-    Define a empresa ativa do usuário logado
-    """
+IGNORAR = ["/static", "/favicon.ico"]
 
-    if current_user.is_authenticated:
-        g.id_empresa = getattr(current_user, "id_empresa", None)
-    else:
+def set_empresa_context():
+    path = request.path
+
+    if any(path.startswith(p) for p in IGNORAR):
+        return
+
+    g.id_empresa = None
+
+    try:
+        if current_user.is_authenticated:
+            g.id_empresa = getattr(current_user, "id_empresa", None)
+    except Exception:
         g.id_empresa = None
 
-
 # =========================================================
-# PEGAR EMPRESA ATUAL (FONTE ÚNICA)
+# GET PADRÃO
 # =========================================================
 def get_empresa_id():
-    """
-    Fonte única do id_empresa atual.
-    """
 
     id_empresa = getattr(g, "id_empresa", None)
 
-    if id_empresa is None:
-        raise PermissionError("Acesso negado: id_empresa não identificado no contexto.")
+    if not id_empresa:
+        raise Exception("Tenant não definido")
 
     return id_empresa
 
@@ -88,3 +89,6 @@ def execute_secure(query, params=(), fetch=False):
                 return cur.fetchall()
 
             conn.commit()
+
+def get_empresa_id_safe():
+    return getattr(g, "id_empresa", None)

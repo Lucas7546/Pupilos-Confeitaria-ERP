@@ -24,7 +24,8 @@ def buscar_usuario(username: str):
                         senha,
                         nivel,
                         id_empresa,
-                        ativo
+                        ativo,
+                        is_superadmin
                     FROM usuarios
                     WHERE username = %s
                     LIMIT 1
@@ -52,6 +53,7 @@ def buscar_usuario_id(id_usuario: int, id_empresa: int):
                         nivel,
                         id_empresa,
                         ativo,
+                        is_superadmin,
                         data_cadastro
                     FROM usuarios
                     WHERE id_usuario = %s

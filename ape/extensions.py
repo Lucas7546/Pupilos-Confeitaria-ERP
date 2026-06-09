@@ -26,6 +26,11 @@ class User(UserMixin):
         self.ativo = user_data["ativo"]
         self.id_empresa = user_data["id_empresa"]
 
+        self.is_superadmin = user_data.get(
+            "is_superadmin",
+            False
+        )
+
 # =============================================================
 # LOGIN MANAGER
 # =============================================================

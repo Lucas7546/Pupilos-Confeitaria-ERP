@@ -1,6 +1,6 @@
 from flask import g
 from flask_login import current_user
-from modules.tenant_db import get_conn
+from modules.tenant_db import get_conn as tenant_conn
 
 
 # =========================================================
@@ -96,7 +96,7 @@ def query_empresa(cur, sql, params=(), alias=""):
 def execute_secure(query, params=(), fetch=False):
     empresa_id = get_empresa_id()
 
-    with get_conn() as conn:
+    with tenant_conn() as conn:
         with conn.cursor() as cur:
 
             # suporte a dict params

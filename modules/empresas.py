@@ -1,4 +1,4 @@
-from modules.tenant_db import get_conn
+from modules.db import get_conn
 
 
 def criar_empresa(nome, responsavel, plano="basic"):

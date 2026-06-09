@@ -1,5 +1,6 @@
 import os
 import time
+from contextlib import contextmanager
 from psycopg2 import pool
 
 _pool = None
@@ -26,17 +27,31 @@ def _get_pool():
     return _pool
 
 
-def query(sql, params=()):
-    pool = _get_pool()
-    conn = pool.getconn()
+@contextmanager
+def get_conn():
+    pool_conn = _get_pool()
+    conn = pool_conn.getconn()
 
     try:
-        with conn.cursor() as cur:
-            cur.execute(sql, params)
-            return cur.fetchall()
+        yield conn
+        conn.commit()
+
+    except Exception:
+        conn.rollback()
+        raise
 
     finally:
-        pool.putconn(conn)
+        pool_conn.putconn(conn)
+
+
+def query(sql, params=()):
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+
+            cur.execute(sql, params)
+
+            return cur.fetchall()
 
 
 def conectar():

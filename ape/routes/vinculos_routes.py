@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required
+from flask_login import login_required, current_user
 from modules import produtos, estoque
 from utils.helpers import _parse_float
 from ape.services.log_service import registrar_log
@@ -19,7 +19,7 @@ def vincular_receita():
         return redirect(url_for("insumos.render_cadastro"))
 
     if produtos.vincular_insumo(id_p, id_m, qtd):
-        registrar_log("CADASTRO", "FICHA_TECNICA", f"MP {id_m} → Prod {id_p} | Qtd {qtd}")
+        registrar_log("CADASTRO", "FICHA_TECNICA", f"MP {id_m} → Prod {id_p} | Qtd {qtd}", current_user.username)
         flash("Ingrediente vinculado!", "success")
     return redirect(url_for("insumos.render_cadastro"))
 
@@ -36,7 +36,7 @@ def vincular_subproduto_produto():
         return redirect(url_for("insumos.render_cadastro"))
 
     if produtos.vincular_subproduto_ao_produto(id_p, id_sub, qtd):
-        registrar_log("VINCULAR","FICHA_TECNICA",f"Subproduto {id_sub} -> Produto {id_p} | Qtd {qtd}")
+        registrar_log("VINCULAR","FICHA_TECNICA",f"Subproduto {id_sub} -> Produto {id_p} | Qtd {qtd}", current_user.username)
 
         flash("Subproduto vinculado ao produto!", "success")
     return redirect(url_for("insumos.render_cadastro"))
@@ -53,7 +53,7 @@ def vincular_receita_subproduto():
         return redirect(url_for("insumos.render_cadastro"))
  
     if estoque.vincular_insumo_subproduto(id_sub, id_m, qtd):
-        registrar_log( "VINCULAR", "SUBPRODUTO",f"MP {id_m} -> Subproduto {id_sub} | Qtd {qtd}")
+        registrar_log( "VINCULAR", "SUBPRODUTO",f"MP {id_m} -> Subproduto {id_sub} | Qtd {qtd}", current_user.username)
         flash("Ingrediente vinculado ao subproduto!", "success")
     else:
         flash("Erro ao vincular.", "danger")

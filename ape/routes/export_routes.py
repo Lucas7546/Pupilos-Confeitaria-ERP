@@ -72,7 +72,7 @@ def exportar_previsao_csv():
                 round(float(item.get("sugestao_compra") or 0), 2),
             ])
 
-        registrar_log("EXPORT_CSV", "EXPORT", f"{len(previsoes)} itens exportados")
+        registrar_log("EXPORT_CSV", "EXPORT", f"{len(previsoes)} itens exportados", current_user.username)
 
         response = make_response(output.getvalue())
         response.headers["Content-Disposition"] = "attachment; filename=previsao.csv"
@@ -130,7 +130,7 @@ def exportar_previsao_excel():
 
         buffer.seek(0)
 
-        registrar_log("EXPORT_CSV", "EXPORT", f"{len(previsoes)} itens exportados")
+        registrar_log("EXPORT_EXCEL", "EXPORT", f"{len(previsoes)} itens exportados", current_user.username)
 
         return send_file(
             buffer,
@@ -211,11 +211,7 @@ def exportar_previsao_pdf():
 
         buffer.seek(0)
 
-        registrar_log(
-            usuario=current_user.id,
-            acao="EXPORT_PDF",
-            detalhes=f"{len(previsoes)} itens exportados"
-        )
+        registrar_log("EXPORT_PDF", "EXPORT", f"{len(previsoes)} itens exportados", current_user.username)
 
         return send_file(
             buffer,

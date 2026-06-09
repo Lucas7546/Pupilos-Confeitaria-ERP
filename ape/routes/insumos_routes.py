@@ -17,12 +17,13 @@ def render_cadastro():
             "cadastro.html",
             produtos=produtos.listar_todos() or [],
             materias=estoque.listar_materia_prima() or [],
-            subprodutos=estoque.listar_subprodutos() or [],
+            subprodutos=estoque.listar_subprodutos(current_user.id_empresa) or [],
         )
     except Exception as e:
         log_erro(f"Erro ao renderizar cadastro: {e}")
         flash("Erro ao carregar a central de cadastros.", "danger")
         return redirect(url_for("main.dashboard"))
+    
 
 @insumos_bp.route("/cadastrar-mp", methods=["POST"])
 @login_required
@@ -39,7 +40,7 @@ def cadastrar_mp():
         flash("Nome, Unidade e Preço são obrigatórios.", "warning")
         return redirect(url_for("insumos.render_cadastro"))
 
-    if estoque.cadastrar_materia(nome, unidade, preco, est_at, est_min):
+    if estoque.cadastrar_materia(nome, unidade, preco, est_at, est_min, current_user.id_empresa):
         registrar_log("CADASTRO", "MATERIA_PRIMA", f"{nome} | R$ {preco}")
         flash(f"Insumo '{nome}' salvo!", "success")
     else:

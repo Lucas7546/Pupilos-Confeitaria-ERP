@@ -45,7 +45,7 @@ def login():
             registrar_log(
                 "LOGIN",
                 "AUTH",
-                f"Usuário '{user.username}' autenticado"
+                f"Usuário '{user.username}' autenticado", current_user.username
             )
 
             flash(f"Bem-vindo, {user.username}!", "success")

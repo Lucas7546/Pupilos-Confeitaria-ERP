@@ -317,7 +317,7 @@ def previsao_estoque():
 
     try:
 
-        previsoes = estoque.previsao_demanda()
+        previsoes = estoque.previsao_demanda(current_user.id_empresa)
 
         return render_template(
             "previsao.html",

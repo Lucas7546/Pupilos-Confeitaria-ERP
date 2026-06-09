@@ -1,6 +1,5 @@
 from flask import Blueprint, request, redirect, flash, url_for
-
-from modules.tenant_db import get_conn
+from modules.db import get_conn
 from modules.empresas import criar_empresa
 from modules.usuarios import (
     criar_usuario_empresa,
@@ -25,6 +24,11 @@ def cadastro_empresa():
     senha = request.form.get("senha", "").strip()
     plano = request.form.get("plano", "basic")
 
+    codigo_convite = request.form.get("codigo_convite", "").strip()
+
+    # =========================
+    # VALIDAÇÕES BÁSICAS
+    # =========================
     if not nome_empresa or not responsavel or not username:
         flash("Preencha todos os campos obrigatórios.", "danger")
         return redirect(url_for("auth.login"))
@@ -38,14 +42,39 @@ def cadastro_empresa():
         return redirect(url_for("auth.login"))
 
     try:
-        # 1. empresa
+
+        # =========================
+        # VALIDAR CONVITE
+        # =========================
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    SELECT id
+                    FROM convites_empresa
+                    WHERE codigo = %s
+                      AND utilizado = FALSE
+                    LIMIT 1
+                """, (codigo_convite,))
+
+                convite = cur.fetchone()
+
+        if not convite:
+            flash("Código de convite inválido.", "danger")
+            return redirect(url_for("auth.login"))
+
+        # =========================
+        # CRIAR EMPRESA
+        # =========================
         id_empresa = criar_empresa(
             nome=nome_empresa,
             responsavel=responsavel,
             plano=plano
         )
 
-        # 2. usuário dono
+        # =========================
+        # CRIAR USUÁRIO DONO
+        # =========================
         criar_usuario_empresa(
             username=username,
             senha=senha,
@@ -53,10 +82,30 @@ def cadastro_empresa():
             id_empresa=id_empresa
         )
 
+        # =========================
+        # MARCAR CONVITE COMO USADO
+        # =========================
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    UPDATE convites_empresa
+                    SET utilizado = TRUE
+                    WHERE codigo = %s
+                      AND utilizado = FALSE
+                """, (codigo_convite,))
+
+            conn.commit()
+
+        # =========================
+        # SUCESSO
+        # =========================
         flash("Empresa criada com sucesso. Faça seu login!", "success")
         return redirect(url_for("auth.login"))
 
     except Exception as e:
+
         log_erro(f"Erro no cadastro da empresa {nome_empresa}: {e}")
-        flash("Erro interno ao criar empresa. Tente novamente mais tarde.", "danger")
+
+        flash("Erro interno ao criar empresa.", "danger")
         return redirect(url_for("auth.login"))

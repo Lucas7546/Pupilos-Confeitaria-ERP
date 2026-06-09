@@ -2,25 +2,31 @@ from flask_login import current_user
 from PIL import Image
 
 def is_admin():
-    return current_user.nivel == "admin"
+    return getattr(current_user, "nivel", None) == "admin"
 
 def is_empresa():
-    return current_user.id_empresa is not None
+    return bool(getattr(current_user, "id_empresa", None))
 
 def _parse_float(valor: str, default: float = 0.0) -> float:
-    """Converte string de formulário para float de forma segura."""
     try:
-        # Garante que substitui vírgula por ponto para o padrão do Python
+        if not valor:
+            return default
         return float(str(valor).replace(",", ".").strip())
     except (ValueError, TypeError):
         return default
 
 def validar_imagem_segura(arquivo):
-    """Valida se um arquivo de imagem é realmente uma imagem íntegra."""
     try:
         img = Image.open(arquivo)
-        img.verify() # Verifica a integridade do arquivo
-        arquivo.seek(0) # Reseta o cursor do arquivo para o início
+        img.verify()
+
+        arquivo.seek(0)
+
+        # tentativa real de leitura (mais seguro)
+        Image.open(arquivo).load()
+
+        arquivo.seek(0)
         return True
-    except Exception:       
+
+    except Exception:
         return False

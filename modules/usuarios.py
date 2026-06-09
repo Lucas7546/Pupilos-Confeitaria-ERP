@@ -403,7 +403,7 @@ def atualizar_usuario(
 def excluir_usuario(id_usuario: int) -> bool:
 
     # 1. Busca quem é o alvo primeiro
-    usuario_alvo = buscar_usuario_id(id_usuario)
+    usuario_alvo = buscar_usuario_id(id_usuario, current_user.id_empresa)
     if not usuario_alvo: return False
     
     # 2. Regra: O dono não pode excluir o ADMIN (você)
@@ -480,7 +480,7 @@ def atualizar_nivel(id_usuario: int, novo_nivel: str) -> bool:
         return False
         
     # 2. Impedir que o dono tente alterar o Admin (você)
-    usuario_alvo = buscar_usuario_id(id_usuario)
+    usuario_alvo = buscar_usuario_id(id_usuario, current_user.id_empresa)
     if usuario_alvo and usuario_alvo['nivel'] == 'admin' and current_user.nivel != 'admin':
         return False
     # -----------------------------

@@ -8,7 +8,8 @@ from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
 from utils.logger import log_erro
 from werkzeug.security import generate_password_hash
-from modules.tenant_db import get_conn
+from modules.db import get_conn
+from flask_login import current_user
 
 usuarios_bp = Blueprint('usuarios', __name__)
 
@@ -70,7 +71,7 @@ def editar_usuario(id_usuario):
 @login_required
 @acesso_requerido("admin")
 def toggle_usuario(id_usuario):
-    usuario = usuarios.buscar_usuario_id(id_usuario)
+    usuario = usuarios.buscar_usuario_id(id_usuario, current_user.id_empresa)
     if not usuario:
         flash("Usuário não encontrado.", "warning")
         return redirect(url_for("usuarios.listar_usuarios_view"))
@@ -100,7 +101,7 @@ def area_admin():
 @acesso_requerido("admin")
 def editar_usuario_page(id_usuario):
 
-    usuario = usuarios.buscar_usuario_id(id_usuario)
+    usuario = usuarios.buscar_usuario_id(id_usuario, current_user.id_empresa)
 
     if not usuario:
         flash("Usuário não encontrado.", "warning")

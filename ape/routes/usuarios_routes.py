@@ -8,7 +8,7 @@ from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
 from utils.logger import log_erro
 from werkzeug.security import generate_password_hash
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 
 usuarios_bp = Blueprint('usuarios', __name__)
 

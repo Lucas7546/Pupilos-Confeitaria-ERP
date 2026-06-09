@@ -1,6 +1,6 @@
 import json
 import mimetypes
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 from ape.services.ai_client import client
 from difflib import SequenceMatcher
 from utils.logger import log_info, log_erro

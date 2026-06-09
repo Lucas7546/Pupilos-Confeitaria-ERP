@@ -1,4 +1,4 @@
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 from utils.logger import log_info, log_erro
 from flask_login import current_user
 

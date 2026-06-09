@@ -34,6 +34,7 @@
             <form method="POST"
                   action="{{ url_for('auditoria.limpar_logs') }}"
                   onsubmit="return confirm('Deseja realmente apagar TODOS os logs? Esta ação não pode ser desfeita.')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <button type="submit"
                         class="btn btn-outline-danger border-opacity-25 fw-bold px-4">

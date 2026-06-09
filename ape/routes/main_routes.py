@@ -17,6 +17,11 @@ def dashboard():
         resumo_mensal  = vendas.obter_resumo_periodo(30) or valores_vazios
         capacidade = produtos.calcular_capacidade_geral()
 
+        if isinstance(resumo_semanal, dict):
+            if 'valores_grafico' not in resumo_semanal:
+                resumo_semanal['valores_grafico'] = [0, 0, 0, 0, 0, 0, 0]
+            if 'dias_grafico' not in resumo_semanal:
+                resumo_semanal['dias_grafico'] = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
         insumos = estoque.listar_materia_prima() or []
         criticos = [
             item for item in insumos

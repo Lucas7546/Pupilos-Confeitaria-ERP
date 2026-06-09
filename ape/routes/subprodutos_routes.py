@@ -5,7 +5,7 @@ from ape.services.log_service import registrar_log
 from utils.helpers import _parse_float
 from modules import estoque
 from utils.logger import log_erro
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 from ape.extensions import limiter
 
 subprodutos_bp = Blueprint('subprodutos', __name__)

@@ -1,5 +1,5 @@
 from flask import g, flash, redirect, url_for
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 from functools import wraps
 from utils.logger import log_erro
 

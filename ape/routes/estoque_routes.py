@@ -2,7 +2,7 @@ from flask import ( Blueprint, request, jsonify, render_template, flash, redirec
 from flask_login import login_required, current_user
 from ape.extensions import limiter
 from ape.services import ai_client
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 from modules import estoque, produtos
 from utils import logger, helpers
 from ape.services.log_service import registrar_log
@@ -28,6 +28,8 @@ def pagina_compras():
 @estoque_bp.route("/registrar-producao", methods=["POST"])
 @login_required
 @acesso_requerido("estoque")
+@limiter.limit("10 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def registrar_producao():
     try:
         tipo_item   = request.form.get("tipo_item", "")
@@ -65,7 +67,8 @@ def registrar_producao():
 @estoque_bp.route("/escanear-inteligente", methods=["POST"])
 @login_required
 @acesso_requerido("estoque")
-@limiter.limit("15 per minute")
+@limiter.limit("10 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def escanear_inteligente():
 
     try:
@@ -251,6 +254,8 @@ def escanear_inteligente():
 
 @estoque_bp.route("/estoque", methods=["GET"])
 @login_required
+@limiter.limit("20 per minute") # Limite do usuário
+@limiter.limit("150 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def estoque_painel():
     try:
         with get_conn() as con:

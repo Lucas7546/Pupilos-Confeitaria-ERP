@@ -2,7 +2,6 @@ from functools import wraps
 
 from flask import redirect, url_for, flash
 from flask_login import current_user
-from modules.planos import get_plano_empresa
 from utils.logger import log_erro
 
 # =========================================================
@@ -42,28 +41,6 @@ def pode_acessar(modulo: str) -> bool:
     return modulo in PERMISSOES.get(nivel, [])
 
 
-def plano_requerido(plano_minimo):
-    
-    ordem = {
-        "basic": 1,
-        "premium": 2
-    }
-
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-
-            plano = get_plano_empresa()
-
-            if ordem.get(plano, 0) < ordem.get(plano_minimo, 0):
-                flash("Seu plano não permite acessar essa funcionalidade.", "warning")
-                return redirect(url_for("main.dashboard"))
-
-            return func(*args, **kwargs)
-
-        return wrapper
-
-    return decorator
 
 def acesso_requerido(modulo: str):
     """Decorator que protege rotas do Flask verificando o módulo permitido."""
@@ -74,7 +51,7 @@ def acesso_requerido(modulo: str):
                 user_id = getattr(current_user, "id", "Anônimo")
                 log_erro(f"Acesso NEGADO ao módulo '{modulo}' pelo usuário: {user_id}")
                 flash("Você não tem permissão para acessar este módulo.", "danger")
-                return redirect(url_for("dashboard"))
+                return redirect(url_for("main.dashboard"))
             return f(*args, **kwargs)
         return wrapper
     return decorator

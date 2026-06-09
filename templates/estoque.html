@@ -138,6 +138,7 @@
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
                                 <form action="{{ url_for('insumos.processar_edicao_mp', id_mp=item[0]) }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <div class="modal-body px-4">
                                         <p class="text-white-50 small mb-4">Editando: <strong class="text-warning fs-6 d-block mt-1">{{ item[1] }}</strong></p>
                                         <div class="mb-3">
@@ -262,6 +263,7 @@
                                 </a>
                                 {% if session.get('nivel')|lower in ['admin', 'administrador', 'socios'] %}
                                  <form action="{{ url_for('produtos.deletar_produto', id_produto=prod[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Deseja excluir o produto {{ prod[1] }}?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn btn-outline-danger btn-sm px-2 rounded-3">
                                         <i class="bi bi-trash3"></i>
                                     </button>
@@ -279,6 +281,7 @@
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
                                 <form action="{{ url_for('produtos.atualizar_produto', id_produto=prod[0]) }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <div class="modal-body px-4">
                                         <div class="mb-3">
                                             <label class="form-label text-white-50 small fw-bold">NOME COMERCIAL</label>
@@ -313,6 +316,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="{{ url_for('subprodutos.registrar_lote') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body px-4">
                     <p class="text-white-50 small mb-3">Utilize este formulário para injetar estoque em itens fabricados internamente na confeitaria.</p>
                     

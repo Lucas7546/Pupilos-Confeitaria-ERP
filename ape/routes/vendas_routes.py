@@ -8,7 +8,7 @@ from ape.extensions import limiter
 import os
 from modules import importador_ia as ia
 from modules import produtos, vendas, receitas
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 
 vendas_bp = Blueprint('vendas', __name__)
 
@@ -17,7 +17,8 @@ vendas_bp = Blueprint('vendas', __name__)
 @vendas_bp.route("/vendas")
 @login_required
 @acesso_requerido("vendas")
-@limiter.limit("60 per minute")
+@limiter.limit("15 per minute")
+@limiter.limit("100 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}")
 def pagina_vendas():
 
     try:
@@ -43,8 +44,8 @@ def pagina_vendas():
 
 @vendas_bp.route("/vender", methods=["POST"])
 @login_required
-@acesso_requerido("vendas")
-@limiter.limit("60 per minute")
+@limiter.limit("30 per minute")
+@limiter.limit("100 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}")
 def vender():
     nome_produto = request.form.get("nome_produto", "").strip() # Pega o nome
     qtd_raw = request.form.get("quantidade", "")
@@ -86,13 +87,16 @@ def vender():
 @vendas_bp.route("/importacoes")
 @login_required
 @acesso_requerido("vendas")
+@limiter.limit("10 per minute")
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}")
 def central_importacoes():
     return render_template("central_importacoes.html")
 
 @vendas_bp.route("/importar-ifood", methods=["POST"])
 @login_required
 @acesso_requerido("vendas")
-@limiter.limit("5 per minute")
+@limiter.limit("10 per minute")
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}")
 def importar_ifood():
 
     arquivo = request.files.get("arquivo")
@@ -153,6 +157,8 @@ def importar_ifood():
 @vendas_bp.route("/deletar-venda/<int:id_venda>")
 @login_required
 @acesso_requerido("vendas")
+@limiter.limit("15 per minute")
+@limiter.limit("100 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}")
 def deletar_venda(id_venda):
     if vendas.excluir_venda(id_venda):
         registrar_log("ESTORNO", "VENDAS", f"Venda {id_venda} cancelada por '{current_user.username}'")

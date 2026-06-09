@@ -3,7 +3,7 @@ from difflib import SequenceMatcher
 
 import pandas as pd
 from google import genai
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 from utils.logger import log_info, log_erro
 from modules import vendas
 from modules.produtos import cadastrar_produto

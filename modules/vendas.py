@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from modules.receitas import calcular_custo_receita
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 from utils.logger import log_info, log_erro
 from flask_login import current_user
 from modules.tenant import get_empresa_id

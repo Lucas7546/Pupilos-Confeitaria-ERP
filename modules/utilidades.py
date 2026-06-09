@@ -1,6 +1,6 @@
 import os
 import sys
-from utils.logger import log_info # Importando para registrar encerramentos
+from utils.logger import log_info
 
 def limpar_tela():
     """Limpa o console de acordo com o sistema operacional."""

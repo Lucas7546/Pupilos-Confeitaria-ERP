@@ -1,7 +1,9 @@
 import os
+from modules.tenant_db import get_conn
+from modules.tenant import get_empresa_id
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_wtf.csrf import CSRFProtect
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, url_for, g
 from ape.extensions import init_extensions
 from modules.tenant import set_empresa_context
 # Importando seus Blueprints organizados
@@ -38,7 +40,7 @@ def create_app():
     csrf.init_app(app)
 
     @app.before_request
-    def before_request():
+    def tenant_bootstrap():
         set_empresa_context()
     
     # 3. Inicializa as extensões (que podem depender da config)

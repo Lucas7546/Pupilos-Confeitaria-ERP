@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
 import json
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 from utils.logger import log_erro
 
 auditoria_bp = Blueprint('auditoria', __name__)

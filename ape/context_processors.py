@@ -1,6 +1,5 @@
 from flask_login import current_user
-# Importe a função que cria a conexão, ex: get_conn
-from modules.db import get_conn 
+from modules.tenant_db import get_conn
 
 def inject_empresa():
     if not current_user.is_authenticated or not hasattr(current_user, 'id_empresa'):

@@ -1,9 +1,10 @@
 import os
 import time
-from contextlib import contextmanager
 from psycopg2 import pool
+from modules.tenant_db import get_conn
 
 _pool = None
+
 
 def _get_pool():
     global _pool
@@ -12,9 +13,8 @@ def _get_pool():
         database_url = os.getenv("DATABASE_URL")
 
         if not database_url:
-            raise RuntimeError("DATABASE_URL não encontrada no ambiente")
+            raise RuntimeError("DATABASE_URL não encontrada")
 
-        # força SSL (Supabase exige em muitos casos)
         if "sslmode" not in database_url:
             database_url += "?sslmode=require"
 
@@ -26,39 +26,13 @@ def _get_pool():
 
     return _pool
 
-
-@contextmanager
-def get_conn():
-    p = _get_pool()
-    conn = None
-
-    deadline = time.monotonic() + 5
-
-    while conn is None:
-        try:
-            conn = p.getconn()
-        except Exception:
-            if time.monotonic() > deadline:
-                raise RuntimeError("Pool de conexões esgotado")
-            time.sleep(0.5)
-
-    try:
-        yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        p.putconn(conn)
-
-
 def query(sql, params=()):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, params)
             return cur.fetchall()
- 
-# Alias de compatibilidade — mantido para módulos ainda não migrados.
-# O conn.close() devolve ao pool, não fecha a conexão de verdade.
+
+
 def conectar():
+    """Compatibilidade LEGADO"""
     return _get_pool().getconn()

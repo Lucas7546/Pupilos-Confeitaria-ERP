@@ -1,6 +1,6 @@
 from flask import g
 from flask_login import current_user
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 
 
 # =========================================================
@@ -74,22 +74,20 @@ def aplicar_filtro_empresa(
     return sql, (*params, empresa_id)
 
 
-def formatar_query_empresa(sql: str) -> str:
-    """
-    LEGADO.
-
-    Utilize somente quando realmente não for possível
-    trabalhar com parâmetros SQL.
-
-    Prefira sempre aplicar_filtro_empresa().
-    """
-
+# =========================================================
+# QUERY SEGURA (RECOMENDADO PARA NOVO CÓDIGO)
+# =========================================================
+def aplicar_filtro_empresa(sql: str, params=(), alias: str = ""):
     empresa_id = get_empresa_id()
 
-    return sql.replace(
+    campo = f"{alias}.id_empresa" if alias else "id_empresa"
+
+    sql = sql.replace(
         "/*empresa*/",
-        f"id_empresa = {int(empresa_id)}"
+        f"{campo} = %s"
     )
+
+    return sql, (*params, empresa_id)
 
 # =========================================================
 # QUERY SEGURA (LEGADO CONTROLADO)

@@ -5,6 +5,7 @@ from ape.services.log_service import registrar_log
 from utils.logger import log_erro
 from utils.helpers import _parse_float
 from modules import produtos, estoque
+from ape.extensions import limiter
 
 insumos_bp = Blueprint('insumos', __name__)
 
@@ -25,6 +26,8 @@ def render_cadastro():
 
 @insumos_bp.route("/cadastrar-mp", methods=["POST"])
 @login_required
+@limiter.limit("15 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def cadastrar_mp():
     nome    = request.form.get("nome", "").strip()
     unidade = request.form.get("unidade", "").strip()
@@ -46,6 +49,8 @@ def cadastrar_mp():
 
 @insumos_bp.route("/editar-materia-prima/<int:id_mp>", methods=["POST"])
 @login_required
+@limiter.limit("15 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def processar_edicao_mp(id_mp):
     nome     = request.form.get("nome", "").strip()
     unidade  = request.form.get("unidade", "").strip()
@@ -70,6 +75,8 @@ def processar_edicao_mp(id_mp):
 
 @insumos_bp.route("/excluir-mp/<int:id_mp>", methods=["POST"])
 @login_required
+@limiter.limit("15 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 @acesso_requerido("estoque")
 def deletar_mp(id_mp):
     if estoque.excluir_materia_prima(id_mp):
@@ -81,6 +88,8 @@ def deletar_mp(id_mp):
 
 @insumos_bp.route('/registrar-compra', methods=['POST'])
 @login_required
+@limiter.limit("20 per minute") # Limite do usuário
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def rota_registrar_compra():
     # Validação rigorosa
     id_mp = request.form.get('id_materia_prima')

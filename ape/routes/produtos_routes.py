@@ -4,7 +4,7 @@ from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
 from utils.logger import log_erro
 from utils.helpers import _parse_float
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 from modules import produtos, estoque
 from psycopg2.extras import RealDictCursor
 from ape.extensions import limiter
@@ -71,14 +71,15 @@ def precificacao():
             with con.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
                     SELECT p.id_produto, p.nome, p.preco_venda,
-                           COALESCE(SUM(r.quantidade_utilizada * mp.preco_unitario), 0) AS custo_producao
+                        COALESCE(SUM(r.quantidade_utilizada * mp.preco_unitario), 0) AS custo_producao
                     FROM produtos p
                     LEFT JOIN receitas r ON p.id_produto = r.id_produto
                     LEFT JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
-                    WHERE p.ativo = 1 AND p.id_empresa = %s
+                    WHERE p.ativo = 1
+                    AND p.id_empresa = %s
                     GROUP BY p.id_produto, p.nome, p.preco_venda
                     ORDER BY p.nome ASC
-                """)
+                """, (current_user.id_empresa,))
                 produtos_db = cur.fetchall()
 
         tabela = []
@@ -120,15 +121,15 @@ def ficha_tecnica(id_produto):
                            r.quantidade_utilizada * COALESCE(mp.preco_unitario, 0)
                     FROM receitas r
                     JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
-                    WHERE r.id_produto = %s AND r.id_subproduto IS NULL
+                    WHERE r.id_produto = %s AND r.id_empresa = %s AND r.id_subproduto IS NULL
                     UNION ALL
                     SELECT r.id_receita, 'subproduto', sub.id_subproduto, sub.nome,
                            r.quantidade_utilizada, sub.unidade_medida,
                            r.quantidade_utilizada * COALESCE(sub.preco_custo_unidade, 0)
                     FROM receitas r
                     JOIN subprodutos sub ON r.id_subproduto = sub.id_subproduto
-                    WHERE r.id_produto = %s AND r.id_subproduto IS NOT NULL
-                """, (id_produto, id_produto))
+                    WHERE r.id_produto = %s AND r.id_empresa = %s AND r.id_subproduto IS NOT NULL
+                """, (id_produto, current_user.id_empresa, id_produto, current_user.id_empresa))
 
                 colunas = [d[0] for d in cur.description]
                 itens = [dict(zip(colunas, row)) for row in cur.fetchall()]
@@ -176,8 +177,8 @@ def editar_item_ficha(id_produto):
         with get_conn() as con:
             with con.cursor() as cur:
                 cur.execute(
-                    "UPDATE receitas SET quantidade_utilizada = %s WHERE id_receita = %s AND id_produto = %s",
-                    (nova_qtd, id_vinculo, id_produto),
+                    "UPDATE receitas SET quantidade_utilizada = %s WHERE id_receita = %s AND id_produto = %s AND id_empresa = %s",
+                    (nova_qtd, id_vinculo, id_produto, current_user.id_empresa),
                 )
             con.commit()
         registrar_log("ALTERAR", "FICHA_TECNICA", f"Vínculo {id_vinculo} → {nova_qtd}")

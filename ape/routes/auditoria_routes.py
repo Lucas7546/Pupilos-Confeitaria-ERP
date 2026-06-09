@@ -162,8 +162,6 @@ def gerar_codigo_convite():
 @superadmin_required
 def admin_convites():
 
-    if not current_user.is_superadmin:
-        abort(403)
 
     with admin_conn() as conn:
         with conn.cursor() as cur:
@@ -190,9 +188,6 @@ def admin_convites():
 @superadmin_required
 def gerar_convite():
 
-    if not current_user.is_superadmin:
-        abort(403)
-
     codigo = secrets.token_hex(6).upper()
 
     with admin_conn() as conn:
@@ -215,7 +210,7 @@ def gerar_convite():
             (
                 codigo,
                 "basic",
-                current_user.id_usuario
+                current_user.id
             ))
 
     flash(f"Convite criado: {codigo}")

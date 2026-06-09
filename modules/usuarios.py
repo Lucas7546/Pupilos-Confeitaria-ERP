@@ -6,7 +6,7 @@ from psycopg2.extras import DictCursor
 
 from utils.logger import log_info, log_erro
 
-from modules.tenant_db import get_conn
+from modules.db import get_conn
 
 
  

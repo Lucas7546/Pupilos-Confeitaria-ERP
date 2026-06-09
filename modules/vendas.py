@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 from modules.receitas import calcular_custo_receita
 from modules.tenant_db import get_conn
-from utils.logger import log_info, log_erro
 from flask_login import current_user
 from modules.tenant import get_empresa_id
+from utils.logger import log_info, log_erro
 from modules.estoque import obter_saldo_subproduto, obter_saldo_materia_prima, obter_saldo_produto
 
 

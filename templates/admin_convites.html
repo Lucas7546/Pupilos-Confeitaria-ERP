@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4 animate-in">
+
+    <div class="mb-5 d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.5rem; letter-spacing: -1.5px;">
+                🎟️ Gestão de <span class="text-warning">Convites</span>
+            </h1>
+            <p class="text-white-50 fs-5">
+                Gerencie os códigos de ativação para novas empresas.
+            </p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auditoria.gerar_convite') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-warning fw-bold px-4 py-2">
+                <i class="bi bi-plus-lg me-2"></i> GERAR NOVO CONVITE
+            </button>
+        </form>
+    </div>
+
+    <div class="card bg-dark-card border-0 shadow-lg">
+        <div class="table-responsive p-4">
+            <table class="table table-dark table-hover align-middle border-secondary border-opacity-10">
+                <thead class="text-white-50 small text-uppercase">
+                    <tr>
+                        <th>Código</th>
+                        <th>Plano</th>
+                        <th>Status</th>
+                        <th>Data de Criação</th>
+                    </tr>
+                </thead>
+                <tbody class="border-0">
+                    {% for convite in convites %}
+                    <tr>
+                        <td class="font-monospace fw-bold text-warning">{{ convite[0] }}</td>
+                        <td>
+                            <span class="badge bg-secondary bg-opacity-20 text-light border border-light border-opacity-10">
+                                {{ convite[1]|upper }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if convite[2] %}
+                                <span class="text-success small">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Utilizado
+                                </span>
+                            {% else %}
+                                <span class="text-warning small">
+                                    <i class="bi bi-clock-fill me-1"></i> Disponível
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-white-50">
+                            {{ convite[3].strftime('%d/%m/%Y %H:%M') }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-white-50 py-5">
+                            Nenhum convite gerado ainda.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-dark-card { background: #1e293b !important; border-radius: 20px; }
+    .animate-in { animation: fadeInBlur 0.5s ease-out; }
+    @keyframes fadeInBlur {
+        from { opacity: 0; filter: blur(10px); transform: translateY(10px); }
+        to { opacity: 1; filter: blur(0); transform: translateY(0); }
+    }
+</style>
+{% endblock %}

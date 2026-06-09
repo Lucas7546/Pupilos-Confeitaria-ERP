@@ -1,7 +1,7 @@
 from utils.logger import log_info, log_erro
 from modules.tenant import get_empresa_id
-from datetime import datetime, timedelta 
 from modules.tenant_db import get_conn 
+from datetime import datetime, timedelta 
  
 # =========================================================
 # ENTRADA DE ESTOQUE

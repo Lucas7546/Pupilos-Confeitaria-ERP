@@ -8,7 +8,7 @@ def get_config_empresa() -> str:
 
     try:
 
-        empresa_id = get_empresa_id()
+        id_empresa = get_empresa_id()
 
         with get_conn() as conn:
 
@@ -21,7 +21,7 @@ def get_config_empresa() -> str:
                     WHERE id_empresa = %s
                     LIMIT 1
                     """,
-                    (empresa_id,)
+                    (id_empresa,)
                 )
 
                 resultado = cur.fetchone()
@@ -43,7 +43,7 @@ def atualizar_regime_fiscal(
 
     try:
 
-        empresa_id = get_empresa_id()
+        id_empresa = get_empresa_id()
 
         with get_conn() as conn:
 
@@ -57,14 +57,14 @@ def atualizar_regime_fiscal(
                     """,
                     (
                         novo_regime,
-                        empresa_id
+                        id_empresa
                     )
                 )
 
             conn.commit()
 
         log_info(
-            f"Regime fiscal atualizado empresa {empresa_id}"
+            f"Regime fiscal atualizado empresa {id_empresa}"
         )
 
     except Exception as e:
@@ -93,7 +93,7 @@ def financeiro_operacional(periodo_dias: int = 30) -> dict:
 
     try:
 
-        empresa_id = get_empresa_id()
+        id_empresa = get_empresa_id()
 
         with get_conn() as conn:
 
@@ -113,7 +113,7 @@ def financeiro_operacional(periodo_dias: int = 30) -> dict:
                     """,
                     (
                         f"{periodo_dias} days",
-                        empresa_id
+                        id_empresa
                     ),
                 )
 
@@ -145,7 +145,7 @@ def financeiro_operacional(periodo_dias: int = 30) -> dict:
                     """,
                     (
                         f"{periodo_dias} days",
-                        empresa_id
+                        id_empresa
                     ),
                 )
 
@@ -167,7 +167,7 @@ def financeiro_operacional(periodo_dias: int = 30) -> dict:
                     """,
                     (
                         f"{periodo_dias} days",
-                        empresa_id
+                        id_empresa
                     ),
                 )
 
@@ -258,7 +258,7 @@ def registrar_despesa(
 
     try:
 
-        empresa_id = get_empresa_id()
+        id_empresa = get_empresa_id()
 
         with get_conn() as con:
 
@@ -284,7 +284,7 @@ def registrar_despesa(
                     (
                         descricao,
                         valor,
-                        empresa_id
+                        id_empresa
                     )
                 )
 
@@ -304,7 +304,7 @@ def listar_despesas():
 
     try:
 
-        empresa_id = get_empresa_id()
+        id_empresa = get_empresa_id()
 
         with get_conn() as con:
 
@@ -324,7 +324,7 @@ def listar_despesas():
                     WHERE id_empresa = %s
                     ORDER BY data_despesa DESC
                     """,
-                    (empresa_id,)
+                    (id_empresa,)
                 )
 
                 return cur.fetchall() or []
@@ -349,7 +349,7 @@ def get_fluxo_caixa(
 
     try:
 
-        empresa_id = get_empresa_id()
+        id_empresa = get_empresa_id()
 
         with get_conn() as conn:
 
@@ -387,9 +387,9 @@ def get_fluxo_caixa(
                     """,
                     (
                         f"{periodo_dias} days",
-                        empresa_id,
+                        id_empresa,
                         f"{periodo_dias} days",
-                        empresa_id
+                        id_empresa
                     )
                 )
 

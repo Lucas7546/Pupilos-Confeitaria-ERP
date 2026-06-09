@@ -13,72 +13,50 @@ def set_empresa_context():
     """
 
     if current_user.is_authenticated:
-        g.empresa_id = getattr(current_user, "id_empresa", None)
+        g.id_empresa = getattr(current_user, "id_empresa", None)
     else:
-        g.empresa_id = None
+        g.id_empresa = None
 
 
 # =========================================================
-# PEGAR EMPRESA ATUAL (PADRÃO GLOBAL)
+# PEGAR EMPRESA ATUAL (FONTE ÚNICA)
 # =========================================================
 def get_empresa_id():
     """
-    Fonte única da empresa atual.
+    Fonte única do id_empresa atual.
     """
 
-    empresa_id = getattr(g, "empresa_id", None)
+    id_empresa = getattr(g, "id_empresa", None)
 
-    if empresa_id is None:
-        raise PermissionError(
-            "Acesso negado: empresa não identificada no contexto."
-        )
+    if id_empresa is None:
+        raise PermissionError("Acesso negado: id_empresa não identificado no contexto.")
 
-    return empresa_id
+    return id_empresa
 
 
-def aplicar_filtro_empresa(
-    sql: str,
-    params=(),
-    alias: str = ""
-):
-    """
-    Forma recomendada para novas consultas.
+# =========================================================
+# FILTRO PADRÃO SQL
+# =========================================================
+def aplicar_filtro_empresa(sql: str, params=(), alias: str = ""):
 
-    Exemplo:
+    id_empresa = get_empresa_id()
 
-        sql, params = aplicar_filtro_empresa(
-            '''
-            SELECT *
-            FROM produtos p
-            WHERE /*empresa*/
-            ''',
-            alias="p"
-        )
-
-        cur.execute(sql, params)
-    """
-
-    empresa_id = get_empresa_id()
-
-    campo = (
-        f"{alias}.id_empresa"
-        if alias
-        else "id_empresa"
-    )
+    campo = f"{alias}.id_empresa" if alias else "id_empresa"
 
     sql = sql.replace(
         "/*empresa*/",
         f"{campo} = %s"
     )
 
-    return sql, (*params, empresa_id)
+    return sql, (*params, id_empresa)
 
 
 # =========================================================
 # QUERY SEGURA (LEGADO CONTROLADO)
 # =========================================================
 def query_empresa(cur, sql, params=(), alias=""):
-    empresa_id = get_empresa_id()
+
+    id_empresa = get_empresa_id()
 
     campo = f"{alias}.id_empresa" if alias else "id_empresa"
 
@@ -87,21 +65,22 @@ def query_empresa(cur, sql, params=(), alias=""):
     else:
         sql += f" WHERE {campo} = %s"
 
-    cur.execute(sql, (*params, empresa_id))
+    cur.execute(sql, (*params, id_empresa))
     return cur.fetchall()
 
+
 # =========================================================
-# EXECUTOR SEGURO (OPCIONAL)
+# EXECUTOR SEGURO
 # =========================================================
 def execute_secure(query, params=(), fetch=False):
-    empresa_id = get_empresa_id()
+
+    id_empresa = get_empresa_id()
 
     with tenant_conn() as conn:
         with conn.cursor() as cur:
 
-            # suporte a dict params
             if isinstance(params, dict):
-                params["empresa_id"] = empresa_id
+                params["id_empresa"] = id_empresa
 
             cur.execute(query, params)
 
@@ -109,4 +88,3 @@ def execute_secure(query, params=(), fetch=False):
                 return cur.fetchall()
 
             conn.commit()
-            return None

@@ -21,6 +21,7 @@ class AnonymousUser(AnonymousUserMixin):
 class User(UserMixin):
     def __init__(self, user_data):
         self.id = str(user_data["id_usuario"])
+        self.id_usuario = user_data["id_usuario"]
         self.username = user_data["username"]
         self.nivel = user_data["nivel"]
         self.ativo = user_data["ativo"]

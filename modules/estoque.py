@@ -654,184 +654,54 @@ def excluir_materia_prima(
 # =========================================================
 # PREVISÃO DE DEMANDA
 # =========================================================
-def previsao_demanda(
-    empresa_id: int
-) -> list[dict]:
-    """
-    Calcula previsão de consumo para todas as matérias-primas
-    da empresa com base nos últimos 30 dias.
-    """
-
+def previsao_demanda(empresa_id: int) -> list[dict]:
+    """Calcula previsão de consumo com uma única query otimizada."""
     try:
-
         with get_conn() as conn:
             with conn.cursor() as cur:
-
-                cur.execute(
-                    """
-                    SELECT
-                        id_materia_prima,
-                        nome,
-                        unidade_medida,
-                        estoque_minimo
-                    FROM materia_prima
-                    WHERE empresa_id = %s
-                    ORDER BY nome ASC
-                    """,
-                    (empresa_id,)
-                )
-
+                cur.execute("""
+                    SELECT 
+                        mp.nome, mp.unidade_medida, mp.estoque_minimo,
+                        COALESCE(saldos.estoque, 0) as estoque_atual,
+                        COALESCE(consumo.total_saida, 0) as total_saida
+                    FROM materia_prima mp
+                    LEFT JOIN (
+                        SELECT id_materia_prima, 
+                        SUM(CASE WHEN tipo_movimento IN ('entrada','ajuste') THEN quantidade ELSE -quantidade END) as estoque
+                        FROM movimentacao_estoque WHERE empresa_id = %s GROUP BY id_materia_prima
+                    ) saldos ON mp.id_materia_prima = saldos.id_materia_prima
+                    LEFT JOIN (
+                        SELECT id_materia_prima, SUM(quantidade) as total_saida
+                        FROM movimentacao_estoque 
+                        WHERE empresa_id = %s AND tipo_movimento = 'saida' 
+                        AND data_movimento >= CURRENT_DATE - INTERVAL '30 days'
+                        GROUP BY id_materia_prima
+                    ) consumo ON mp.id_materia_prima = consumo.id_materia_prima
+                    WHERE mp.empresa_id = %s
+                """, (empresa_id, empresa_id, empresa_id))
+                
                 materias = cur.fetchall()
 
-                previsoes: list[dict] = []
+        previsoes = []
+        for nome, unidade, min_est, atual, saida30d in materias:
+            media_d = saida30d / 30.0
+            dias_r = round(atual / media_d, 1) if media_d > 0 else 999.0
+            
+            # Lógica de risco e sugestão
+            risco = "CRÍTICO" if dias_r <= 2 else "ALTO" if dias_r <= 5 else "MODERADO" if dias_r <= 10 else "BAIXO"
+            sugestao = max(round((media_d * 15 * 1.15) - atual, 2), 0.0)
 
-                for (
-                    id_mp,
-                    nome,
-                    unidade,
-                    estoque_minimo
-                ) in materias:
-
-                    estoque_minimo = float(
-                        estoque_minimo or 0
-                    )
-
-                    # saldo atual
-                    cur.execute(
-                        """
-                        SELECT
-                            COALESCE(
-                                SUM(
-                                    CASE
-                                        WHEN tipo_movimento IN ('entrada','ajuste')
-                                        THEN quantidade
-                                        ELSE 0
-                                    END
-                                ),
-                                0
-                            )
-                            -
-                            COALESCE(
-                                SUM(
-                                    CASE
-                                        WHEN tipo_movimento = 'saida'
-                                        THEN quantidade
-                                        ELSE 0
-                                    END
-                                ),
-                                0
-                            )
-                        FROM movimentacao_estoque
-                        WHERE id_materia_prima = %s
-                        AND empresa_id = %s
-                        """,
-                        (
-                            id_mp,
-                            empresa_id
-                        )
-                    )
-
-                    estoque_atual = float(
-                        cur.fetchone()[0] or 0
-                    )
-
-                    # consumo últimos 30 dias
-                    cur.execute(
-                        """
-                        SELECT
-                            COALESCE(
-                                SUM(quantidade),
-                                0
-                            )
-                        FROM movimentacao_estoque
-                        WHERE id_materia_prima = %s
-                        AND empresa_id = %s
-                        AND tipo_movimento = 'saida'
-                        AND data_movimento >= CURRENT_DATE - INTERVAL '30 days'
-                        """,
-                        (
-                            id_mp,
-                            empresa_id
-                        )
-                    )
-
-                    total_consumido = float(
-                        cur.fetchone()[0] or 0
-                    )
-
-                    media_diaria = total_consumido / 30.0
-
-                    fator = 1.15
-
-                    consumo_7d = round(
-                        media_diaria * 7 * fator,
-                        2
-                    )
-
-                    consumo_15d = round(
-                        media_diaria * 15 * fator,
-                        2
-                    )
-
-                    dias_restantes = (
-                        round(
-                            estoque_atual / media_diaria,
-                            1
-                        )
-                        if media_diaria > 0
-                        else 999.0
-                    )
-
-                    if dias_restantes <= 2:
-                        risco = "CRÍTICO"
-                    elif dias_restantes <= 5:
-                        risco = "ALTO"
-                    elif dias_restantes <= 10:
-                        risco = "MODERADO"
-                    else:
-                        risco = "BAIXO"
-
-                    sugestao = max(
-                        round(
-                            consumo_15d - estoque_atual,
-                            2
-                        ),
-                        0.0
-                    )
-
-                    previsoes.append(
-                        {
-                            "materia_prima": nome,
-                            "unidade": unidade,
-                            "estoque_atual": round(
-                                estoque_atual,
-                                2
-                            ),
-                            "estoque_minimo": estoque_minimo,
-                            "media_diaria": round(
-                                media_diaria,
-                                2
-                            ),
-                            "consumo_previsto": consumo_7d,
-                            "consumo_15d": consumo_15d,
-                            "dias_restantes": dias_restantes,
-                            "risco": risco,
-                            "sugestao_compra": sugestao,
-                        }
-                    )
-
-        previsoes.sort(
-            key=lambda x: x["dias_restantes"]
-        )
-
-        return previsoes
+            previsoes.append({
+                "materia_prima": nome, "unidade": unidade, "estoque_atual": round(atual, 2),
+                "estoque_minimo": float(min_est or 0), "media_diaria": round(media_d, 2),
+                "consumo_previsto": round(media_d * 7 * 1.15, 2), "dias_restantes": dias_r,
+                "risco": risco, "sugestao_compra": sugestao
+            })
+            
+        return sorted(previsoes, key=lambda x: x["dias_restantes"])
 
     except Exception as e:
-
-        log_erro(
-            f"Erro na previsão de demanda: {e}"
-        )
-
+        log_erro(f"Erro na previsão: {e}")
         return []
  
 # =========================================================

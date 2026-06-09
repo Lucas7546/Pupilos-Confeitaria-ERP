@@ -1,4 +1,4 @@
-from modules.tenant_db import get_conn
+from modules.db import get_conn
 from flask_login import current_user
 
 def registrar_log(acao, modulo, detalhe="", usuario=None):

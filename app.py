@@ -1,5 +1,5 @@
 import os
-from modules.tenant_db import get_conn
+from modules.db import get_conn
 from modules.tenant import get_empresa_id
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_wtf.csrf import CSRFProtect
@@ -42,7 +42,7 @@ def create_app():
     @app.before_request
     def tenant_bootstrap():
         set_empresa_context()
-    
+        
     # 3. Inicializa as extensões (que podem depender da config)
     init_extensions(app)
     

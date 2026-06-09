@@ -160,7 +160,7 @@ def exportar_previsao_pdf():
 
     try:
 
-        previsoes = previsao_demanda()
+        previsoes = previsao_demanda(current_user.id_empresa)
 
         if not previsoes:
 

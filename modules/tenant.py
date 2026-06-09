@@ -75,21 +75,6 @@ def aplicar_filtro_empresa(
 
 
 # =========================================================
-# QUERY SEGURA (RECOMENDADO PARA NOVO CÓDIGO)
-# =========================================================
-def aplicar_filtro_empresa(sql: str, params=(), alias: str = ""):
-    empresa_id = get_empresa_id()
-
-    campo = f"{alias}.id_empresa" if alias else "id_empresa"
-
-    sql = sql.replace(
-        "/*empresa*/",
-        f"{campo} = %s"
-    )
-
-    return sql, (*params, empresa_id)
-
-# =========================================================
 # QUERY SEGURA (LEGADO CONTROLADO)
 # =========================================================
 def query_empresa(cur, sql, params=(), alias=""):

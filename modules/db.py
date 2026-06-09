@@ -1,7 +1,6 @@
 import os
 import time
 from psycopg2 import pool
-from modules.tenant_db import get_conn
 
 _pool = None
 
@@ -26,13 +25,19 @@ def _get_pool():
 
     return _pool
 
+
 def query(sql, params=()):
-    with get_conn() as conn:
+    pool = _get_pool()
+    conn = pool.getconn()
+
+    try:
         with conn.cursor() as cur:
             cur.execute(sql, params)
             return cur.fetchall()
 
+    finally:
+        pool.putconn(conn)
+
 
 def conectar():
-    """Compatibilidade LEGADO"""
     return _get_pool().getconn()

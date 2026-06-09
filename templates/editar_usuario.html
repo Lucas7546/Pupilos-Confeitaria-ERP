@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4 px-md-5 animate-in">
+
+    <div class="mb-4">
+        <a href="{{ url_for('usuarios.usuarios_page') }}" class="text-white-50 text-decoration-none">
+            <i class="bi bi-arrow-left"></i> Voltar para gestão de usuários
+        </a>
+        <h1 class="fw-extrabold text-white mt-2">Editar Usuário #{{ usuario['id_usuario'] }}</h1>
+        <p class="text-white-50">Editando permissões para <strong>{{ usuario['username'] }}</strong></p>
+    </div>
+
+    <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4">
+        <form action="{{ url_for('usuarios.atualizar_usuario_route', id_usuario=usuario['id_usuario']) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="text-white-50 small fw-bold mb-1">NÍVEL DE ACESSO</label>
+                    <select name="nivel" class="form-select bg-dark border-secondary text-white py-2">
+                        {% for cargo in ['colaborador', 'financeiro', 'ti', 'dono', 'socios', 'admin'] %}
+                            <option value="{{ cargo }}" {% if usuario['nivel'] == cargo %}selected{% endif %}>
+                                {{ cargo|upper }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="text-white-50 small fw-bold mb-1">NOVA SENHA (Deixe em branco para manter a atual)</label>
+                    <input type="password" name="senha" class="form-control bg-dark border-secondary text-white py-2" placeholder="Nova senha">
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex justify-content-end">
+                <button type="submit" class="btn btn-warning fw-bold px-4">
+                    <i class="bi bi-save"></i> SALVAR ALTERAÇÕES
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .bg-dark-card { background: #1e293b; }
+    .animate-in { animation: fadeUp 0.4s ease-out; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+{% endblock %}

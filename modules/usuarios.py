@@ -554,50 +554,18 @@ def atualizar_nivel(id_usuario: int, novo_nivel: str) -> bool:
 
  
 
-def registrar_log_db(
-    usuario: str,
-    acao: str,
-    modulo: str,
-    detalhe: str
-) -> None:
-
+def registrar_log_db(usuario: str, acao: str, modulo: str, detalhe: str) -> None:
     try:
-
-        id_empresa = getattr(current_user, "id_empresa", None)
-
+        # Força o id_empresa para 0 se o usuário for superadmin (ou não tiver empresa)
+        id_empresa = getattr(current_user, "id_empresa", 0) or 0 
+        
         with get_conn() as conn:
             with conn.cursor() as cur:
-
-                cur.execute(
-                    """
-                    INSERT INTO logs
-                    (
-                        usuario,
-                        acao,
-                        modulo,
-                        detalhe,
-                        id_empresa
-                    )
-                    VALUES
-                    (
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s
-                    )
-                    """,
-                    (
-                        usuario,
-                        acao,
-                        modulo,
-                        detalhe,
-                        id_empresa
-                    )
-                )
-
+                cur.execute("""
+                    INSERT INTO logs (usuario, acao, modulo, detalhe, id_empresa)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (usuario, acao, modulo, detalhe, id_empresa))
             conn.commit()
-
     except Exception as e:
         log_erro(f"Erro ao registrar log: {e}")
 
@@ -678,7 +646,21 @@ def criar_usuario_empresa(
     return True
  
 
- 
+def alterar_status(id_usuario: int, novo_status: int) -> bool:
+    try:
+        id_empresa = current_user.id_empresa
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE usuarios 
+                    SET ativo = %s 
+                    WHERE id_usuario = %s AND id_empresa = %s
+                """, (novo_status, id_usuario, id_empresa))
+            conn.commit()
+        return True
+    except Exception as e:
+        log_erro(f"Erro ao alterar status do usuário {id_usuario}: {e}")
+        return False
 
 
 

@@ -96,7 +96,7 @@ def area_admin():
     lista = usuarios.listar_usuarios() or []
     return render_template("admin_panel.html", total_usuarios=len(lista), usuarios=lista)
 
-@usuarios_bp.route("/editar/<int:id_usuario>")
+@usuarios_bp.route("/editar/<int:id_usuario>", methods=["GET"])
 @login_required
 @acesso_requerido("admin")
 def editar_usuario_page(id_usuario):

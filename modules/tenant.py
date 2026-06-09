@@ -2,23 +2,19 @@ from flask import g, request
 from flask_login import current_user
 from modules.tenant_db import get_conn as tenant_conn
 
-
-# =========================================================
-# CONTEXTO DA EMPRESA (ÚNICO)
-# =========================================================
-IGNORAR = ["/static", "/favicon.ico"]
+EXCLUIR_PATHS = ["/static", "/favicon.ico", "/login"]
 
 def set_empresa_context():
     path = request.path
 
-    if any(path.startswith(p) for p in IGNORAR):
+    if any(path.startswith(p) for p in EXCLUIR_PATHS):
         return
 
-    g.id_empresa = None
-
     try:
-        if current_user.is_authenticated:
+        if current_user and current_user.is_authenticated:
             g.id_empresa = getattr(current_user, "id_empresa", None)
+        else:
+            g.id_empresa = None
     except Exception:
         g.id_empresa = None
 
@@ -26,11 +22,12 @@ def set_empresa_context():
 # GET PADRÃO
 # =========================================================
 def get_empresa_id():
-
     id_empresa = getattr(g, "id_empresa", None)
 
     if not id_empresa:
-        raise Exception("Tenant não definido")
+        raise Exception(
+            f"Tenant não definido (path={request.path})"
+        )
 
     return id_empresa
 

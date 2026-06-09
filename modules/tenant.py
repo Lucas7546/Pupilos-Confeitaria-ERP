@@ -17,22 +17,27 @@ def set_empresa_context():
         id_empresa = getattr(current_user, "id_empresa", None)
 
     g.id_empresa = id_empresa
-    
+
     if not g.id_empresa:
         # Isso vai te mostrar exatamente em qual rota o sistema "esqueceu" a empresa
         print(f"DEBUG: Tenant não definido para a rota: {request.path}")
+
 # =========================================================
 # GET PADRÃO
 # =========================================================
 def get_empresa_id():
-    id_empresa = getattr(g, "id_empresa", None)
+    if has_request_context() and hasattr(g, 'id_empresa') and g.id_empresa:
+        return g.id_empresa
+    
+    if has_request_context() and session.get("id_empresa"):
+        return session.get("id_empresa")
+    
+    # 3. Tenta o current_user (se estiver logado)
+    if current_user and current_user.is_authenticated and hasattr(current_user, 'id_empresa'):
+        return current_user.id_empresa
 
-    if not id_empresa:
-        path = request.path if has_request_context() else "no-context"
-        raise Exception(f"Tenant não definido (path={path})")
-
-    return id_empresa
-
+    # Se nada funcionar, vamos logar o estado real para debug
+    raise Exception("Tenant não definido (Falha crítica de contexto)")
 
 # =========================================================
 # FILTRO PADRÃO SQL
@@ -45,8 +50,7 @@ def aplicar_filtro_empresa(sql: str, params=(), alias: str = ""):
 
     sql = sql.replace(
         "/*empresa*/",
-        f"{campo} = %s"
-    )
+        f"{campo} = %s" )
 
     return sql, (*params, id_empresa)
 
@@ -73,21 +77,24 @@ def query_empresa(cur, sql, params=(), alias=""):
 # EXECUTOR SEGURO
 # =========================================================
 def execute_secure(query, params=(), fetch=False):
-
-    id_empresa = get_empresa_id()
+    # Pega o ID de forma mais robusta
+    id_empresa = session.get("id_empresa") or getattr(current_user, "id_empresa", None)
+    
+    if not id_empresa:
+        raise Exception("Tenant não definido - Falha no contexto de sessão")
 
     with tenant_conn() as conn:
         with conn.cursor() as cur:
-
-            if isinstance(params, dict):
+            # Se params for tupla, convertemos para lista para adicionar o ID
+            if isinstance(params, (list, tuple)):
+                params = list(params)
+                params.append(id_empresa)
+                cur.execute(query, params)
+            elif isinstance(params, dict):
                 params["id_empresa"] = id_empresa
-
-            cur.execute(query, params)
-
-            if fetch:
-                return cur.fetchall()
-
-            conn.commit()
+                cur.execute(query, params)
+            else:
+                cur.execute(query + " WHERE id_empresa = %s", (id_empresa,))
 
 def get_empresa_id_safe():
     return getattr(g, "id_empresa", None)

@@ -24,7 +24,7 @@ def cadastro_empresa():
     senha = request.form.get("senha", "").strip()
     plano = request.form.get("plano", "basic")
 
-    codigo_convite = request.form.get("codigo_convite", "").strip()
+    codigo_convite = request.form.get("codigo_convite", "").strip().upper()
 
     # =========================
     # VALIDAÇÕES BÁSICAS

@@ -55,20 +55,12 @@ def execute_secure(query, params=(), fetch=False):
             
 
 def aplicar_tenant(conn):
-    try:
-        id_empresa = get_empresa_id()
+    id_empresa = get_empresa_id()
 
-        if not id_empresa:
-            raise Exception("Tenant não definido no contexto")
+    if not id_empresa:
+        raise Exception("Tenant não definido no contexto")
 
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT set_config(
-                    'app.id_empresa',
-                    %s,
-                    false
-                )
-            """, (str(id_empresa),))
-
-    except Exception as e:
-        raise Exception(f"Erro ao aplicar tenant: {e}")
+    with conn.cursor() as cur:
+        cur.execute("""
+            SET LOCAL app.id_empresa = %s
+        """, (str(id_empresa),))

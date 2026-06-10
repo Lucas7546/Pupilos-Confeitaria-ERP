@@ -32,8 +32,8 @@ def buscar_usuario_global(id_usuario: int):
         release_conn(conn)
 
 @lru_cache(maxsize=1024)
-def buscar_usuario_global_cached(id_usuario: int):
-    return buscar_usuario_global(id_usuario)
+def buscar_usuario_global_cached(id_usuario, id_empresa):
+    return buscar_usuario_global(id_usuario, id_empresa)
 
 def buscar_usuario(username: str):
     try:

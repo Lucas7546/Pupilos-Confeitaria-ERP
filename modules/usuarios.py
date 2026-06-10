@@ -6,11 +6,7 @@ from psycopg2.extras import DictCursor
 
 from utils.logger import log_info, log_erro
 
-from modules.db import get_conn
-
-
- 
-
+from modules.tenant_db import get_conn
 
 
 def buscar_usuario(username: str):
@@ -41,12 +37,11 @@ def buscar_usuario(username: str):
 
  
 
-def buscar_usuario_id(id_usuario: int, id_empresa: int):
+def buscar_usuario_id(id_usuario: int):
     try:
         with get_conn() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
-                cur.execute(
-                    """
+                cur.execute("""
                     SELECT
                         id_usuario,
                         username,
@@ -57,11 +52,8 @@ def buscar_usuario_id(id_usuario: int, id_empresa: int):
                         data_cadastro
                     FROM usuarios
                     WHERE id_usuario = %s
-                      AND id_empresa = %s
                     LIMIT 1
-                    """,
-                    (id_usuario, id_empresa)
-                )
+                """, (id_usuario,))
 
                 return cur.fetchone()
 
@@ -661,6 +653,9 @@ def alterar_status(id_usuario: int, novo_status: int) -> bool:
     except Exception as e:
         log_erro(f"Erro ao alterar status do usuário {id_usuario}: {e}")
         return False
+    
+
+
 
 
 

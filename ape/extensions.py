@@ -52,7 +52,6 @@ def load_user(user_id):
         print(f"Erro crítico no load_user: {e}")
 
     return None
-
 # =============================================================
 # RATE LIMIT KEY (AGORA COM EMPRESA)
 # =============================================================

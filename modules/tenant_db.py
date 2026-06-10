@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from modules.tenant_db import _get_pool
+from modules.db import _get_pool
 from modules.tenant import get_empresa_id
 
 
@@ -51,3 +51,4 @@ def execute_secure(query, params=(), fetch=False):
 
             if fetch:
                 return cur.fetchall()
+            conn.commit()

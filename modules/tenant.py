@@ -4,23 +4,17 @@ from modules.tenant_db import get_conn as tenant_conn
 
 EXCLUIR_PATHS = ["/static", "/favicon.ico", "/login"]
 
-def set_empresa_context():
-    if current_user.is_authenticated:
-        g.id_empresa = current_user.id_empresa
+
 # =========================================================
 # GET PADRÃO
 # =========================================================
 def get_empresa_id():
-    if has_request_context():
-        id_empresa = getattr(g, "id_empresa", None)
+    id_empresa = getattr(g, "id_empresa", None)
 
-        if id_empresa:
-            return id_empresa
+    if id_empresa:
+        return id_empresa
 
-        if session.get("id_empresa"):
-            return session.get("id_empresa")
-
-    if current_user and current_user.is_authenticated:
+    if current_user.is_authenticated:
         return current_user.id_empresa
 
     raise Exception("Tenant não definido")
@@ -83,6 +77,7 @@ def execute_secure(query, params=(), fetch=False):
                 return cur.fetchall()
 
             conn.commit()
-
-def get_empresa_id_safe():
-    return getattr(g, "id_empresa", None)
+            
+def set_empresa_context():
+    if current_user.is_authenticated:
+        g.id_empresa = current_user.id_empresa

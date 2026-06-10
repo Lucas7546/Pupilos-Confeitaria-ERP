@@ -1,49 +1,30 @@
-from contextlib import contextmanager
-from flask import g
 from modules.db import _get_pool
-
+from flask import g
+from contextlib import contextmanager
+from flask_login import current_user
+from modules.tenant import get_empresa_id
 
 @contextmanager
 def get_conn():
 
-    empresa_id = getattr(
-        g,
-        "empresa_id",
-        None
-    )
-
-    if empresa_id is None:
-        raise Exception(
-            "Tenant não definido"
-        )
+    id_empresa = get_empresa_id()
 
     pool = _get_pool()
     conn = pool.getconn()
 
     try:
-
         with conn.cursor() as cur:
-
             cur.execute(
-                """
-                SELECT set_config(
-                    'app.empresa_id',
-                    %s,
-                    false
-                )
-                """,
-                (str(empresa_id),)
+                "SELECT set_config('app.id_empresa', %s, false)",
+                (str(id_empresa),)
             )
 
         yield conn
-
         conn.commit()
 
     except Exception:
-
         conn.rollback()
         raise
 
     finally:
-
         pool.putconn(conn)

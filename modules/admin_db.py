@@ -1,10 +1,10 @@
 from contextlib import contextmanager
-from modules.db import _get_pool
+from modules.db import get_pool
 
 @contextmanager
 def admin_conn():
 
-    pool = _get_pool()
+    pool = get_pool()
     conn = pool.getconn()
 
     try:

@@ -218,7 +218,7 @@ def listar_materia_prima() -> list[tuple]:
                         ON mov.id_materia_prima = m.id_materia_prima
                         AND mov.id_empresa = m.id_empresa
 
-                    WHERE m.id_empresa = %s
+                    WHERE m.id_empresa = current_setting('app.id_empresa')::int
 
                     GROUP BY
                         m.id_materia_prima,

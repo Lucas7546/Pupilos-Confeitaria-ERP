@@ -7,22 +7,25 @@ from flask import g
 __all__ = ["get_empresa_id", "set_empresa_context"]
 
 
+@app.before_request
 def set_empresa_context():
     if current_user.is_authenticated:
         g.id_empresa = current_user.id_empresa
-    else:
-        g.id_empresa = None
 
 
 def get_empresa_id():
     from flask import g
+    from flask_login import current_user
 
-    if hasattr(g, "id_empresa") and g.id_empresa:
-        return g.id_empresa
+    id_empresa = getattr(g, "id_empresa", None)
+
+    if id_empresa:
+        return id_empresa
 
     if current_user.is_authenticated:
         return current_user.id_empresa
 
+    # ⚠️ NÃO QUEBRA LOGIN
     return None
 
 # =========================================================

@@ -3,6 +3,8 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from modules.usuarios import buscar_usuario_global_cached
 from flask import session
+from modules.db import release_conn, get_conn_raw
+from psycopg2.extras import DictCursor
 
 
 
@@ -43,12 +45,20 @@ login_manager.anonymous_user = AnonymousUser
 @login_manager.user_loader
 def load_user(user_id):
     try:
-        user_data = buscar_usuario_global_cached(int(user_id))
+        conn = get_conn_raw()   # 👈 IMPORTANTE
 
-        if not user_data:
-            return None
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("""
+                SELECT id_usuario, username, nivel, id_empresa, ativo, is_superadmin
+                FROM usuarios
+                WHERE id_usuario = %s
+            """, (user_id,))
 
-        if not user_data.get("ativo"):
+            user_data = cur.fetchone()
+
+        release_conn(conn)
+
+        if not user_data or not user_data.get("ativo"):
             return None
 
         return User(user_data)

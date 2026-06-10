@@ -10,11 +10,8 @@ def db_conn():
     conn = get_conn()
 
     try:
-
         aplicar_tenant(conn)
-
         yield conn
-
         conn.commit()
 
     except Exception:
@@ -23,7 +20,6 @@ def db_conn():
 
     finally:
         release_conn(conn)
-
 
 def get_conn():
     pool = get_pool()

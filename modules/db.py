@@ -30,7 +30,7 @@ def release_conn(conn):
     except Exception:
         pass
 
-def get_conn():
+def get_conn_raw():
     pool = get_pool()
     conn = pool.getconn()
     conn.autocommit = False

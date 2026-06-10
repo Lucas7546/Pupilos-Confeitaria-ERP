@@ -1,4 +1,5 @@
 import os
+from flask_login import current_user
 from modules.tenant_db import db_conn, get_conn
 from modules.tenant import get_empresa_id
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -39,8 +40,11 @@ def create_app():
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     csrf.init_app(app)
 
-    app.before_request(set_empresa_context)
-    init_extensions(app)
+    @app.before_request
+    def set_empresa_context():
+        if current_user.is_authenticated:
+            g.id_empresa = current_user.id_empresa
+        init_extensions(app)
     
     # Registro dos Blueprints
     app.register_blueprint(auth_bp)

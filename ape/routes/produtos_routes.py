@@ -25,7 +25,7 @@ def cadastrar_produto_final():
         return redirect(url_for("insumos.render_cadastro"))
 
     if produtos.cadastrar_produto(nome, preco, categoria):
-        registrar_log("CADASTRO", "PRODUTO", f"{nome} | R$ {preco}")
+        registrar_log("CADASTRO", "PRODUTO", f"{nome} | R$ {preco}", current_user.username)
         flash(f"Produto '{nome}' cadastrado!", "success")
     else:
         flash("Erro ao salvar produto.", "danger")
@@ -44,7 +44,7 @@ def atualizar_produto(id_produto):
     elif preco < 0:
         flash("Preço inválido.", "danger")
     elif produtos.update_produto(id_produto, nome, preco):
-        registrar_log("ALTERAR", "PRODUTOS", f"ID {id_produto} → {nome} | R$ {preco}")
+        registrar_log("ALTERAR", "PRODUTOS", f"ID {id_produto} → {nome} | R$ {preco}", current_user.username)
         flash("Produto atualizado!", "success")
     else:
         flash("Erro ao atualizar produto.", "danger")
@@ -181,7 +181,7 @@ def editar_item_ficha(id_produto):
                     (nova_qtd, id_vinculo, id_produto, current_user.id_empresa),
                 )
             con.commit()
-        registrar_log("ALTERAR", "FICHA_TECNICA", f"Vínculo {id_vinculo} → {nova_qtd}")
+        registrar_log("ALTERAR", "FICHA_TECNICA", f"Vínculo {id_vinculo} → {nova_qtd}", current_user.username)
         flash("Quantidade ajustada!", "success")
     except Exception as e:
         log_erro(f"Erro ao editar ficha técnica: {e}")

@@ -1,5 +1,5 @@
 from flask_login import current_user
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 def inject_empresa():
     if not current_user.is_authenticated or not hasattr(current_user, 'id_empresa'):
         return {"EMPRESA": "Confeitaria ERP"}

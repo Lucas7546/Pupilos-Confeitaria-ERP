@@ -1,5 +1,5 @@
 from flask import g, flash, redirect, url_for
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 from functools import wraps
 from utils.logger import log_erro
 
@@ -8,9 +8,9 @@ def get_plano_empresa():
 
     try:
 
-        empresa_id = getattr(g, "empresa_id", None)
+        id_empresa = getattr(g, "id_empresa", None)
 
-        if empresa_id is None:
+        if id_empresa is None:
             return "basic"
 
         with get_conn() as conn:
@@ -25,7 +25,7 @@ def get_plano_empresa():
                     ORDER BY id DESC
                     LIMIT 1
                     """,
-                    (empresa_id,)
+                    (id_empresa,)
                 )
 
                 row = cur.fetchone()

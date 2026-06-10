@@ -1,5 +1,5 @@
 from flask import Blueprint, request, redirect, flash, url_for
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 from modules.empresas import criar_empresa
 from modules.usuarios import (
     criar_usuario_empresa,

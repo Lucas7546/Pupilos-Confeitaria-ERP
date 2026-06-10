@@ -21,9 +21,14 @@ def cadastrar_subproduto():
 
     if not nome or not unidade:
         flash("Nome e Unidade são obrigatórios.", "warning")
-    elif estoque.cadastrar_subproduto_banco(nome, unidade, est_min):
-        registrar_log("CADASTRO", "SUBPRODUTO", f"Novo subproduto: {nome}")
-        flash(f"Subproduto '{nome}' cadastrado!", "success")
+    else:
+        ok = estoque.cadastrar_subproduto_banco(current_user.id_empresa, nome, unidade, est_min)
+
+        if ok: 
+            registrar_log("CADASTRO", "SUBPRODUTO", f"Novo subproduto: {nome}", current_user.username)
+            flash(f"Subproduto '{nome}' cadastrado!", "success")
+        else:
+            flash("Erro ao criar subproduto.", "danger")
     return redirect(url_for("insumos.render_cadastro"))
 
 @subprodutos_bp.route("/excluir-subproduto/<int:id_subproduto>")
@@ -32,8 +37,8 @@ def cadastrar_subproduto():
 @limiter.limit("15 per minute") # Limite do usuário
 @limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
 def deletar_subproduto(id_subproduto):
-    if estoque.excluir_subproduto_banco(id_subproduto):
-        registrar_log("EXCLUIR", "SUBPRODUTO", f"ID {id_subproduto}")
+    if estoque.excluir_subproduto_banco(current_user.id_empresa, id_subproduto):
+        registrar_log("EXCLUIR", "SUBPRODUTO", f"ID {id_subproduto}", current_user.username)
         flash("Subproduto removido!", "success")
     return redirect(url_for("estoque.estoque_painel"))
 
@@ -61,7 +66,7 @@ def registrar_lote():
                         (preco_venda, nome_comercial),
                     )
                     con.commit()
-                    registrar_log("ALTERAR", "PRODUTOS", f"Preço '{nome_comercial}' → R$ {preco_venda:.2f}")
+                    registrar_log("ALTERAR", "PRODUTOS", f"Preço '{nome_comercial}' → R$ {preco_venda:.2f}", current_user.username)
                     flash(f"Preço de '{nome_comercial}' atualizado!", "success")
 
                 # Lógica de Entrada de Lote (Subprodutos)
@@ -76,7 +81,7 @@ def registrar_lote():
                         (qtd, id_sub),
                     )
                     con.commit()
-                    registrar_log("ESTOQUE", "SUBPRODUTOS", f"Lote {qtd} → Subproduto ID {id_sub}")
+                    registrar_log("ESTOQUE", "SUBPRODUTOS", f"Lote {qtd} → Subproduto ID {id_sub}", current_user.username)
                     flash("Lote registrado!", "success")
                 else:
                     flash("Dados insuficientes.", "warning")

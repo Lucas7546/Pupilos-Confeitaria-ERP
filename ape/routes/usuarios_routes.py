@@ -8,7 +8,7 @@ from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
 from utils.logger import log_erro
 from werkzeug.security import generate_password_hash
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 from flask_login import current_user
 
 usuarios_bp = Blueprint('usuarios', __name__)
@@ -26,7 +26,7 @@ def listar_usuarios_view():
 @acesso_requerido("admin")
 def deletar_user(id):
     if usuarios.excluir_usuario(id):
-        registrar_log("EXCLUIR_USUARIO", "USUARIOS", f"ID {id} removido")
+        registrar_log("EXCLUIR_USUARIO", "USUARIOS", f"ID {id} removido", current_user.username)
         flash("Usuário removido!", "success")
     else:
         flash("Erro ao remover usuário.", "danger")
@@ -45,7 +45,7 @@ def criar_usuario():
         return redirect(url_for("usuarios.listar_usuarios_view"))
 
     if usuarios.criar_usuario(username, senha, nivel):
-        registrar_log("CRIAR_USUARIO", "USUARIOS", f"{username} | Nível: {nivel}")
+        registrar_log("CRIAR_USUARIO", "USUARIOS", f"{username} | Nível: {nivel}", current_user.username)
         flash(f"Usuário '{username}' criado!", "success")
     else:
         flash("Usuário já pode estar em uso.", "danger")
@@ -59,7 +59,7 @@ def editar_usuario(id_usuario):
     nova_senha = request.form.get("nova_senha", "").strip()
 
     if usuarios.atualizar_usuario(id_usuario, nivel, nova_senha):
-        registrar_log("EDIÇÃO", "USUARIOS", f"Perfil ID {id_usuario} atualizado")
+        registrar_log("EDIÇÃO", "USUARIOS", f"Perfil ID {id_usuario} atualizado", current_user.username)
         flash("Dados atualizados com sucesso!", "success")
     else:
         flash("Erro ao atualizar dados no banco.", "danger")
@@ -81,7 +81,7 @@ def toggle_usuario(id_usuario):
 
     if usuarios.alterar_status(id_usuario, novo_status):
         status_txt = "ativado" if novo_status == 1 else "desativado"
-        registrar_log("ALTERAR_STATUS", "USUARIOS", f"ID {id_usuario} {status_txt}")
+        registrar_log("ALTERAR_STATUS", "USUARIOS", f"ID {id_usuario} {status_txt}", current_user.username)
         flash(f"Conta {status_txt} com sucesso!", "success")
     else:
         flash("Falha ao atualizar status.", "danger")

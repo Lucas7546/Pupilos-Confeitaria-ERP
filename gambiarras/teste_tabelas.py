@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 
 load_dotenv()
 

@@ -77,7 +77,7 @@ def vender():
     usuario_atual = getattr(current_user, "username", "Sistema")
 
     if vendas.registrar_venda(id_produto=id_p, quantidade=qtd, valor_total=valor_total, usuario=usuario_atual):
-        registrar_log("VENDA", "VENDAS", f"{nome_produto} | Qtd {qtd} | R$ {valor_total:.2f}")
+        registrar_log("VENDA", "VENDAS", f"{nome_produto} | Qtd {qtd} | R$ {valor_total:.2f}", current_user.username)
         flash("Venda registrada!", "success")
     else:
         flash("Erro ao registrar venda.", "danger")
@@ -121,7 +121,7 @@ def importar_ifood():
             registrar_log(
                 "IMPORTACAO",
                 "VENDAS",
-                f"{resultado['quantidade_vendas']} vendas importadas"
+                f"{resultado['quantidade_vendas']} vendas importadas", current_user.username
             )
 
             flash(
@@ -161,7 +161,7 @@ def importar_ifood():
 @limiter.limit("100 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}")
 def deletar_venda(id_venda):
     if vendas.excluir_venda(id_venda):
-        registrar_log("ESTORNO", "VENDAS", f"Venda {id_venda} cancelada por '{current_user.username}'")
+        registrar_log("ESTORNO", "VENDAS", f"Venda {id_venda} cancelada por '{current_user.username}'", current_user.username)
         flash("Venda estornada e estoque devolvido!", "success")
     else:
         flash("Não foi possível estornar a venda.", "warning")
@@ -203,7 +203,7 @@ def importacao_confirmar():
             registrar_log(
                 "IMPORTACAO",
                 "VENDAS",
-                f"{resultado['processadas']} vendas importadas"
+                f"{resultado['processadas']} vendas importadas", current_user.username
             )
 
         return resultado

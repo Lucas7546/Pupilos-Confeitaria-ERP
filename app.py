@@ -1,5 +1,5 @@
 import os
-from modules.db import get_conn
+from modules.tenant_db import get_conn
 from modules.tenant import get_empresa_id
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_wtf.csrf import CSRFProtect
@@ -40,7 +40,6 @@ def create_app():
     csrf.init_app(app)
 
     app.before_request(set_empresa_context)
-
     init_extensions(app)
     
     # Registro dos Blueprints

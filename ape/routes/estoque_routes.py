@@ -1,4 +1,4 @@
-from flask import ( Blueprint, request, jsonify, render_template, flash, redirect, url_for)
+from flask import ( Blueprint, request, jsonify, render_template, flash, redirect, url_for, session)
 from flask_login import login_required, current_user
 from ape.extensions import limiter
 from ape.services import ai_client
@@ -19,6 +19,12 @@ ALLOWED_MIME = {
 
 estoque_bp = Blueprint("estoque", __name__)
 
+
+@estoque_bp.before_request
+def carregar_tenant_estoque():
+    if 'id_empresa' not in session:
+        # Tenta recuperar de alguma forma ou força erro
+        print("DEBUG: Blueprint de estoque sem ID na sessão!")
 
 @estoque_bp.route("/compras")
 @login_required

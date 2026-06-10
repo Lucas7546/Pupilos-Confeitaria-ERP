@@ -1,4 +1,4 @@
-from flask import g, request, session, g
+from flask import g, request, session, g, has_request_context
 from flask_login import current_user
 from modules.tenant_db import get_conn as tenant_conn
 
@@ -7,29 +7,23 @@ EXCLUIR_PATHS = ["/static", "/favicon.ico", "/login"]
 def set_empresa_context():
     if current_user.is_authenticated:
         g.id_empresa = current_user.id_empresa
-        session["id_empresa"] = current_user.id_empresa  # reforço
-
-    else:
-        g.id_empresa = session.get("id_empresa")
 # =========================================================
 # GET PADRÃO
 # =========================================================
 def get_empresa_id():
-    id_empresa = (
-        getattr(g, "id_empresa", None)
-        or session.get("id_empresa")
-        or (current_user.id_empresa if current_user.is_authenticated else None)
-    )
+    if has_request_context():
+        id_empresa = getattr(g, "id_empresa", None)
 
-    if not id_empresa:
-        print("DEBUG CONTEXTO:", {
-            "g": getattr(g, "id_empresa", None),
-            "session": session.get("id_empresa"),
-            "auth": current_user.is_authenticated
-        })
-        raise Exception("Tenant não definido")
+        if id_empresa:
+            return id_empresa
 
-    return id_empresa
+        if session.get("id_empresa"):
+            return session.get("id_empresa")
+
+    if current_user and current_user.is_authenticated:
+        return current_user.id_empresa
+
+    raise Exception("Tenant não definido")
 
 # =========================================================
 # FILTRO PADRÃO SQL

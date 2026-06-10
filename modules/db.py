@@ -26,6 +26,7 @@ def get_pool():
 
 
 def get_conn():
+    print("DB GET_CONN")
     conn = get_pool().getconn()
     conn.autocommit = False
     return conn

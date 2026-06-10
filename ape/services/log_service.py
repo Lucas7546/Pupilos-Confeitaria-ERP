@@ -15,6 +15,5 @@ def registrar_log(acao, modulo, detalhe="", usuario=None):
                     "INSERT INTO logs (id_empresa, usuario, acao, modulo, detalhe) VALUES (%s, %s, %s, %s, %s)",
                     (current_user.id_empresa, usuario, acao, modulo, detalhe),
                 )
-            conn.commit()
     except Exception as e:
         print(f"Erro no log: {e}")

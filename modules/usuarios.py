@@ -527,7 +527,7 @@ def atualizar_nivel(id_usuario: int, novo_nivel: str) -> bool:
 def registrar_log_db(usuario: str, acao: str, modulo: str, detalhe: str) -> None:
     try:
         # Força o id_empresa para 0 se o usuário for superadmin (ou não tiver empresa)
-        id_empresa = getattr(current_user, "id_empresa", 0) or 0 
+        id_empresa = getattr(current_user, "id_empresa", 0) or 0
         
         with db_conn() as conn:
             with conn.cursor() as cur:

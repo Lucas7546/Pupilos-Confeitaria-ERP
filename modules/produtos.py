@@ -340,7 +340,7 @@ def calcular_cenarios_preco(
 # =========================================================
 # CAPACIDADE GERAL DE PRODUÇÃO
 # =========================================================
-def calcular_capacidade_geral() -> list[dict]:
+def def calcular_capacidade_geral(*args, **kwargs):
 
     try:
 

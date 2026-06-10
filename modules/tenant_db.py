@@ -1,9 +1,7 @@
 from contextlib import contextmanager
-
+import traceback
 from flask_login import current_user
-
-from modules.db import ( get_conn as base_get_conn, release_conn)
-
+from modules.db import release_conn, get_pool
 from modules.tenant import get_empresa_id
 
 
@@ -25,16 +23,15 @@ def db_conn():
 
 
 def get_conn():
-    print("TENANT_DB GET_CONN")
+    conn = get_pool().getconn()
 
-    conn = base_get_conn()
+    print("\nPEGOU CONEXAO")
+    traceback.print_stack(limit=5)
+
+    conn.autocommit = False
 
     try:
-        if (
-            hasattr(current_user, "is_authenticated")
-            and current_user.is_authenticated
-            and getattr(current_user, "id_empresa", None)
-        ):
+        if current_user.is_authenticated:
             with conn.cursor() as cur:
                 cur.execute(
                     """
@@ -46,8 +43,7 @@ def get_conn():
                     """,
                     (str(current_user.id_empresa),)
                 )
-
-    except Exception:
+    except:
         pass
 
     return conn

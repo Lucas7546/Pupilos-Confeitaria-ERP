@@ -33,4 +33,5 @@ def get_conn():
 
 
 def release_conn(conn):
+    print("DEVOLVEU CONEXAO")
     get_pool().putconn(conn)

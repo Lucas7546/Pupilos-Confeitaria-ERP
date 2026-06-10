@@ -658,7 +658,7 @@ def alterar_status(id_usuario: int, novo_status: int) -> bool:
 
 def buscar_usuario_global(id_usuario: int):
     with get_conn() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
                 SELECT
                     id_usuario,

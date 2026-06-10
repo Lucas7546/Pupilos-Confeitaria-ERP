@@ -41,6 +41,8 @@ def login():
             session["username"] = user.username
             session["nivel"] = user.nivel
             session["id_empresa"] = user.id_empresa
+            # 🔥 AQUI (pode colocar logo abaixo ou junto)
+            session["empresa_id"] = user.id_empresa
 
             registrar_log(
                 "LOGIN",

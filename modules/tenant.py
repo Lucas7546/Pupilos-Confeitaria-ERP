@@ -1,24 +1,32 @@
-from flask import g, request, has_request_context, session
+from flask import g, request, session, g
 from flask_login import current_user
 from modules.tenant_db import get_conn as tenant_conn
 
 EXCLUIR_PATHS = ["/static", "/favicon.ico", "/login"]
 
 def set_empresa_context():
-    print("USER AUTH:", current_user.is_authenticated)
-    print("USER EMPRESA:", getattr(current_user, "id_empresa", None))
-
     if current_user.is_authenticated:
         g.id_empresa = current_user.id_empresa
+        session["id_empresa"] = current_user.id_empresa  # reforço
+
     else:
-        g.id_empresa = None
+        g.id_empresa = session.get("id_empresa")
 # =========================================================
 # GET PADRÃO
 # =========================================================
 def get_empresa_id():
-    id_empresa = getattr(g, "id_empresa", None)
+    id_empresa = (
+        getattr(g, "id_empresa", None)
+        or session.get("id_empresa")
+        or (current_user.id_empresa if current_user.is_authenticated else None)
+    )
 
     if not id_empresa:
+        print("DEBUG CONTEXTO:", {
+            "g": getattr(g, "id_empresa", None),
+            "session": session.get("id_empresa"),
+            "auth": current_user.is_authenticated
+        })
         raise Exception("Tenant não definido")
 
     return id_empresa

@@ -54,9 +54,7 @@ def aplicar_tenant(conn):
     id_empresa = get_empresa_id()
 
     if not id_empresa:
-        raise Exception("Tenant não definido no contexto")
+        return
 
     with conn.cursor() as cur:
-        cur.execute("""
-            SET LOCAL app.id_empresa = %s
-        """, (str(id_empresa),))
+        cur.execute("SET LOCAL app.id_empresa = %s", (str(id_empresa),))

@@ -18,16 +18,14 @@ def get_empresa_id():
     from flask import g
     from flask_login import current_user
 
-    id_empresa = getattr(g, "id_empresa", None)
+    # durante login
+    if not current_user or not current_user.is_authenticated:
+        return None
 
-    if id_empresa:
-        return id_empresa
+    if hasattr(g, "id_empresa") and g.id_empresa:
+        return g.id_empresa
 
-    if current_user.is_authenticated:
-        return current_user.id_empresa
-
-    # ⚠️ NÃO QUEBRA LOGIN
-    return None
+    return current_user.id_empresa
 
 # =========================================================
 # FILTRO PADRÃO SQL

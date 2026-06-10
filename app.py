@@ -33,18 +33,27 @@ csrf = CSRFProtect()
 def create_app():
     app = Flask(__name__, static_folder="static")
 
-    # 1. Carrega as configurações PRIMEIRO, para garantir que SECRET_KEY exista
     app.config.from_object('ape.config.Config')
-    
-    # 2. Inicializa o CSRF depois de ter as configurações carregadas
+
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
     csrf.init_app(app)
 
+    # 🔥 PRIMEIRO TUDO (LOGIN, DB, ETC)
+    init_extensions(app)
+
+    # 🔐 SÓ DEPOIS disso usar current_user
     @app.before_request
     def set_empresa_context():
-        if current_user.is_authenticated:
+        from flask_login import current_user
+        from flask import g
+
+        if current_user and current_user.is_authenticated:
             g.id_empresa = current_user.id_empresa
-        init_extensions(app)
+        else:
+            g.id_empresa = None
+
+
     
     # Registro dos Blueprints
     app.register_blueprint(auth_bp)

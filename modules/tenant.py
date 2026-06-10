@@ -20,7 +20,7 @@ def get_empresa_id():
     if current_user and getattr(current_user, "is_authenticated", False):
         return current_user.id_empresa
 
-    return None
+    raise Exception("SEM TENANT ATIVO")
 # =========================================================
 # FILTRO PADRÃO SQL
 # =========================================================
@@ -56,3 +56,9 @@ def query_empresa(cur, sql, params=(), alias=""):
 
 def get_empresa_id_login(user_data):
     return user_data["id_empresa"]
+
+def safe_execute(cur, sql, params):
+    if "%s" in sql and (not params or len(params) == 0):
+        raise Exception("QUERY SEM PARAMETRO DE TENANT")
+
+    cur.execute(sql, params)

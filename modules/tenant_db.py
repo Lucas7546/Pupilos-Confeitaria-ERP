@@ -8,6 +8,7 @@ from modules.tenant import get_empresa_id
 @contextmanager
 def db_conn():
     conn = get_conn_raw()
+    conn.autocommit = False
 
     try:
         yield conn
@@ -18,7 +19,7 @@ def db_conn():
         raise
 
     finally:
-        release_conn(conn)
+        conn.close()  # ❗ ISSO TEM QUE SER CLOSE REAL
 
 def get_conn():
     pool = get_pool()

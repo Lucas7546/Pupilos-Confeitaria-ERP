@@ -175,27 +175,85 @@ def calcular_estoque(
 # =========================================================
 # LISTAR MATÉRIAS-PRIMAS
 # =========================================================
-def listar_materia_prima():
-    id_empresa = get_empresa_id()
+def listar_materia_prima() -> list[tuple]:
 
-    with db_conn() as conn:
-        with conn.cursor() as cur:
+    try:
+        id_empresa = get_empresa_id()
 
-            cur.execute("""
-                SELECT
-                    id_materia_prima,
-                    nome,
-                    unidade_medida,
-                    estoque_minimo,
-                    preco_unitario
-                FROM materia_prima
-                WHERE id_empresa = %s
-                ORDER BY nome
-            """, (id_empresa,))
+        if not id_empresa:
+            raise Exception("Empresa não definida")
 
-            rows = cur.fetchall()
+        with db_conn() as conn:
+            with conn.cursor() as cur:
 
-    return rows
+                cur.execute("""
+                    SELECT
+                        m.id_materia_prima,
+                        m.nome,
+                        m.unidade_medida,
+                        m.estoque_minimo,
+                        m.preco_unitario,
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN mov.tipo_movimento IN ('entrada','ajuste')
+                                    THEN mov.quantidade
+                                    ELSE 0
+                                END
+                            ), 0
+                        )
+                        -
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN mov.tipo_movimento = 'saida'
+                                    THEN mov.quantidade
+                                    ELSE 0
+                                END
+                            ), 0
+                        ) AS saldo
+                    FROM materia_prima m
+
+                    LEFT JOIN movimentacao_estoque mov
+                        ON mov.id_materia_prima = m.id_materia_prima
+                        AND mov.id_empresa = m.id_empresa
+
+                    WHERE id_empresa = %s
+
+                    GROUP BY
+                        m.id_materia_prima,
+                        m.nome,
+                        m.unidade_medida,
+                        m.estoque_minimo,
+                        m.preco_unitario
+
+                    ORDER BY m.nome
+                """, (id_empresa,))
+
+                rows = cur.fetchall()
+
+        resultado = []
+
+        for m in rows:
+            saldo = float(m[5] or 0)
+
+            status = "BAIXO" if saldo <= float(m[3] or 0) else "OK"
+
+            resultado.append((
+                m[0],
+                m[1],
+                m[2],
+                m[3],
+                saldo,
+                status,
+                float(m[4] or 0),
+            ))
+
+        return resultado
+
+    except Exception as e:
+        log_erro(f"Erro listar_materia_prima: {e}")
+        return []
  
  
 # =========================================================

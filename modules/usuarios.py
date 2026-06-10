@@ -4,13 +4,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from psycopg2.extras import DictCursor, RealDictCursor
 
 from utils.logger import log_info, log_erro
+from modules.tenant_db import get_conn, db_conn
 
-from modules.tenant_db import get_conn
 
 
 def buscar_usuario(username: str):
     try:
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 cur.execute("""
                     SELECT
@@ -38,7 +38,7 @@ def buscar_usuario(username: str):
 
 def buscar_usuario_id(id_usuario: int):
     try:
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 cur.execute("""
                     SELECT
@@ -656,7 +656,7 @@ def alterar_status(id_usuario: int, novo_status: int) -> bool:
 
 
 def buscar_usuario_global(id_usuario: int):
-    with get_conn() as conn:
+    with db_conn() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute("""
                 SELECT

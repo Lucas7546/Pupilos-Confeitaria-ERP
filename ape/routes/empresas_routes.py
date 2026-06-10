@@ -1,5 +1,5 @@
 from flask import Blueprint, request, redirect, flash, url_for
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 from modules.empresas import criar_empresa
 from modules.usuarios import (
     criar_usuario_empresa,
@@ -46,7 +46,7 @@ def cadastro_empresa():
         # =========================
         # VALIDAR CONVITE
         # =========================
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute("""
@@ -85,7 +85,7 @@ def cadastro_empresa():
         # =========================
         # MARCAR CONVITE COMO USADO
         # =========================
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute("""

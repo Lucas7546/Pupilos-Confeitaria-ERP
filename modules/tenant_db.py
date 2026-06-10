@@ -1,6 +1,7 @@
 from contextlib import contextmanager
-from modules.db import get_conn, release_conn
+from modules.db import get_conn, release_conn, get_pool
 from modules.tenant import get_empresa_id
+from flask_login import current_user
 
 
 @contextmanager
@@ -19,27 +20,27 @@ def db_conn():
         release_conn(conn)
 
 
-@contextmanager
-def tenant_conn():
-    conn = get_conn()
-    id_empresa = get_empresa_id()
+def get_conn():
+    conn = get_pool().getconn()
+    conn.autocommit = False
 
     try:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT set_config('app.id_empresa', %s, false)",
-                (str(id_empresa),)
-            )
+        if current_user.is_authenticated:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT set_config(
+                        'app.id_empresa',
+                        %s,
+                        false
+                    )
+                    """,
+                    (str(current_user.id_empresa),)
+                )
+    except:
+        pass
 
-        yield conn
-        conn.commit()
-
-    except Exception:
-        conn.rollback()
-        raise
-
-    finally:
-        release_conn(conn)
+    return conn
 
 # =========================================================
 # EXECUTOR SEGURO
@@ -64,4 +65,3 @@ def execute_secure(query, params=(), fetch=False):
 
             if fetch:
                 return cur.fetchall()
-            conn.commit()

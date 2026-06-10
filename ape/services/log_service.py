@@ -12,8 +12,8 @@ def registrar_log(acao, modulo, detalhe="", usuario=None):
         with get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "INSERT INTO logs (usuario, acao, modulo, detalhe) VALUES (%s, %s, %s, %s)",
-                    (usuario, acao, modulo, detalhe),
+                    "INSERT INTO logs (id_empresa, usuario, acao, modulo, detalhe) VALUES (%s, %s, %s, %s, %s)",
+                    (current_user.id_empresa, usuario, acao, modulo, detalhe),
                 )
             conn.commit()
     except Exception as e:

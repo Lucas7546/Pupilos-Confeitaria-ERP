@@ -1,8 +1,8 @@
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 
 def criar_empresa(nome, responsavel, plano="basic"):
     try:
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 # 1. cria empresa

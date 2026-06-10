@@ -6,7 +6,7 @@ from ape.services.log_service import registrar_log
 import json
 import secrets
 from modules.admin_db import admin_conn
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 from utils.logger import log_erro
 
 auditoria_bp = Blueprint('auditoria', __name__)
@@ -59,7 +59,7 @@ def _listar_logs(
 
     try:
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(query, params)
@@ -124,7 +124,7 @@ def limpar_logs():
 
     try:
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(

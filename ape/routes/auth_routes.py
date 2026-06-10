@@ -32,31 +32,26 @@ def login():
                 flash("Usuário ou senha inválidos.", "danger")
                 return render_template("login.html"), 401
 
-            # proteção contra session fixation
             session.clear()
-
             login_user(user)
 
             session["user_id"] = user.id
             session["username"] = user.username
             session["nivel"] = user.nivel
-            session["id_empresa"] = user.id_empresa
-            # 🔥 AQUI (pode colocar logo abaixo ou junto)
-            session["empresa_id"] = user.id_empresa
 
             registrar_log(
                 "LOGIN",
                 "AUTH",
-                f"Usuário '{user.username}' autenticado", current_user.username
+                f"Login realizado: {user.username}",
+                user.username
             )
 
             flash(f"Bem-vindo, {user.username}!", "success")
 
-            # IMPORTANTE: manter string direta até o blueprint principal existir
             return redirect(url_for("main.dashboard"))
 
         except Exception as e:
-            log_erro(f"Erro crítico no login: {e}")
+            log_erro(f"Erro login: {e}")
             flash("Erro interno inesperado.", "danger")
             return render_template("login.html"), 500
 

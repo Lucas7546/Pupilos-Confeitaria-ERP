@@ -1,14 +1,27 @@
 from contextlib import contextmanager
-from modules.db import _get_pool
+from modules.db import get_conn, release_conn
 from modules.tenant import get_empresa_id
 
 
+@contextmanager
+def db_conn():
+    conn = get_conn()
+
+    try:
+        yield conn
+        conn.commit()
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        release_conn(conn)
+
 
 @contextmanager
-def get_conn():
-    pool = _get_pool()
-    conn = pool.getconn()
-
+def tenant_conn():
+    conn = get_conn()
     id_empresa = get_empresa_id()
 
     try:
@@ -26,7 +39,7 @@ def get_conn():
         raise
 
     finally:
-        pool.putconn(conn)
+        release_conn(conn)
 
 # =========================================================
 # EXECUTOR SEGURO

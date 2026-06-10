@@ -8,12 +8,10 @@ __all__ = ["get_empresa_id", "set_empresa_context"]
 
 
 def get_empresa_id():
-    id_empresa = getattr(g, "id_empresa", None)
+    if hasattr(g, "id_empresa"):
+        return g.id_empresa
 
-    if id_empresa:
-        return id_empresa
-
-    if current_user and getattr(current_user, "is_authenticated", False):
+    if current_user.is_authenticated:
         return current_user.id_empresa
 
     raise Exception("Tenant não definido")
@@ -55,5 +53,5 @@ def query_empresa(cur, sql, params=(), alias=""):
             
 
 def set_empresa_context():
-    if current_user and getattr(current_user, "is_authenticated", False):
+    if current_user.is_authenticated:
         g.id_empresa = current_user.id_empresa

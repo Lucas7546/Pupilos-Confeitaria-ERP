@@ -12,12 +12,10 @@ def validar_login(username: str, senha: str):
     if not usuario.get("ativo"):
         return None
 
-    senha_hash_banco = usuario.get("senha")
-
-    if not senha_hash_banco:
+    if not usuario.get("senha"):
         return None
 
-    if check_password_hash(senha_hash_banco, senha):
+    if check_password_hash(usuario["senha"], senha):
         return User(usuario)
 
     return None

@@ -39,11 +39,8 @@ def create_app():
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     csrf.init_app(app)
 
-    @app.before_request
-    def tenant_bootstrap():
-        set_empresa_context()
-        
-    # 3. Inicializa as extensões (que podem depender da config)
+    app.before_request(set_empresa_context)
+
     init_extensions(app)
     
     # Registro dos Blueprints

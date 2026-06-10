@@ -1,20 +1,13 @@
-from flask import g, request, session, g, has_request_context
+from flask import g
 from flask_login import current_user
-from modules.tenant_db import get_conn as tenant_conn
 
-EXCLUIR_PATHS = ["/static", "/favicon.ico", "/login"]
-
-
-# =========================================================
-# GET PADRÃO
-# =========================================================
 def get_empresa_id():
     id_empresa = getattr(g, "id_empresa", None)
 
     if id_empresa:
         return id_empresa
 
-    if current_user.is_authenticated:
+    if current_user and getattr(current_user, "is_authenticated", False):
         return current_user.id_empresa
 
     raise Exception("Tenant não definido")
@@ -53,31 +46,4 @@ def query_empresa(cur, sql, params=(), alias=""):
     return cur.fetchall()
 
 
-# =========================================================
-# EXECUTOR SEGURO
-# =========================================================
-def execute_secure(query, params=(), fetch=False):
-    id_empresa = get_empresa_id()
-
-    with tenant_conn() as conn:
-        with conn.cursor() as cur:
-
-            if isinstance(params, dict):
-                params["id_empresa"] = id_empresa
-
-            elif params is None:
-                 params = [id_empresa]
-            elif isinstance(params, (list, tuple)):
-                params = list(params)
-                params.append(id_empresa)
-
-            cur.execute(query, params)
-
-            if fetch:
-                return cur.fetchall()
-
-            conn.commit()
             
-def set_empresa_context():
-    if current_user.is_authenticated:
-        g.id_empresa = current_user.id_empresa

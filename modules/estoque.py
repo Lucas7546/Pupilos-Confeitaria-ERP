@@ -178,14 +178,15 @@ def calcular_estoque(
 def listar_materia_prima() -> list[tuple]:
 
     try:
-
         id_empresa = get_empresa_id()
+
+        if not id_empresa:
+            raise Exception("Empresa não definida")
 
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                cur.execute(
-                    """
+                cur.execute("""
                     SELECT
                         m.id_materia_prima,
                         m.nome,
@@ -199,8 +200,7 @@ def listar_materia_prima() -> list[tuple]:
                                     THEN mov.quantidade
                                     ELSE 0
                                 END
-                            ),
-                            0
+                            ), 0
                         )
                         -
                         COALESCE(
@@ -210,8 +210,7 @@ def listar_materia_prima() -> list[tuple]:
                                     THEN mov.quantidade
                                     ELSE 0
                                 END
-                            ),
-                            0
+                            ), 0
                         ) AS saldo
                     FROM materia_prima m
 
@@ -229,44 +228,31 @@ def listar_materia_prima() -> list[tuple]:
                         m.preco_unitario
 
                     ORDER BY m.nome
-                    """,
-                    (id_empresa,),
-                )
+                """, (id_empresa,))
 
                 rows = cur.fetchall()
 
         resultado = []
 
         for m in rows:
+            saldo = float(m[5] or 0)
 
-            saldo = float(m[5])
+            status = "BAIXO" if saldo <= float(m[3] or 0) else "OK"
 
-            status = (
-                "BAIXO"
-                if saldo <= float(m[3] or 0)
-                else "OK"
-            )
-
-            resultado.append(
-                (
-                    m[0],
-                    m[1],
-                    m[2],
-                    m[3],
-                    saldo,
-                    status,
-                    float(m[4] or 0),
-                )
-            )
+            resultado.append((
+                m[0],
+                m[1],
+                m[2],
+                m[3],
+                saldo,
+                status,
+                float(m[4] or 0),
+            ))
 
         return resultado
 
     except Exception as e:
-
-        log_erro(
-            f"Erro listar_materia_prima: {e}"
-        )
-
+        log_erro(f"Erro listar_materia_prima: {e}")
         return []
  
  

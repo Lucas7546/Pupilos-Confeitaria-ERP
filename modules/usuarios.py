@@ -1,7 +1,7 @@
 from flask_login import current_user
 
 from werkzeug.security import generate_password_hash, check_password_hash
-from psycopg2.extras import DictCursor, RealDictCursor
+from psycopg2.extras import DictCursor
 from functools import lru_cache
 from utils.logger import log_info, log_erro
 from modules.tenant_db import get_conn, db_conn
@@ -10,6 +10,7 @@ from modules.db import release_conn
 
 def buscar_usuario_global(id_usuario: int):
     conn = get_conn()
+
     try:
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute("""
@@ -519,26 +520,6 @@ def atualizar_nivel(id_usuario: int, novo_nivel: str) -> bool:
         log_erro(f"Erro ao atualizar nível usuário {id_usuario}: {e}")
 
         return False
-
- 
-
- 
-
-def registrar_log_db(usuario: str, acao: str, modulo: str, detalhe: str) -> None:
-    try:
-        # Força o id_empresa para 0 se o usuário for superadmin (ou não tiver empresa)
-        id_empresa = getattr(current_user, "id_empresa", 0) or 0
-        
-        with db_conn() as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO logs (usuario, acao, modulo, detalhe, id_empresa)
-                    VALUES (%s, %s, %s, %s, %s)
-                """, (usuario, acao, modulo, detalhe, id_empresa))
-    except Exception as e:
-        log_erro(f"Erro ao registrar log: {e}")
-
-
 
 def criar_usuario_empresa(
     username,

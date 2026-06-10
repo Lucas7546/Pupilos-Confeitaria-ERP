@@ -59,19 +59,16 @@ def aplicar_tenant(conn):
         id_empresa = get_empresa_id()
 
         if not id_empresa:
-            return
+            raise Exception("Tenant não definido no contexto")
 
         with conn.cursor() as cur:
-            cur.execute(
-                """
+            cur.execute("""
                 SELECT set_config(
                     'app.id_empresa',
                     %s,
                     false
                 )
-                """,
-                (str(id_empresa),)
-            )
+            """, (str(id_empresa),))
 
-    except Exception:
-        return
+    except Exception as e:
+        raise Exception(f"Erro ao aplicar tenant: {e}")

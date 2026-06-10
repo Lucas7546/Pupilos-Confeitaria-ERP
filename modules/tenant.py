@@ -8,13 +8,22 @@ __all__ = ["get_empresa_id", "set_empresa_context"]
 
 
 def get_empresa_id():
-    if hasattr(g, "id_empresa"):
-        return g.id_empresa
+    """
+    Fonte única e segura de tenant.
+    Ordem de prioridade:
+    1. g (request context)
+    2. current_user
+    """
 
-    if current_user.is_authenticated:
-        return current_user.id_empresa
+    id_empresa = getattr(g, "id_empresa", None)
 
-    raise Exception("Tenant não definido")
+    if id_empresa:
+        return id_empresa
+
+    if current_user and current_user.is_authenticated:
+        return getattr(current_user, "id_empresa", None)
+
+    return None
 
 # =========================================================
 # FILTRO PADRÃO SQL

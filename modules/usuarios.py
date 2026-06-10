@@ -5,8 +5,31 @@ from psycopg2.extras import DictCursor, RealDictCursor
 
 from utils.logger import log_info, log_erro
 from modules.tenant_db import get_conn, db_conn
+from modules.db import release_conn
 
 
+def buscar_usuario_global(id_usuario: int):
+    conn = get_conn()
+
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("""
+                SELECT
+                    id_usuario,
+                    username,
+                    nivel,
+                    id_empresa,
+                    ativo,
+                    is_superadmin
+                FROM usuarios
+                WHERE id_usuario = %s
+                LIMIT 1
+            """, (id_usuario,))
+
+            return cur.fetchone()
+
+    finally:
+        release_conn(conn)
 
 def buscar_usuario(username: str):
     try:
@@ -653,25 +676,6 @@ def alterar_status(id_usuario: int, novo_status: int) -> bool:
         log_erro(f"Erro ao alterar status do usuário {id_usuario}: {e}")
         return False
     
-
-
-def buscar_usuario_global(id_usuario: int):
-    with db_conn() as conn:
-        with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute("""
-                SELECT
-                    id_usuario,
-                    username,
-                    nivel,
-                    id_empresa,
-                    ativo,
-                    is_superadmin
-                FROM usuarios
-                WHERE id_usuario = %s
-                LIMIT 1
-            """, (id_usuario,))
-
-            return cur.fetchone()
 
 
 

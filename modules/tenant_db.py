@@ -10,7 +10,11 @@ def db_conn():
     conn = get_conn()
 
     try:
+
+        aplicar_tenant(conn)
+
         yield conn
+
         conn.commit()
 
     except Exception:
@@ -18,34 +22,12 @@ def db_conn():
         raise
 
     finally:
-        print("DEVOLVEU CONEXAO")
         release_conn(conn)
 
 
 def get_conn():
     conn = get_pool().getconn()
-
-    print("\nPEGOU CONEXAO")
-    traceback.print_stack(limit=5)
-
     conn.autocommit = False
-
-    try:
-        if current_user.is_authenticated:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT set_config(
-                        'app.id_empresa',
-                        %s,
-                        false
-                    )
-                    """,
-                    (str(current_user.id_empresa),)
-                )
-    except:
-        pass
-
     return conn
 
 
@@ -69,3 +51,23 @@ def execute_secure(query, params=(), fetch=False):
 
             if fetch:
                 return cur.fetchall()
+            
+
+def aplicar_tenant(conn):
+    try:
+        id_empresa = get_empresa_id()
+
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT set_config(
+                    'app.id_empresa',
+                    %s,
+                    false
+                )
+                """,
+                (str(id_empresa),)
+            )
+
+    except Exception:
+        pass

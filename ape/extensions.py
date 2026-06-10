@@ -95,6 +95,7 @@ limiter = Limiter(
 def init_extensions(app):
     login_manager.init_app(app)
     limiter.init_app(app)
+    login_manager.anonymous_user = AnonymousUser
 
 
 # =============================================================

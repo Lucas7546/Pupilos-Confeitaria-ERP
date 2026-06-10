@@ -3,30 +3,24 @@ from flask import g
 
 
 
-
 __all__ = ["get_empresa_id", "set_empresa_context"]
 
 
 def set_empresa_context():
-    if current_user.is_authenticated:
+    if current_user and getattr(current_user, "is_authenticated", False):
         g.id_empresa = current_user.id_empresa
     else:
         g.id_empresa = None
 
 
 def get_empresa_id():
-    from flask import g
-    from flask_login import current_user
-
-    # durante login
-    if not current_user or not current_user.is_authenticated:
-        return None
-
     if hasattr(g, "id_empresa") and g.id_empresa:
         return g.id_empresa
 
-    return current_user.id_empresa
+    if current_user and getattr(current_user, "is_authenticated", False):
+        return current_user.id_empresa
 
+    return None
 # =========================================================
 # FILTRO PADRÃO SQL
 # =========================================================

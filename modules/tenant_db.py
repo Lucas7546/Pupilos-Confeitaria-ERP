@@ -1,16 +1,15 @@
 from contextlib import contextmanager
 import traceback
 from flask_login import current_user
-from modules.db import release_conn, get_pool
+from modules.db import release_conn, get_pool, get_conn_raw
 from modules.tenant import get_empresa_id
 
 
 @contextmanager
 def db_conn():
-    conn = get_conn()
+    conn = get_conn_raw()
 
     try:
-        aplicar_tenant(conn)
         yield conn
         conn.commit()
 
@@ -30,6 +29,9 @@ def get_conn():
 
 def execute_secure(query, params=(), fetch=False):
     id_empresa = get_empresa_id()
+
+    if not id_empresa:
+        raise Exception("Empresa não definida")
 
     with db_conn() as conn:
         with conn.cursor() as cur:
@@ -54,7 +56,9 @@ def aplicar_tenant(conn):
     id_empresa = get_empresa_id()
 
     if not id_empresa:
-        return
+        raise Exception("Tenant não definido no contexto")
 
     with conn.cursor() as cur:
-        cur.execute("SET LOCAL app.id_empresa = %s", (str(id_empresa),))
+        cur.execute("""
+            SET LOCAL app.id_empresa = %s
+        """, (str(id_empresa),))

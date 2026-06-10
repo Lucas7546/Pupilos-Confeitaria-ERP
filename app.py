@@ -39,20 +39,19 @@ def create_app():
 
     csrf.init_app(app)
 
-    # 🔥 PRIMEIRO TUDO (LOGIN, DB, ETC)
+    # EXTENSIONS PRIMEIRO
     init_extensions(app)
 
-    # 🔐 SÓ DEPOIS disso usar current_user
+    # CONTEXTO TENANT
     @app.before_request
     def set_empresa_context():
         from flask_login import current_user
         from flask import g
 
-        if current_user and current_user.is_authenticated:
+        if current_user.is_authenticated:
             g.id_empresa = current_user.id_empresa
         else:
             g.id_empresa = None
-
 
     
     # Registro dos Blueprints

@@ -7,21 +7,21 @@ from flask import g
 __all__ = ["get_empresa_id", "set_empresa_context"]
 
 
+def set_empresa_context():
+    if current_user.is_authenticated:
+        g.id_empresa = current_user.id_empresa
+    else:
+        g.id_empresa = None
+
+
 def get_empresa_id():
-    """
-    Fonte única e segura de tenant.
-    Ordem de prioridade:
-    1. g (request context)
-    2. current_user
-    """
+    from flask import g
 
-    id_empresa = getattr(g, "id_empresa", None)
+    if hasattr(g, "id_empresa") and g.id_empresa:
+        return g.id_empresa
 
-    if id_empresa:
-        return id_empresa
-
-    if current_user and current_user.is_authenticated:
-        return getattr(current_user, "id_empresa", None)
+    if current_user.is_authenticated:
+        return current_user.id_empresa
 
     return None
 
@@ -58,9 +58,5 @@ def query_empresa(cur, sql, params=(), alias=""):
     cur.execute(sql, (*params, id_empresa))
     return cur.fetchall()
 
-
-            
-
-def set_empresa_context():
-    if current_user.is_authenticated:
-        g.id_empresa = current_user.id_empresa
+def get_empresa_id_login(user_data):
+    return user_data["id_empresa"]

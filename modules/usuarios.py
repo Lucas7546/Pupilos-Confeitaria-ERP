@@ -10,7 +10,6 @@ from modules.db import release_conn
 
 def buscar_usuario_global(id_usuario: int):
     conn = get_conn()
-
     try:
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute("""

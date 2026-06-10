@@ -1,4 +1,4 @@
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 from utils.logger import log_info, log_erro
 from modules.tenant import get_empresa_id
 # =========================================================
@@ -10,7 +10,7 @@ def get_config_empresa() -> str:
 
         id_empresa = get_empresa_id()
 
-        with get_conn() as conn:
+        with db_conn() as conn:
 
             with conn.cursor() as cur:
 
@@ -45,7 +45,7 @@ def atualizar_regime_fiscal(
 
         id_empresa = get_empresa_id()
 
-        with get_conn() as conn:
+        with db_conn() as conn:
 
             with conn.cursor() as cur:
 
@@ -61,7 +61,7 @@ def atualizar_regime_fiscal(
                     )
                 )
 
-            conn.commit()
+            
 
         log_info(
             f"Regime fiscal atualizado empresa {id_empresa}"
@@ -95,7 +95,7 @@ def financeiro_operacional(periodo_dias: int = 30) -> dict:
 
         id_empresa = get_empresa_id()
 
-        with get_conn() as conn:
+        with db_conn() as conn:
 
             with conn.cursor() as cur:
 
@@ -260,9 +260,9 @@ def registrar_despesa(
 
         id_empresa = get_empresa_id()
 
-        with get_conn() as con:
+        with db_conn() as conn:
 
-            with con.cursor() as cur:
+            with conn.cursor() as cur:
 
                 cur.execute(
                     """
@@ -288,7 +288,7 @@ def registrar_despesa(
                     )
                 )
 
-            con.commit()
+           
 
         return True
 
@@ -306,9 +306,9 @@ def listar_despesas():
 
         id_empresa = get_empresa_id()
 
-        with get_conn() as con:
+        with db_conn() as conn:
 
-            with con.cursor() as cur:
+            with conn.cursor() as cur:
 
                 cur.execute(
                     """
@@ -351,7 +351,7 @@ def get_fluxo_caixa(
 
         id_empresa = get_empresa_id()
 
-        with get_conn() as conn:
+        with db_conn() as conn:
 
             with conn.cursor() as cur:
 

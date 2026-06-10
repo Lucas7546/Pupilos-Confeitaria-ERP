@@ -131,7 +131,7 @@ def criar_usuario(username: str, senha: str, nivel: str = "colaborador") -> bool
 
 
 
-        with get_conn() as conn:
+        with db_conn() as conn:
 
             with conn.cursor() as cur:
 
@@ -215,47 +215,22 @@ def criar_usuario(username: str, senha: str, nivel: str = "colaborador") -> bool
 
                 )
 
-
-
-            conn.commit()
-
-
-
         log_info(
 
             f"Usuário '{username}' criado para empresa {id_empresa}"
 
         )
-
-
-
         return True
-
-
-
     except Exception as e:
-
         log_erro(f"Erro ao criar usuário '{username}': {e}")
-
         return False
-
- 
-
- 
 
 def listar_usuarios():
 
-
-
     try:
-
-
-
         id_empresa = current_user.id_empresa
 
-
-
-        with get_conn() as conn:
+        with db_conn() as conn:
 
             with conn.cursor() as cur:
 
@@ -292,18 +267,11 @@ def listar_usuarios():
 
 
                 return cur.fetchall()
-
-
-
     except Exception as e:
 
         log_erro(f"Erro ao listar usuários: {e}")
 
         return []
-
- 
-
- 
 
 def atualizar_usuario(
 
@@ -325,9 +293,9 @@ def atualizar_usuario(
 
 
 
-        with get_conn() as con:
+        with db_conn() as conn:
 
-            with con.cursor() as cur:
+            with conn.cursor() as cur:
 
 
 
@@ -396,26 +364,12 @@ def atualizar_usuario(
                         )
 
                     )
-
-
-
-            con.commit()
-
-
-
         return True
-
-
-
     except Exception as e:
 
         print(f"Erro ao atualizar usuário no banco: {e}")
 
         return False
-
- 
-
- 
 
 def excluir_usuario(id_usuario: int) -> bool:
 
@@ -439,7 +393,7 @@ def excluir_usuario(id_usuario: int) -> bool:
 
 
 
-        with get_conn() as conn:
+        with db_conn() as conn:
 
             with conn.cursor() as cur:
 
@@ -463,7 +417,7 @@ def excluir_usuario(id_usuario: int) -> bool:
 
 
 
-            conn.commit()
+
 
 
 
@@ -511,7 +465,7 @@ def atualizar_nivel(id_usuario: int, novo_nivel: str) -> bool:
 
 
 
-        with get_conn() as conn:
+        with db_conn() as conn:
 
             with conn.cursor() as cur:
 
@@ -545,7 +499,6 @@ def atualizar_nivel(id_usuario: int, novo_nivel: str) -> bool:
 
 
 
-            conn.commit()
 
 
 
@@ -576,13 +529,12 @@ def registrar_log_db(usuario: str, acao: str, modulo: str, detalhe: str) -> None
         # Força o id_empresa para 0 se o usuário for superadmin (ou não tiver empresa)
         id_empresa = getattr(current_user, "id_empresa", 0) or 0 
         
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
                     INSERT INTO logs (usuario, acao, modulo, detalhe, id_empresa)
                     VALUES (%s, %s, %s, %s, %s)
                 """, (usuario, acao, modulo, detalhe, id_empresa))
-            conn.commit()
     except Exception as e:
         log_erro(f"Erro ao registrar log: {e}")
 
@@ -629,7 +581,7 @@ def criar_usuario_empresa(
 
     else:
 
-        with get_conn() as conn:
+        with db_conn() as conn:
 
             with conn.cursor() as cur:
 
@@ -658,22 +610,19 @@ def criar_usuario_empresa(
                     id_empresa
                 ))
 
-            conn.commit()
-
     return True
  
 
 def alterar_status(id_usuario: int, novo_status: int) -> bool:
     try:
         id_empresa = current_user.id_empresa
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
                     UPDATE usuarios 
                     SET ativo = %s 
                     WHERE id_usuario = %s AND id_empresa = %s
                 """, (novo_status, id_usuario, id_empresa))
-            conn.commit()
         return True
     except Exception as e:
         log_erro(f"Erro ao alterar status do usuário {id_usuario}: {e}")

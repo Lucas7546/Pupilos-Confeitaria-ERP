@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from modules.receitas import calcular_custo_receita
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 from flask_login import current_user
 from modules.tenant import get_empresa_id
 from utils.logger import log_info, log_erro
@@ -16,7 +16,7 @@ def obter_resumo_periodo(dias: int = 7) -> dict:
         data_inicio = datetime.now() - timedelta(days=dias)
         id_empresa = current_user.id_empresa
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -106,7 +106,7 @@ def registrar_venda(
             )
         )
 
-        with get_conn() as conn:
+        with db_conn() as conn:
 
             with conn.cursor() as cur:
 
@@ -431,7 +431,7 @@ def listar_vendas_recentes(limite: int = 10) -> list[dict]:
 
     try:
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -485,7 +485,7 @@ def excluir_venda(id_venda: int) -> bool:
 
         id_empresa = current_user.id_empresa
 
-        with get_conn() as conn:
+        with db_conn() as conn:
 
             with conn.cursor() as cur:
 
@@ -697,7 +697,7 @@ def obter_custo_total_vendas(dias: int = 30) -> float:
 
         data_inicio = datetime.now() - timedelta(days=dias)
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(

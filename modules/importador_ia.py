@@ -3,7 +3,7 @@ from difflib import SequenceMatcher
 
 import pandas as pd
 from google import genai
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 from utils.logger import log_info, log_erro
 from modules import vendas
 from modules.produtos import cadastrar_produto
@@ -248,7 +248,7 @@ def localizar_produto_erp(nome_produto: str) -> int | None:
 
     try:
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -320,7 +320,6 @@ def localizar_produto_erp(nome_produto: str) -> int | None:
                         )
                     )
 
-                conn.commit()
 
                 return melhor_id
 
@@ -340,7 +339,7 @@ def garantir_produto_erp(nome: str, preco_sugerido=0.0):
         return None
 
     try:
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -386,7 +385,6 @@ def garantir_produto_erp(nome: str, preco_sugerido=0.0):
 
                 id_produto = cur.fetchone()[0]
 
-            conn.commit()
 
         log_info(
             f"Produto criado automaticamente pelo importador: {nome}"

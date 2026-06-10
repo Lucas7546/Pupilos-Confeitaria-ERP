@@ -1,4 +1,4 @@
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 from utils.logger import log_info, log_erro
 from flask_login import current_user
 
@@ -12,7 +12,7 @@ def cadastrar_produto(
 
         id_empresa = current_user.id_empresa
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -40,7 +40,6 @@ def cadastrar_produto(
                     ),
                 )
 
-            conn.commit()
 
         log_info(
             f"Produto '{nome}' cadastrado. Empresa {id_empresa}"
@@ -63,7 +62,7 @@ def buscar_produto_por_nome(nome: str) -> list[tuple]:
 
         id_empresa = current_user.id_empresa
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -102,7 +101,7 @@ def listar_todos() -> list[tuple]:
 
         id_empresa = current_user.id_empresa
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -140,7 +139,7 @@ def vincular_insumo(
 
         id_empresa = current_user.id_empresa
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -203,7 +202,6 @@ def vincular_insumo(
                         ),
                     )
 
-            conn.commit()
 
         return True
 
@@ -225,7 +223,7 @@ def vincular_subproduto_ao_produto(
 
         id_empresa = current_user.id_empresa
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -290,7 +288,7 @@ def vincular_subproduto_ao_produto(
                         ),
                     )
 
-            conn.commit()
+
 
         return True
 
@@ -355,7 +353,7 @@ def calcular_capacidade_geral() -> list[dict]:
 
         ids_produtos = [p[0] for p in produtos_lista]
 
-        with get_conn() as conn:
+        with db_conn() as conn:
 
             with conn.cursor() as cur:
 
@@ -507,7 +505,7 @@ def excluir_produto(id_produto: int) -> bool:
 
         id_empresa = current_user.id_empresa
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -546,7 +544,7 @@ def excluir_produto(id_produto: int) -> bool:
                     )
                 )
 
-            conn.commit()
+
 
         log_info(
             f"Produto {id_produto} excluído. Empresa {id_empresa}"
@@ -573,7 +571,7 @@ def update_produto(
 
         id_empresa = current_user.id_empresa
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -592,7 +590,6 @@ def update_produto(
                     ),
                 )
 
-            conn.commit()
 
         log_info(
             f"Produto ID {id_produto} atualizado."

@@ -1,6 +1,6 @@
 from utils.logger import log_info, log_erro
 from modules.tenant import get_empresa_id
-from modules.tenant_db import get_conn 
+from modules.tenant_db import db_conn
 from datetime import datetime, timedelta 
  
 # =========================================================
@@ -15,7 +15,7 @@ def entrada_estoque(
 
         id_empresa = get_empresa_id()
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -44,8 +44,6 @@ def entrada_estoque(
                     ),
                 )
 
-            conn.commit()
-
         log_info(
             f"Entrada estoque MP {materia_prima_id} | Empresa {id_empresa}"
         )
@@ -73,7 +71,7 @@ def saida_estoque(
 
         id_empresa = get_empresa_id()
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -103,7 +101,6 @@ def saida_estoque(
                     ),
                 )
 
-            conn.commit()
 
         return True
 
@@ -127,7 +124,7 @@ def calcular_estoque(
 
         id_empresa = get_empresa_id()
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -184,7 +181,7 @@ def listar_materia_prima() -> list[tuple]:
 
         id_empresa = get_empresa_id()
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -288,7 +285,7 @@ def cadastrar_materia(
 
         id_empresa = get_empresa_id()
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -350,8 +347,6 @@ def cadastrar_materia(
                         ),
                     )
 
-            conn.commit()
-
         return True
 
     except Exception as e:
@@ -382,7 +377,7 @@ def registrar_compra_estoque(
 
         novo_preco = total / qtd
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -438,8 +433,6 @@ def registrar_compra_estoque(
                     )
                 )
 
-            conn.commit()
-
         return True
 
     except Exception as e:
@@ -456,7 +449,7 @@ def ajustar_estoque(
     novo_valor: float
 ) -> bool:
     try:
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -498,7 +491,6 @@ def ajustar_estoque(
                     )
                 )
 
-            conn.commit()
 
         log_info(
             f"Ajuste manual. Empresa {id_empresa} | MP {id_mp}"
@@ -522,7 +514,7 @@ def atualizar_materia_prima(
     quantidade: float
 ) -> bool:
     try:
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -572,7 +564,6 @@ def atualizar_materia_prima(
                         )
                     )
 
-            conn.commit()
 
         log_info(
             f"Matéria-prima ID {id_mp} atualizada."
@@ -595,7 +586,7 @@ def excluir_materia_prima(
     id_mp: int
 ) -> bool:
     try:
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -634,7 +625,6 @@ def excluir_materia_prima(
                     )
                 )
 
-            conn.commit()
 
         log_info(
             f"Matéria-prima ID {id_mp} excluída."
@@ -654,7 +644,7 @@ def excluir_materia_prima(
 def previsao_demanda(id_empresa: int) -> list[dict]:
     """Calcula previsão de consumo com uma única query otimizada."""
     try:
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
                     SELECT 
@@ -709,7 +699,7 @@ def obter_historico_movimentacoes(
 ) -> list[dict]:
     try:
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -777,7 +767,7 @@ def listar_subprodutos(
 
     try:
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -884,7 +874,7 @@ def cadastrar_subproduto_banco(
 
     try:
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -934,7 +924,7 @@ def vincular_insumo_subproduto(
 
     try:
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -994,7 +984,6 @@ def vincular_insumo_subproduto(
                     )
                 )
 
-            conn.commit()
 
         return True
 
@@ -1017,7 +1006,7 @@ def excluir_subproduto_banco(
 
     try:
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -1033,7 +1022,6 @@ def excluir_subproduto_banco(
                     )
                 )
 
-            conn.commit()
 
         return True
 
@@ -1060,7 +1048,7 @@ def entrada_subproduto(
 
     try:
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 # valida subproduto da empresa
@@ -1153,8 +1141,6 @@ def entrada_subproduto(
                         )
                     )
 
-            conn.commit()
-
         log_info(
             f"Entrada subproduto ID {id_subproduto} | Empresa {id_empresa} | Qtd {quantidade}"
         )
@@ -1185,7 +1171,7 @@ def entrada_produto(
 
     try:
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 # valida produto da empresa
@@ -1281,7 +1267,6 @@ def entrada_produto(
                         )
                     )
 
-            conn.commit()
 
         log_info(
             f"Produto produzido ID {id_produto} | Empresa {id_empresa} | Qtd {quantidade}"
@@ -1311,7 +1296,7 @@ def obter_balanco_diario(
 
     try:
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -1391,7 +1376,7 @@ def obter_saldo_produto(id_produto: int) -> float:
 
         id_empresa = get_empresa_id()
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -1446,7 +1431,7 @@ def obter_saldo_materia_prima(id_mp: int) -> float:
 
         id_empresa = get_empresa_id()
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -1501,7 +1486,7 @@ def obter_saldo_subproduto(id_subproduto: int) -> float:
 
         id_empresa = get_empresa_id()
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(

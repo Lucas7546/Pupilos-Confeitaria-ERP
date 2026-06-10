@@ -7,7 +7,7 @@ import uuid
 import tempfile
 from ape.services.log_service import registrar_log
 from utils.logger import log_erro
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 
 from modules.ocr_notas import analisar_nota, limpar_e_parsear_json
 from utils.helpers import validar_imagem_segura
@@ -142,7 +142,7 @@ def confirmar_nota():
         salvos = 0
         erros = []
 
-        with get_conn() as conn:
+        with db_conn() as conn:
 
             with conn.cursor() as cur:
 

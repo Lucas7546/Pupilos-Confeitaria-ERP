@@ -29,7 +29,7 @@ def criar_empresa(nome, responsavel, plano="basic"):
 
 def buscar_empresa_nome(nome):
 
-    with get_conn() as conn:
+    with db_conn() as conn:
         with conn.cursor() as cur:
 
             cur.execute(

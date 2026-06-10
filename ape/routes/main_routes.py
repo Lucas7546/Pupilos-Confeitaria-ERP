@@ -13,9 +13,9 @@ def dashboard():
     valores_vazios = {"faturamento": 0, "total_vendas": 0, "lucro": 0}
     id_empresa = current_user.id_empresa
     try:
-        resumo_diario  = vendas.obter_resumo_periodo(1, id_empresa)  or valores_vazios
-        resumo_semanal = vendas.obter_resumo_periodo(7, id_empresa)  or valores_vazios
-        resumo_mensal  = vendas.obter_resumo_periodo(30, id_empresa) or valores_vazios
+        resumo_diario  = vendas.obter_resumo_periodo(1)  or valores_vazios
+        resumo_semanal = vendas.obter_resumo_periodo(7)  or valores_vazios
+        resumo_mensal  = vendas.obter_resumo_periodo(30) or valores_vazios
         capacidade = produtos.calcular_capacidade_geral(id_empresa)
 
         if isinstance(resumo_semanal, dict):

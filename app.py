@@ -1,5 +1,5 @@
 import os
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn, get_conn
 from modules.tenant import get_empresa_id
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_wtf.csrf import CSRFProtect

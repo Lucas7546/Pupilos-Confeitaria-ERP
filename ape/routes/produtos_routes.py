@@ -4,7 +4,7 @@ from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
 from utils.logger import log_erro
 from utils.helpers import _parse_float
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 from modules import produtos, estoque
 from psycopg2.extras import RealDictCursor
 from ape.extensions import limiter
@@ -67,8 +67,8 @@ def deletar_produto(id_produto):
 @login_required
 def precificacao():
     try:
-        with get_conn() as con:
-            with con.cursor(cursor_factory=RealDictCursor) as cur:
+        with db_conn() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
                     SELECT p.id_produto, p.nome, p.preco_venda,
                         COALESCE(SUM(r.quantidade_utilizada * mp.preco_unitario), 0) AS custo_producao
@@ -103,8 +103,8 @@ def precificacao():
 @login_required
 def ficha_tecnica(id_produto):
     try:
-        with get_conn() as con:
-            with con.cursor() as cur:
+        with db_conn() as conn:
+            with conn.cursor() as cur:
                 cur.execute(
                     "SELECT id_produto, nome, preco_venda FROM produtos WHERE id_produto = %s AND id_empresa = %s",
                     (id_produto, current_user.id_empresa),
@@ -174,13 +174,12 @@ def editar_item_ficha(id_produto):
         return redirect(url_for("produtos.ficha_tecnica", id_produto=id_produto))
 
     try:
-        with get_conn() as con:
-            with con.cursor() as cur:
+        with db_conn() as conn:
+            with conn.cursor() as cur:
                 cur.execute(
                     "UPDATE receitas SET quantidade_utilizada = %s WHERE id_receita = %s AND id_produto = %s AND id_empresa = %s",
                     (nova_qtd, id_vinculo, id_produto, current_user.id_empresa),
                 )
-            con.commit()
         registrar_log("ALTERAR", "FICHA_TECNICA", f"Vínculo {id_vinculo} → {nova_qtd}", current_user.username)
         flash("Quantidade ajustada!", "success")
     except Exception as e:

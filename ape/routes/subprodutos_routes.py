@@ -5,7 +5,7 @@ from ape.services.log_service import registrar_log
 from utils.helpers import _parse_float
 from modules import estoque
 from utils.logger import log_erro
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 from ape.extensions import limiter
 
 subprodutos_bp = Blueprint('subprodutos', __name__)
@@ -53,8 +53,8 @@ def registrar_lote():
     qtd_lote_raw     = request.form.get("quantidade", "").strip()
 
     try:
-        with get_conn() as con:
-            with con.cursor() as cur:
+        with db_conn() as conn:
+            with conn.cursor() as cur:
                 # Lógica de Atualização de Preço
                 if nome_comercial and preco_venda_raw:
                     preco_venda = _parse_float(preco_venda_raw)
@@ -65,7 +65,6 @@ def registrar_lote():
                         "UPDATE produtos SET preco_venda = %s WHERE nome = %s",
                         (preco_venda, nome_comercial),
                     )
-                    con.commit()
                     registrar_log("ALTERAR", "PRODUTOS", f"Preço '{nome_comercial}' → R$ {preco_venda:.2f}", current_user.username)
                     flash(f"Preço de '{nome_comercial}' atualizado!", "success")
 
@@ -80,7 +79,6 @@ def registrar_lote():
                         "UPDATE subprodutos SET quantidade_atual = COALESCE(quantidade_atual,0) + %s WHERE id_subproduto = %s",
                         (qtd, id_sub),
                     )
-                    con.commit()
                     registrar_log("ESTOQUE", "SUBPRODUTOS", f"Lote {qtd} → Subproduto ID {id_sub}", current_user.username)
                     flash("Lote registrado!", "success")
                 else:

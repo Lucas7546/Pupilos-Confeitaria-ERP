@@ -8,7 +8,7 @@ from ape.extensions import limiter
 import os
 from modules import importador_ia as ia
 from modules import produtos, vendas, receitas
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 
 vendas_bp = Blueprint('vendas', __name__)
 

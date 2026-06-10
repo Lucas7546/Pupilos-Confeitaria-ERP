@@ -1,4 +1,4 @@
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 from utils.logger import log_info, log_erro
 from flask_login import current_user
 from modules.tenant import get_empresa_id
@@ -17,7 +17,7 @@ def cadastrar_receita(
 
         id_empresa = current_user.id_empresa
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -80,7 +80,6 @@ def cadastrar_receita(
                         ),
                     )
 
-            conn.commit()
 
         log_info(
             f"Receita: Produto {id_produto}, MP {id_materia_prima}, Empresa {id_empresa}"
@@ -106,7 +105,7 @@ def listar_itens_receita(id_produto: int) -> list[tuple]:
 
         id_empresa = current_user.id_empresa
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(
@@ -154,7 +153,7 @@ def validar_estoque_suficiente(
 
         id_empresa = current_user.id_empresa
 
-        with get_conn() as conn:
+        with db_conn() as conn:
 
             with conn.cursor() as cur:
 
@@ -211,7 +210,7 @@ def validar_estoque_suficiente(
 
             if id_subproduto:
 
-                with get_conn() as conn:
+                with db_conn() as conn:
 
                     with conn.cursor() as cur:
 
@@ -275,7 +274,7 @@ def calcular_custo_receita(id_produto: int) -> float:
 
         id_empresa = current_user.id_empresa
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
 
                 cur.execute(

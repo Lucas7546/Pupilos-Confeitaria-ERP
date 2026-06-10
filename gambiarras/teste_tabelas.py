@@ -1,9 +1,9 @@
 from dotenv import load_dotenv
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 
 load_dotenv()
 
-with get_conn() as conn:
+with db_conn() as conn:
     with conn.cursor() as cur:
 
         # 1. CRIAR TABELA EMPRESAS

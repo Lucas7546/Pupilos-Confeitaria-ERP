@@ -1,6 +1,6 @@
 from flask_login import current_user
 from PIL import Image
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 
 def is_admin():
     return getattr(current_user, "nivel", None) == "admin"
@@ -35,7 +35,7 @@ def validar_imagem_segura(arquivo):
 
 
 def query(sql, params=()):
-    with get_conn() as conn:
+    with db_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, params)
             return cur.fetchall()

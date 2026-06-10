@@ -1,6 +1,6 @@
 import json
 import mimetypes
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 from ape.services.ai_client import client
 from difflib import SequenceMatcher
 from utils.logger import log_info, log_erro
@@ -152,7 +152,7 @@ def enriquecer_itens_nota(itens):
 
         id_empresa = current_user.id_empresa
 
-        with get_conn() as conn:
+        with db_conn() as conn:
 
             with conn.cursor() as cur:
 

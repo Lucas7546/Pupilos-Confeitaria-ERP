@@ -1,5 +1,11 @@
-from flask import g
 from flask_login import current_user
+from flask import g
+
+
+
+
+__all__ = ["get_empresa_id", "set_empresa_context"]
+
 
 def get_empresa_id():
     id_empresa = getattr(g, "id_empresa", None)
@@ -47,3 +53,7 @@ def query_empresa(cur, sql, params=(), alias=""):
 
 
             
+
+def set_empresa_context():
+    if current_user.is_authenticated:
+        g.id_empresa = current_user.id_empresa

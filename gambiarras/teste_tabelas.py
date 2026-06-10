@@ -17,8 +17,6 @@ with db_conn() as conn:
             );
         """)
 
-        conn.commit()
-
         # 2. LISTAR TABELAS (opcional debug)
         cur.execute("""
             SELECT table_name

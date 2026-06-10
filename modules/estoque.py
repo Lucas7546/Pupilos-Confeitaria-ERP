@@ -904,8 +904,6 @@ def cadastrar_subproduto_banco(
                     )
                 )
 
-            conn.commit()
-
         return True
 
     except Exception as e:

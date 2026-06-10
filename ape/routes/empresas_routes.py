@@ -95,7 +95,6 @@ def cadastro_empresa():
                       AND utilizado = FALSE
                 """, (codigo_convite,))
 
-            conn.commit()
 
         # =========================
         # SUCESSO

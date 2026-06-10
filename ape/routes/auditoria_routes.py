@@ -135,8 +135,6 @@ def limpar_logs():
                     (current_user.id_empresa,)
                 )
 
-            conn.commit()
-
         registrar_log(
             "DELETE",
             "AUDITORIA",

@@ -279,7 +279,6 @@ def confirmar_nota():
 
                     salvos += 1
 
-            conn.commit()
 
         registrar_log(
             "CONFIRMAR_NOTA",

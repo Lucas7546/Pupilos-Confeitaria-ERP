@@ -405,8 +405,6 @@ def registrar_venda(
                             )
                         )
 
-            conn.commit()
-
         log_info(
             f"Venda {id_venda} registrada - Empresa {id_empresa}"
         )
@@ -666,9 +664,7 @@ def excluir_venda(id_venda: int) -> bool:
                         id_venda,
                         id_empresa
                     )
-                )
-
-            conn.commit()
+                )          
 
         log_info(
             f"Venda {id_venda} excluída com estorno de estoque. Empresa: {id_empresa}"

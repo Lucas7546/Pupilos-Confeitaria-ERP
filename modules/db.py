@@ -24,14 +24,14 @@ def get_pool():
 
     return _pool
 
+def release_conn(conn):
+    try:
+        get_pool().putconn(conn)
+    except Exception:
+        pass
 
 def get_conn():
-    print("DB GET_CONN")
-    conn = get_pool().getconn()
+    pool = get_pool()
+    conn = pool.getconn()
     conn.autocommit = False
     return conn
-
-
-def release_conn(conn):
-    print("DEVOLVEU CONEXAO")
-    get_pool().putconn(conn)

@@ -1,11 +1,11 @@
 from flask_login import current_user
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 def inject_empresa():
     if not current_user.is_authenticated or not hasattr(current_user, 'id_empresa'):
         return {"EMPRESA": "Confeitaria ERP"}
 
     try:
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
                 # Busca a empresa pelo ID do usuário logado
                 cur.execute("SELECT nome FROM empresas WHERE id_empresa = %s", (current_user.id_empresa,))

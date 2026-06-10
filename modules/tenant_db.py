@@ -26,7 +26,8 @@ def db_conn():
 
 
 def get_conn():
-    conn = get_pool().getconn()
+    pool = get_pool()
+    conn = pool.getconn()
     conn.autocommit = False
     return conn
 
@@ -57,6 +58,9 @@ def aplicar_tenant(conn):
     try:
         id_empresa = get_empresa_id()
 
+        if not id_empresa:
+            return
+
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -70,4 +74,4 @@ def aplicar_tenant(conn):
             )
 
     except Exception:
-        pass
+        return

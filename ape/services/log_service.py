@@ -1,4 +1,4 @@
-from modules.tenant_db import get_conn
+from modules.tenant_db import db_conn
 from flask_login import current_user
 
 def registrar_log(acao, modulo, detalhe="", usuario=None):
@@ -9,7 +9,7 @@ def registrar_log(acao, modulo, detalhe="", usuario=None):
         elif not usuario:
             usuario = "Sistema"
 
-        with get_conn() as conn:
+        with db_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     "INSERT INTO logs (id_empresa, usuario, acao, modulo, detalhe) VALUES (%s, %s, %s, %s, %s)",

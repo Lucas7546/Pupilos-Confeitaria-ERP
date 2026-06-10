@@ -2,7 +2,7 @@ from flask_login import current_user
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from psycopg2.extras import DictCursor, RealDictCursor
-
+from functools import lru_cache
 from utils.logger import log_info, log_erro
 from modules.tenant_db import get_conn, db_conn
 from modules.db import release_conn
@@ -30,6 +30,10 @@ def buscar_usuario_global(id_usuario: int):
 
     finally:
         release_conn(conn)
+
+@lru_cache(maxsize=1024)
+def buscar_usuario_global_cached(id_usuario: int):
+    return buscar_usuario_global(id_usuario)
 
 def buscar_usuario(username: str):
     try:

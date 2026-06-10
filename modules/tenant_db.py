@@ -17,11 +17,15 @@ def db_conn():
         raise
 
     finally:
+        print("DEVOLVEU CONEXAO")
         release_conn(conn)
 
 
 def get_conn():
     conn = get_pool().getconn()
+
+    print("PEGOU CONEXAO")
+
     conn.autocommit = False
 
     try:

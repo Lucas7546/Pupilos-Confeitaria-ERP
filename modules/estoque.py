@@ -13,7 +13,7 @@ def entrada_estoque(
 
     try:
 
-        empresa_id = get_empresa_id()
+        id_empresa = get_empresa_id()
 
         with get_conn() as conn:
             with conn.cursor() as cur:
@@ -38,7 +38,7 @@ def entrada_estoque(
                     )
                     """,
                     (
-                        empresa_id,
+                        id_empresa,
                         materia_prima_id,
                         float(quantidade)
                     ),
@@ -47,7 +47,7 @@ def entrada_estoque(
             conn.commit()
 
         log_info(
-            f"Entrada estoque MP {materia_prima_id} | Empresa {empresa_id}"
+            f"Entrada estoque MP {materia_prima_id} | Empresa {id_empresa}"
         )
 
         return True
@@ -71,7 +71,7 @@ def saida_estoque(
 
     try:
 
-        empresa_id = get_empresa_id()
+        id_empresa = get_empresa_id()
 
         with get_conn() as conn:
             with conn.cursor() as cur:
@@ -96,7 +96,7 @@ def saida_estoque(
                     )
                     """,
                     (
-                        empresa_id,
+                        id_empresa,
                         materia_prima_id,
                         float(quantidade),
                         observacao
@@ -125,7 +125,7 @@ def calcular_estoque(
 
     try:
 
-        empresa_id = get_empresa_id()
+        id_empresa = get_empresa_id()
 
         with get_conn() as conn:
             with conn.cursor() as cur:
@@ -159,7 +159,7 @@ def calcular_estoque(
                     AND id_materia_prima = %s
                     """,
                     (
-                        empresa_id,
+                        id_empresa,
                         materia_prima_id
                     ),
                 )
@@ -182,7 +182,7 @@ def listar_materia_prima() -> list[tuple]:
 
     try:
 
-        empresa_id = get_empresa_id()
+        id_empresa = get_empresa_id()
 
         with get_conn() as conn:
             with conn.cursor() as cur:
@@ -233,7 +233,7 @@ def listar_materia_prima() -> list[tuple]:
 
                     ORDER BY m.nome
                     """,
-                    (empresa_id,),
+                    (id_empresa,),
                 )
 
                 rows = cur.fetchall()
@@ -286,7 +286,7 @@ def cadastrar_materia(
 
     try:
 
-        empresa_id = get_empresa_id()
+        id_empresa = get_empresa_id()
 
         with get_conn() as conn:
             with conn.cursor() as cur:
@@ -312,7 +312,7 @@ def cadastrar_materia(
                     RETURNING id_materia_prima
                     """,
                     (
-                        empresa_id,
+                        id_empresa,
                         nome,
                         unidade,
                         preco,
@@ -344,7 +344,7 @@ def cadastrar_materia(
                         )
                         """,
                         (
-                            empresa_id,
+                            id_empresa,
                             id_mp,
                             estoque_inicial
                         ),
@@ -367,7 +367,7 @@ def cadastrar_materia(
 # REGISTRAR COMPRA (ENTRADA + ATUALIZA PREÇO MÉDIO)
 # =========================================================
 def registrar_compra_estoque(
-    empresa_id: int,
+    id_empresa: int,
     id_materia_prima: int,
     quantidade_comprada,
     valor_total_pago
@@ -390,9 +390,9 @@ def registrar_compra_estoque(
                     SELECT 1
                     FROM materia_prima mp
                     WHERE mp.id_materia_prima = %s
-                      AND mp.empresa_id = %s
+                      AND mp.id_empresa = %s
                     """,
-                    (id_materia_prima, empresa_id)
+                    (id_materia_prima, id_empresa)
                 )
 
                 if not cur.fetchone():
@@ -403,12 +403,12 @@ def registrar_compra_estoque(
                     UPDATE materia_prima
                     SET preco_unitario = %s
                     WHERE id_materia_prima = %s
-                      AND empresa_id = %s
+                      AND id_empresa = %s
                     """,
                     (
                         novo_preco,
                         id_materia_prima,
-                        empresa_id
+                        id_empresa
                     )
                 )
 
@@ -416,7 +416,7 @@ def registrar_compra_estoque(
                     """
                     INSERT INTO movimentacao_estoque
                     (
-                        empresa_id,
+                        id_empresa,
                         id_materia_prima,
                         tipo_movimento,
                         quantidade,
@@ -432,7 +432,7 @@ def registrar_compra_estoque(
                     )
                     """,
                     (
-                        empresa_id,
+                        id_empresa,
                         id_materia_prima,
                         qtd
                     )
@@ -451,7 +451,7 @@ def registrar_compra_estoque(
 # AJUSTE MANUAL DE ESTOQUE
 # =========================================================
 def ajustar_estoque(
-    empresa_id: int,
+    id_empresa: int,
     id_mp: int,
     novo_valor: float
 ) -> bool:
@@ -464,9 +464,9 @@ def ajustar_estoque(
                     SELECT 1
                     FROM materia_prima
                     WHERE id_materia_prima = %s
-                      AND empresa_id = %s
+                      AND id_empresa = %s
                     """,
-                    (id_mp, empresa_id)
+                    (id_mp, id_empresa)
                 )
 
                 if not cur.fetchone():
@@ -476,7 +476,7 @@ def ajustar_estoque(
                     """
                     INSERT INTO movimentacao_estoque
                     (
-                        empresa_id,
+                        id_empresa,
                         id_materia_prima,
                         tipo_movimento,
                         quantidade,
@@ -492,7 +492,7 @@ def ajustar_estoque(
                     )
                     """,
                     (
-                        empresa_id,
+                        id_empresa,
                         id_mp,
                         float(novo_valor)
                     )
@@ -501,7 +501,7 @@ def ajustar_estoque(
             conn.commit()
 
         log_info(
-            f"Ajuste manual. Empresa {empresa_id} | MP {id_mp}"
+            f"Ajuste manual. Empresa {id_empresa} | MP {id_mp}"
         )
 
         return True
@@ -514,7 +514,7 @@ def ajustar_estoque(
 # ATUALIZAR MATÉRIA-PRIMA
 # =========================================================
 def atualizar_materia_prima(
-    empresa_id: int,
+    id_empresa: int,
     id_mp: int,
     nome: str,
     preco: float,
@@ -533,14 +533,14 @@ def atualizar_materia_prima(
                         preco_unitario = %s,
                         unidade_medida = %s
                     WHERE id_materia_prima = %s
-                      AND empresa_id = %s
+                      AND id_empresa = %s
                     """,
                     (
                         nome,
                         preco,
                         unidade,
                         id_mp,
-                        empresa_id
+                        id_empresa
                     )
                 )
 
@@ -550,7 +550,7 @@ def atualizar_materia_prima(
                         """
                         INSERT INTO movimentacao_estoque
                         (
-                            empresa_id,
+                            id_empresa,
                             id_materia_prima,
                             tipo_movimento,
                             quantidade,
@@ -566,7 +566,7 @@ def atualizar_materia_prima(
                         )
                         """,
                         (
-                            empresa_id,
+                            id_empresa,
                             id_mp,
                             quantidade
                         )
@@ -591,7 +591,7 @@ def atualizar_materia_prima(
 # EXCLUIR MATÉRIA-PRIMA
 # =========================================================
 def excluir_materia_prima(
-    empresa_id: int,
+    id_empresa: int,
     id_mp: int
 ) -> bool:
     try:
@@ -602,11 +602,11 @@ def excluir_materia_prima(
                     """
                     DELETE FROM receitas
                     WHERE id_materia_prima = %s
-                      AND empresa_id = %s
+                      AND id_empresa = %s
                     """,
                     (
                         id_mp,
-                        empresa_id
+                        id_empresa
                     )
                 )
 
@@ -614,11 +614,11 @@ def excluir_materia_prima(
                     """
                     DELETE FROM movimentacao_estoque
                     WHERE id_materia_prima = %s
-                      AND empresa_id = %s
+                      AND id_empresa = %s
                     """,
                     (
                         id_mp,
-                        empresa_id
+                        id_empresa
                     )
                 )
 
@@ -626,11 +626,11 @@ def excluir_materia_prima(
                     """
                     DELETE FROM materia_prima
                     WHERE id_materia_prima = %s
-                      AND empresa_id = %s
+                      AND id_empresa = %s
                     """,
                     (
                         id_mp,
-                        empresa_id
+                        id_empresa
                     )
                 )
 
@@ -651,7 +651,7 @@ def excluir_materia_prima(
 # =========================================================
 # PREVISÃO DE DEMANDA
 # =========================================================
-def previsao_demanda(empresa_id: int) -> list[dict]:
+def previsao_demanda(id_empresa: int) -> list[dict]:
     """Calcula previsão de consumo com uma única query otimizada."""
     try:
         with get_conn() as conn:
@@ -665,17 +665,17 @@ def previsao_demanda(empresa_id: int) -> list[dict]:
                     LEFT JOIN (
                         SELECT id_materia_prima, 
                         SUM(CASE WHEN tipo_movimento IN ('entrada','ajuste') THEN quantidade ELSE -quantidade END) as estoque
-                        FROM movimentacao_estoque WHERE empresa_id = %s GROUP BY id_materia_prima
+                        FROM movimentacao_estoque WHERE id_empresa = %s GROUP BY id_materia_prima
                     ) saldos ON mp.id_materia_prima = saldos.id_materia_prima
                     LEFT JOIN (
                         SELECT id_materia_prima, SUM(quantidade) as total_saida
                         FROM movimentacao_estoque 
-                        WHERE empresa_id = %s AND tipo_movimento = 'saida' 
+                        WHERE id_empresa = %s AND tipo_movimento = 'saida' 
                         AND data_movimento >= CURRENT_DATE - INTERVAL '30 days'
                         GROUP BY id_materia_prima
                     ) consumo ON mp.id_materia_prima = consumo.id_materia_prima
-                    WHERE mp.empresa_id = %s
-                """, (empresa_id, empresa_id, empresa_id))
+                    WHERE mp.id_empresa = %s
+                """, (id_empresa, id_empresa, id_empresa))
                 
                 materias = cur.fetchall()
 
@@ -705,7 +705,7 @@ def previsao_demanda(empresa_id: int) -> list[dict]:
 # HISTÓRICO DE MOVIMENTAÇÕES
 # =========================================================
 def obter_historico_movimentacoes(
-    empresa_id: int
+    id_empresa: int
 ) -> list[dict]:
     try:
 
@@ -739,12 +739,12 @@ def obter_historico_movimentacoes(
                         ON mov.id_subproduto = s.id_subproduto
                     LEFT JOIN produtos p
                         ON mov.id_produto = p.id_produto
-                    WHERE mov.empresa_id = %s
+                    WHERE mov.id_empresa = %s
                     ORDER BY
                         mov.data_movimento DESC,
                         mov.id_movimento DESC
                     """,
-                    (empresa_id,)
+                    (id_empresa,)
                 )
 
                 rows = cur.fetchall()
@@ -772,7 +772,7 @@ def obter_historico_movimentacoes(
 # SUBPRODUTOS — funções que estavam perdidas no app.py
 # =========================================================
 def listar_subprodutos(
-    empresa_id: int
+    id_empresa: int
 ) -> list[tuple]:
 
     try:
@@ -817,11 +817,11 @@ def listar_subprodutos(
 
                     LEFT JOIN movimentacao_estoque mov
                         ON s.id_subproduto = mov.id_subproduto
-                       AND mov.empresa_id = s.empresa_id
+                       AND mov.id_empresa = s.id_empresa
 
                     WHERE
                         s.ativo = 1
-                        AND s.empresa_id = %s
+                        AND s.id_empresa = %s
 
                     GROUP BY
                         s.id_subproduto,
@@ -832,7 +832,7 @@ def listar_subprodutos(
 
                     ORDER BY s.nome ASC
                     """,
-                    (empresa_id,)
+                    (id_empresa,)
                 )
 
                 rows = cur.fetchall()
@@ -873,7 +873,7 @@ def listar_subprodutos(
  
  
 def cadastrar_subproduto_banco(
-    empresa_id: int,
+    id_empresa: int,
     nome: str,
     unidade: str,
     estoque_minimo: float
@@ -891,7 +891,7 @@ def cadastrar_subproduto_banco(
                     """
                     INSERT INTO subprodutos
                     (
-                        empresa_id,
+                        id_empresa,
                         nome,
                         unidade_medida,
                         estoque_minimo,
@@ -907,7 +907,7 @@ def cadastrar_subproduto_banco(
                     )
                     """,
                     (
-                        empresa_id,
+                        id_empresa,
                         nome.strip(),
                         unidade,
                         float(estoque_minimo or 0)
@@ -926,7 +926,7 @@ def cadastrar_subproduto_banco(
  
  
 def vincular_insumo_subproduto(
-    empresa_id: int,
+    id_empresa: int,
     id_subproduto: int,
     id_materia_prima: int,
     quantidade: float
@@ -942,11 +942,11 @@ def vincular_insumo_subproduto(
                     SELECT 1
                     FROM subprodutos
                     WHERE id_subproduto = %s
-                      AND empresa_id = %s
+                      AND id_empresa = %s
                     """,
                     (
                         id_subproduto,
-                        empresa_id
+                        id_empresa
                     )
                 )
 
@@ -958,11 +958,11 @@ def vincular_insumo_subproduto(
                     SELECT 1
                     FROM materia_prima
                     WHERE id_materia_prima = %s
-                      AND empresa_id = %s
+                      AND id_empresa = %s
                     """,
                     (
                         id_materia_prima,
-                        empresa_id
+                        id_empresa
                     )
                 )
 
@@ -973,7 +973,7 @@ def vincular_insumo_subproduto(
                     """
                     INSERT INTO receitas_subprodutos
                     (
-                        empresa_id,
+                        id_empresa,
                         id_subproduto,
                         id_materia_prima,
                         quantidade_utilizada
@@ -987,7 +987,7 @@ def vincular_insumo_subproduto(
                     )
                     """,
                     (
-                        empresa_id,
+                        id_empresa,
                         int(id_subproduto),
                         int(id_materia_prima),
                         float(quantidade)
@@ -1008,7 +1008,7 @@ def vincular_insumo_subproduto(
  
  
 def excluir_subproduto_banco(
-    empresa_id: int,
+    id_empresa: int,
     id_subproduto: int
 ) -> bool:
     """
@@ -1025,11 +1025,11 @@ def excluir_subproduto_banco(
                     UPDATE subprodutos
                     SET ativo = 0
                     WHERE id_subproduto = %s
-                      AND empresa_id = %s
+                      AND id_empresa = %s
                     """,
                     (
                         int(id_subproduto),
-                        empresa_id
+                        id_empresa
                     )
                 )
 
@@ -1049,7 +1049,7 @@ def excluir_subproduto_banco(
 # ENTRADA DE SUBPRODUTO (chamada em /registrar-producao)
 # =========================================================
 def entrada_subproduto(
-    empresa_id: int,
+    id_empresa: int,
     id_subproduto: int,
     quantidade: float
 ) -> bool:
@@ -1069,11 +1069,11 @@ def entrada_subproduto(
                     SELECT 1
                     FROM subprodutos
                     WHERE id_subproduto = %s
-                    AND empresa_id = %s
+                    AND id_empresa = %s
                     """,
                     (
                         id_subproduto,
-                        empresa_id
+                        id_empresa
                     )
                 )
 
@@ -1085,7 +1085,7 @@ def entrada_subproduto(
                     """
                     INSERT INTO movimentacao_estoque
                     (
-                        empresa_id,
+                        id_empresa,
                         id_subproduto,
                         tipo_movimento,
                         quantidade,
@@ -1101,7 +1101,7 @@ def entrada_subproduto(
                     )
                     """,
                     (
-                        empresa_id,
+                        id_empresa,
                         id_subproduto,
                         float(quantidade)
                     )
@@ -1117,11 +1117,11 @@ def entrada_subproduto(
                     INNER JOIN materia_prima mp
                         ON mp.id_materia_prima = rs.id_materia_prima
                     WHERE rs.id_subproduto = %s
-                    AND mp.empresa_id = %s
+                    AND mp.id_empresa = %s
                     """,
                     (
                         id_subproduto,
-                        empresa_id
+                        id_empresa
                     )
                 )
 
@@ -1131,7 +1131,7 @@ def entrada_subproduto(
                         """
                         INSERT INTO movimentacao_estoque
                         (
-                            empresa_id,
+                            id_empresa,
                             id_materia_prima,
                             tipo_movimento,
                             quantidade,
@@ -1147,7 +1147,7 @@ def entrada_subproduto(
                         )
                         """,
                         (
-                            empresa_id,
+                            id_empresa,
                             id_mp,
                             float(qtd_receita) * float(quantidade)
                         )
@@ -1156,7 +1156,7 @@ def entrada_subproduto(
             conn.commit()
 
         log_info(
-            f"Entrada subproduto ID {id_subproduto} | Empresa {empresa_id} | Qtd {quantidade}"
+            f"Entrada subproduto ID {id_subproduto} | Empresa {id_empresa} | Qtd {quantidade}"
         )
 
         return True
@@ -1174,7 +1174,7 @@ def entrada_subproduto(
 # ENTRADA DE PRODUTO FINAL (chamada em /registrar-producao)
 # =========================================================
 def entrada_produto(
-    empresa_id: int,
+    id_empresa: int,
     id_produto: int,
     quantidade: float
 ) -> bool:
@@ -1194,11 +1194,11 @@ def entrada_produto(
                     SELECT 1
                     FROM produtos
                     WHERE id_produto = %s
-                    AND empresa_id = %s
+                    AND id_empresa = %s
                     """,
                     (
                         id_produto,
-                        empresa_id
+                        id_empresa
                     )
                 )
 
@@ -1210,7 +1210,7 @@ def entrada_produto(
                     """
                     INSERT INTO movimentacao_estoque
                     (
-                        empresa_id,
+                        id_empresa,
                         id_produto,
                         tipo_movimento,
                         quantidade,
@@ -1226,7 +1226,7 @@ def entrada_produto(
                     )
                     """,
                     (
-                        empresa_id,
+                        id_empresa,
                         id_produto,
                         float(quantidade)
                     )
@@ -1243,11 +1243,11 @@ def entrada_produto(
                         ON mp.id_materia_prima = r.id_materia_prima
                     WHERE r.id_produto = %s
                     AND r.id_materia_prima IS NOT NULL
-                    AND mp.empresa_id = %s
+                    AND mp.id_empresa = %s
                     """,
                     (
                         id_produto,
-                        empresa_id
+                        id_empresa
                     )
                 )
 
@@ -1259,7 +1259,7 @@ def entrada_produto(
                         """
                         INSERT INTO movimentacao_estoque
                         (
-                            empresa_id,
+                            id_empresa,
                             id_materia_prima,
                             tipo_movimento,
                             quantidade,
@@ -1275,7 +1275,7 @@ def entrada_produto(
                         )
                         """,
                         (
-                            empresa_id,
+                            id_empresa,
                             id_mp,
                             float(qtd_receita) * float(quantidade)
                         )
@@ -1284,7 +1284,7 @@ def entrada_produto(
             conn.commit()
 
         log_info(
-            f"Produto produzido ID {id_produto} | Empresa {empresa_id} | Qtd {quantidade}"
+            f"Produto produzido ID {id_produto} | Empresa {id_empresa} | Qtd {quantidade}"
         )
 
         return True
@@ -1302,7 +1302,7 @@ def entrada_produto(
 # BALANÇO DIÁRIO (chamada em /estoque/fechamento)
 # =========================================================
 def obter_balanco_diario(
-    empresa_id: int
+    id_empresa: int
 ) -> list[dict]:
     """
     Retorna fabricado x vendido x sobra de hoje
@@ -1340,7 +1340,7 @@ def obter_balanco_diario(
 
                     LEFT JOIN movimentacao_estoque mov
                         ON mov.id_produto = p.id_produto
-                        AND mov.empresa_id = p.empresa_id
+                        AND mov.id_empresa = p.id_empresa
                         AND DATE(mov.data_movimento) = CURRENT_DATE
 
                     LEFT JOIN itens_venda iv
@@ -1348,10 +1348,10 @@ def obter_balanco_diario(
 
                     LEFT JOIN vendas v
                         ON v.id_venda = iv.id_venda
-                        AND v.empresa_id = p.empresa_id
+                        AND v.id_empresa = p.id_empresa
                         AND DATE(v.data_venda) = CURRENT_DATE
 
-                    WHERE p.empresa_id = %s
+                    WHERE p.id_empresa = %s
 
                     GROUP BY
                         p.id_produto,
@@ -1360,7 +1360,7 @@ def obter_balanco_diario(
                     ORDER BY
                         p.nome ASC
                     """,
-                    (empresa_id,)
+                    (id_empresa,)
                 )
 
                 rows = cur.fetchall()
@@ -1389,7 +1389,7 @@ def obter_saldo_produto(id_produto: int) -> float:
 
     try:
 
-        empresa_id = get_empresa_id()
+        id_empresa = get_empresa_id()
 
         with get_conn() as conn:
             with conn.cursor() as cur:
@@ -1424,7 +1424,7 @@ def obter_saldo_produto(id_produto: int) -> float:
                     """,
                     (
                         id_produto,
-                        empresa_id
+                        id_empresa
                     )
                 )
 
@@ -1444,7 +1444,7 @@ def obter_saldo_materia_prima(id_mp: int) -> float:
 
     try:
 
-        empresa_id = get_empresa_id()
+        id_empresa = get_empresa_id()
 
         with get_conn() as conn:
             with conn.cursor() as cur:
@@ -1479,7 +1479,7 @@ def obter_saldo_materia_prima(id_mp: int) -> float:
                     """,
                     (
                         id_mp,
-                        empresa_id
+                        id_empresa
                     )
                 )
 
@@ -1499,7 +1499,7 @@ def obter_saldo_subproduto(id_subproduto: int) -> float:
 
     try:
 
-        empresa_id = get_empresa_id()
+        id_empresa = get_empresa_id()
 
         with get_conn() as conn:
             with conn.cursor() as cur:
@@ -1534,7 +1534,7 @@ def obter_saldo_subproduto(id_subproduto: int) -> float:
                     """,
                     (
                         id_subproduto,
-                        empresa_id
+                        id_empresa
                     )
                 )
 

@@ -55,5 +55,5 @@ def query_empresa(cur, sql, params=(), alias=""):
             
 
 def set_empresa_context():
-    if current_user.is_authenticated:
+    if current_user and getattr(current_user, "is_authenticated", False):
         g.id_empresa = current_user.id_empresa

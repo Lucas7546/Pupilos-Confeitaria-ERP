@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from modules.db import _get_pool
+from modules.tenant_db import _get_pool
 from modules.tenant import get_empresa_id
 
 
@@ -9,7 +9,15 @@ def get_conn():
     pool = _get_pool()
     conn = pool.getconn()
 
+    id_empresa = get_empresa_id()
+
     try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT set_config('app.id_empresa', %s, false)",
+                (str(id_empresa),)
+            )
+
         yield conn
         conn.commit()
 

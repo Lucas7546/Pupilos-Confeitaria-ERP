@@ -3,7 +3,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from modules.usuarios import buscar_usuario_id
 from flask import session
-from flask import request
+
 
 
 # =============================================================
@@ -43,18 +43,13 @@ login_manager.anonymous_user = AnonymousUser
 @login_manager.user_loader
 def load_user(user_id):
     try:
-        id_empresa = session.get("id_empresa")
+        user_data = buscar_usuario_id(int(user_id))
 
-        if not id_empresa:
-            return None
-
-        user_data = buscar_usuario_id(int(user_id), id_empresa)
-
-        if user_data and user_data["ativo"]:
+        if user_data and user_data.get("ativo"):
             return User(user_data)
 
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Erro crítico no load_user: {e}")
 
     return None
 

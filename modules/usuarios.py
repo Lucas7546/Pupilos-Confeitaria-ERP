@@ -656,6 +656,25 @@ def alterar_status(id_usuario: int, novo_status: int) -> bool:
     
 
 
+def buscar_usuario_global(id_usuario: int):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    id_usuario,
+                    username,
+                    nivel,
+                    id_empresa,
+                    ativo,
+                    is_superadmin
+                FROM usuarios
+                WHERE id_usuario = %s
+                LIMIT 1
+            """, (id_usuario,))
+
+            return cur.fetchone()
+
+
 
 
 

@@ -175,6 +175,9 @@ def calcular_estoque(
 # =========================================================
 # LISTAR MATÉRIAS-PRIMAS
 # =========================================================
+# =========================================================
+# LISTAR MATÉRIAS-PRIMAS
+# =========================================================
 def listar_materia_prima() -> list[tuple]:
 
     try:
@@ -193,16 +196,20 @@ def listar_materia_prima() -> list[tuple]:
                         m.unidade_medida,
                         m.estoque_minimo,
                         m.preco_unitario,
+
                         COALESCE(
                             SUM(
                                 CASE
-                                    WHEN mov.tipo_movimento IN ('entrada','ajuste')
+                                    WHEN mov.tipo_movimento IN ('entrada', 'ajuste')
                                     THEN mov.quantidade
                                     ELSE 0
                                 END
-                            ), 0
+                            ),
+                            0
                         )
+
                         -
+
                         COALESCE(
                             SUM(
                                 CASE
@@ -210,15 +217,17 @@ def listar_materia_prima() -> list[tuple]:
                                     THEN mov.quantidade
                                     ELSE 0
                                 END
-                            ), 0
+                            ),
+                            0
                         ) AS saldo
+
                     FROM materia_prima m
 
                     LEFT JOIN movimentacao_estoque mov
                         ON mov.id_materia_prima = m.id_materia_prima
                         AND mov.id_empresa = m.id_empresa
 
-                    WHERE id_empresa = %s
+                    WHERE m.id_empresa = %s
 
                     GROUP BY
                         m.id_materia_prima,
@@ -235,18 +244,23 @@ def listar_materia_prima() -> list[tuple]:
         resultado = []
 
         for m in rows:
+
             saldo = float(m[5] or 0)
 
-            status = "BAIXO" if saldo <= float(m[3] or 0) else "OK"
+            status = (
+                "BAIXO"
+                if saldo <= float(m[3] or 0)
+                else "OK"
+            )
 
             resultado.append((
-                m[0],
-                m[1],
-                m[2],
-                m[3],
-                saldo,
-                status,
-                float(m[4] or 0),
+                m[0],                          # id_materia_prima
+                m[1],                          # nome
+                m[2],                          # unidade_medida
+                m[3],                          # estoque_minimo
+                saldo,                         # saldo
+                status,                        # status
+                float(m[4] or 0),             # preco_unitario
             ))
 
         return resultado
@@ -254,7 +268,6 @@ def listar_materia_prima() -> list[tuple]:
     except Exception as e:
         log_erro(f"Erro listar_materia_prima: {e}")
         return []
- 
  
 # =========================================================
 # CADASTRAR MATÉRIA-PRIMA
@@ -711,10 +724,13 @@ def obter_historico_movimentacoes(
                     FROM movimentacao_estoque mov
                     LEFT JOIN materia_prima mp
                         ON mov.id_materia_prima = mp.id_materia_prima
+                        AND mp.id_empresa = mov.id_empresa
                     LEFT JOIN subprodutos s
                         ON mov.id_subproduto = s.id_subproduto
+                        AND s.id_empresa = mov.id_empresa
                     LEFT JOIN produtos p
                         ON mov.id_produto = p.id_produto
+                        AAND p.id_empresa = mov.id_empresa
                     WHERE mov.id_empresa = %s
                     ORDER BY
                         mov.data_movimento DESC,
@@ -1314,6 +1330,7 @@ def obter_balanco_diario(
 
                     LEFT JOIN itens_venda iv
                         ON iv.id_produto = p.id_produto
+                        AND iv.id_empresa = p.id_empresa
 
                     LEFT JOIN vendas v
                         ON v.id_venda = iv.id_venda

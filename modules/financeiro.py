@@ -17,8 +17,8 @@ def get_config_empresa() -> str:
                 cur.execute(
                     """
                     SELECT regime_fiscal
-                    FROM empresa_config
-                    WHERE id_empresa = %s
+                    FROM empresa_config ec
+                    WHERE ec.id_empresa = %s
                     LIMIT 1
                     """,
                     (id_empresa,)
@@ -51,9 +51,9 @@ def atualizar_regime_fiscal(
 
                 cur.execute(
                     """
-                    UPDATE empresa_config
+                    UPDATE empresa_config ec
                     SET regime_fiscal = %s
-                    WHERE id_empresa = %s
+                    WHERE ec.id_empresa = %s
                     """,
                     (
                         novo_regime,
@@ -136,10 +136,13 @@ def financeiro_operacional(periodo_dias: int = 30) -> dict:
                     FROM vendas v
                     JOIN itens_venda iv
                         ON iv.id_venda = v.id_venda
+                        AND iv.id_empresa = v.id_empresa
                     JOIN receitas r
                         ON r.id_produto = iv.id_produto
+                        AND r.id_empresa = v.id_empresa
                     JOIN materia_prima mp
                         ON mp.id_materia_prima = r.id_materia_prima
+                        AND mp.id_empresa = v.id_empresa
                     WHERE v.data_venda >= CURRENT_DATE - CAST(%s AS INTERVAL)
                     AND v.id_empresa = %s
                     """,

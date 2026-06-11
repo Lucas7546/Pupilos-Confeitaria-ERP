@@ -31,8 +31,8 @@ def buscar_usuario_global(id_usuario: int):
         release_conn(conn)
 
 @lru_cache(maxsize=1024)
-def buscar_usuario_global_cached(id_usuario, id_empresa):
-    return buscar_usuario_global(id_usuario, id_empresa)
+def buscar_usuario_global_cached(id_usuario):
+    return buscar_usuario_global(id_usuario)
 
 def buscar_usuario(username: str):
     try:
@@ -242,21 +242,21 @@ def listar_usuarios():
 
                     SELECT
 
-                        id_usuario,
+                        u.id_usuario,
 
-                        username,
+                        u.username,
 
-                        nivel,
+                        u.nivel,
 
-                        ativo,
+                        u.ativo,
 
-                        data_cadastro
+                        u.data_cadastro
 
-                    FROM usuarios
+                    FROM usuarios u
 
-                    WHERE id_empresa = %s
+                    WHERE u.id_empresa = %s
 
-                    ORDER BY id_usuario DESC
+                    ORDER BY u.id_usuario DESC
 
                     """,
 
@@ -374,7 +374,7 @@ def atualizar_usuario(
 def excluir_usuario(id_usuario: int) -> bool:
 
     # 1. Busca quem é o alvo primeiro
-    usuario_alvo = buscar_usuario_id(id_usuario, current_user.id_empresa)
+    usuario_alvo = buscar_usuario_id(id_usuario)
     if not usuario_alvo: return False
     
     # 2. Regra: O dono não pode excluir o ADMIN (você)
@@ -451,7 +451,7 @@ def atualizar_nivel(id_usuario: int, novo_nivel: str) -> bool:
         return False
         
     # 2. Impedir que o dono tente alterar o Admin (você)
-    usuario_alvo = buscar_usuario_id(id_usuario, current_user.id_empresa)
+    usuario_alvo = buscar_usuario_id(id_usuario)
     if usuario_alvo and usuario_alvo['nivel'] == 'admin' and current_user.nivel != 'admin':
         return False
     # -----------------------------

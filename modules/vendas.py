@@ -92,7 +92,7 @@ def registrar_venda(
 
     try:
 
-        id_empresa = get_empresa_id()
+        id_empresa = current_user.id_empresa
 
         custo_unitario = calcular_custo_receita(
             id_produto
@@ -443,8 +443,10 @@ def listar_vendas_recentes(limite: int = 10) -> list[dict]:
                     FROM vendas v
                     JOIN itens_venda iv
                         ON iv.id_venda = v.id_venda
+                        AND iv.id_empresa = v.id_empresa
                     JOIN produtos p
                         ON p.id_produto = iv.id_produto
+                        AND iv.id_empresa = v.id_empresa
                     WHERE v.id_empresa = %s
                     ORDER BY v.data_venda DESC
                     LIMIT %s

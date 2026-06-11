@@ -391,12 +391,12 @@ def calcular_capacidade_geral(*args, **kwargs):
                     cur.execute(
                         """
                         SELECT
-                            id_materia_prima,
+                            me.id_materia_prima,
                             COALESCE(
                                 SUM(
                                     CASE
-                                        WHEN tipo_movimento IN ('entrada','ajuste')
-                                        THEN quantidade
+                                        WHEN me.tipo_movimento IN ('entrada','ajuste')
+                                        THEN me.quantidade
                                         ELSE 0
                                     END
                                 ),
@@ -406,17 +406,17 @@ def calcular_capacidade_geral(*args, **kwargs):
                             COALESCE(
                                 SUM(
                                     CASE
-                                        WHEN tipo_movimento = 'saida'
-                                        THEN quantidade
+                                        WHEN me.tipo_movimento = 'saida'
+                                        THEN me.quantidade
                                         ELSE 0
                                     END
                                 ),
                                 0
                             )
-                        FROM movimentacao_estoque
-                        WHERE id_materia_prima = ANY(%s)
-                        AND id_empresa = %s
-                        GROUP BY id_materia_prima
+                        FROM movimentacao_estoque me
+                        WHERE me.id_materia_prima = ANY(%s)
+                        AND me.id_empresa = %s
+                        GROUP BY me.id_materia_prima
                         """,
                         (
                             ids_mps,

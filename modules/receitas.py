@@ -119,6 +119,7 @@ def listar_itens_receita(id_produto: int) -> list[tuple]:
                     FROM receitas r
                     JOIN materia_prima mp
                         ON mp.id_materia_prima = r.id_materia_prima
+                        AND mp.id_empresa = r.id_empresa
                     WHERE r.id_produto = %s
                     AND r.id_empresa = %s
                     ORDER BY mp.nome ASC
@@ -285,6 +286,7 @@ def calcular_custo_receita(id_produto: int) -> float:
                     FROM receitas r
                     JOIN materia_prima mp
                         ON mp.id_materia_prima = r.id_materia_prima
+                        AND mp.id_empresa = r.id_empresa
                     WHERE r.id_produto = %s
                     AND r.id_empresa = %s
                     """,

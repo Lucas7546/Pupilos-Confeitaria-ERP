@@ -260,61 +260,154 @@ def escanear_inteligente():
 
 @estoque_bp.route("/estoque", methods=["GET"])
 @login_required
-@limiter.limit("20 per minute") # Limite do usuário
-@limiter.limit("150 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
+@limiter.limit("20 per minute")
+@limiter.limit("150 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}")
 def estoque_painel():
+
     try:
+
         with db_conn() as conn:
             with conn.cursor() as cur:
-                # Consulta de Matéria-Prima
+
+                # ==========================
+                # MATÉRIA PRIMA
+                # ==========================
                 cur.execute("""
-                    SELECT 
-                        m.id_materia_prima, m.nome, m.unidade_medida, m.estoque_minimo,
-                        COALESCE(SUM(CASE WHEN mov.tipo_movimento IN ('entrada','ajuste') 
-                                          THEN mov.quantidade ELSE 0 END), 0)
-                        - COALESCE(SUM(CASE WHEN mov.tipo_movimento = 'saida' 
-                                            THEN mov.quantidade ELSE 0 END), 0) AS estoque_atual,
-                        CASE WHEN (
-                            COALESCE(SUM(CASE WHEN mov.tipo_movimento IN ('entrada','ajuste') 
-                                              THEN mov.quantidade ELSE 0 END), 0)
-                            - COALESCE(SUM(CASE WHEN mov.tipo_movimento = 'saida' 
-                                                THEN mov.quantidade ELSE 0 END), 0)
-                        ) <= m.estoque_minimo THEN 'BAIXO' ELSE 'OK' END AS status,
-                        COALESCE(m.preco_unitario, 0),
-                        TO_CHAR(m.data_cadastro, 'DD/MM/YYYY')
+                    SELECT
+                        m.id_materia_prima,
+                        m.nome,
+                        m.unidade_medida,
+                        m.estoque_minimo,
+
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN mov.tipo_movimento IN ('entrada','ajuste')
+                                    THEN mov.quantidade
+                                    ELSE 0
+                                END
+                            ),0
+                        )
+                        -
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN mov.tipo_movimento = 'saida'
+                                    THEN mov.quantidade
+                                    ELSE 0
+                                END
+                            ),0
+                        ) AS estoque_atual,
+
+                        CASE
+                            WHEN (
+                                COALESCE(
+                                    SUM(
+                                        CASE
+                                            WHEN mov.tipo_movimento IN ('entrada','ajuste')
+                                            THEN mov.quantidade
+                                            ELSE 0
+                                        END
+                                    ),0
+                                )
+                                -
+                                COALESCE(
+                                    SUM(
+                                        CASE
+                                            WHEN mov.tipo_movimento = 'saida'
+                                            THEN mov.quantidade
+                                            ELSE 0
+                                        END
+                                    ),0
+                                )
+                            ) <= m.estoque_minimo
+                            THEN 'BAIXO'
+                            ELSE 'OK'
+                        END AS status,
+
+                        COALESCE(m.preco_unitario,0),
+
+                        TO_CHAR(
+                            m.data_cadastro,
+                            'DD/MM/YYYY'
+                        )
+
                     FROM materia_prima m
-                    LEFT JOIN movimentacao_estoque mov ON m.id_materia_prima = mov.id_materia_prima
-                    GROUP BY m.id_materia_prima, m.nome, m.unidade_medida, 
-                             m.estoque_minimo, m.preco_unitario, m.data_cadastro
+
+                    LEFT JOIN movimentacao_estoque mov
+                        ON mov.id_materia_prima = m.id_materia_prima
+                        AND mov.id_empresa = m.id_empresa
+
+                    WHERE m.id_empresa = %s
+
+                    GROUP BY
+                        m.id_materia_prima,
+                        m.nome,
+                        m.unidade_medida,
+                        m.estoque_minimo,
+                        m.preco_unitario,
+                        m.data_cadastro
+
                     ORDER BY m.nome ASC
-                """)
+                """, (current_user.id_empresa,))
+
                 materias = cur.fetchall()
 
-                # Consulta de Subprodutos
+                # ==========================
+                # SUBPRODUTOS
+                # ==========================
                 cur.execute("""
-                    SELECT id_subproduto, nome, 0, preco_custo_unidade, 
-                           unidade_medida, TO_CHAR(data_cadastro, 'DD/MM/YYYY')
-                    FROM subprodutos ORDER BY nome ASC
-                """)
+                    SELECT
+                        id_subproduto,
+                        nome,
+                        0,
+                        preco_custo_unidade,
+                        unidade_medida,
+                        TO_CHAR(data_cadastro,'DD/MM/YYYY')
+
+                    FROM subprodutos
+
+                    WHERE id_empresa = %s
+
+                    ORDER BY nome ASC
+                """, (current_user.id_empresa,))
+
                 subprodutos = cur.fetchall()
 
-                # Consulta de Produtos
+                # ==========================
+                # PRODUTOS
+                # ==========================
                 cur.execute("""
-                    SELECT id_produto, nome, preco_venda, categoria, 0, 
-                           TO_CHAR(data_cadastro, 'DD/MM/YYYY')
-                    FROM produtos ORDER BY nome ASC
-                """)
+                    SELECT
+                        id_produto,
+                        nome,
+                        preco_venda,
+                        categoria,
+                        0,
+                        TO_CHAR(data_cadastro,'DD/MM/YYYY')
+
+                    FROM produtos
+
+                    WHERE id_empresa = %s
+
+                    ORDER BY nome ASC
+                """, (current_user.id_empresa,))
+
                 lista_produtos = cur.fetchall()
 
         return render_template(
             "estoque.html",
-            materias=materias, 
-            subprodutos=subprodutos, 
-            produtos=lista_produtos,
+            materias=materias,
+            subprodutos=subprodutos,
+            produtos=lista_produtos
         )
+
     except Exception as e:
         logger.log_erro(f"Erro no painel de estoque: {e}")
-        flash(f"Não foi possível carregar o painel de estoque: {e}", "danger")
+        flash(
+            f"Não foi possível carregar o painel de estoque: {e}",
+            "danger"
+        )
         return redirect(url_for("main.dashboard"))
 
 @estoque_bp.route("/previsao-estoque")

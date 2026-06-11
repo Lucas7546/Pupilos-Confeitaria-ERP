@@ -1,7 +1,6 @@
 from utils.logger import log_info, log_erro
 from modules.tenant import get_empresa_id
 from modules.tenant_db import db_conn
-from datetime import datetime, timedelta 
  
 # =========================================================
 # ENTRADA DE ESTOQUE
@@ -447,7 +446,9 @@ def ajustar_estoque(
     id_mp: int,
     novo_valor: float
 ) -> bool:
+
     try:
+
         with db_conn() as conn:
             with conn.cursor() as cur:
 
@@ -464,6 +465,54 @@ def ajustar_estoque(
                 if not cur.fetchone():
                     return False
 
+                # saldo atual
+                cur.execute(
+                    """
+                    SELECT
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN tipo_movimento IN ('entrada','ajuste')
+                                    THEN quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        )
+                        -
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN tipo_movimento = 'saida'
+                                    THEN quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        )
+                    FROM movimentacao_estoque
+                    WHERE id_materia_prima = %s
+                    AND id_empresa = %s
+                    """,
+                    (
+                        id_mp,
+                        id_empresa
+                    )
+                )
+
+                saldo_atual = float(cur.fetchone()[0] or 0)
+
+                diferenca = float(novo_valor) - saldo_atual
+
+                if diferenca == 0:
+                    return True
+
+                tipo_movimento = (
+                    "entrada"
+                    if diferenca > 0
+                    else "saida"
+                )
+
                 cur.execute(
                     """
                     INSERT INTO movimentacao_estoque
@@ -478,7 +527,7 @@ def ajustar_estoque(
                     (
                         %s,
                         %s,
-                        'ajuste',
+                        %s,
                         %s,
                         'Ajuste manual de estoque'
                     )
@@ -486,19 +535,23 @@ def ajustar_estoque(
                     (
                         id_empresa,
                         id_mp,
-                        float(novo_valor)
+                        tipo_movimento,
+                        abs(diferenca)
                     )
                 )
 
-
         log_info(
-            f"Ajuste manual. Empresa {id_empresa} | MP {id_mp}"
+            f"Ajuste estoque MP {id_mp} | Empresa {id_empresa} | Novo saldo {novo_valor}"
         )
 
         return True
 
     except Exception as e:
-        log_erro(f"Erro ao ajustar estoque (ID MP: {id_mp}): {e}")
+
+        log_erro(
+            f"Erro ao ajustar estoque MP {id_mp}: {e}"
+        )
+
         return False
  
 # =========================================================
@@ -512,7 +565,9 @@ def atualizar_materia_prima(
     unidade: str,
     quantidade: float
 ) -> bool:
+
     try:
+
         with db_conn() as conn:
             with conn.cursor() as cur:
 
@@ -535,7 +590,54 @@ def atualizar_materia_prima(
                     )
                 )
 
-                if quantidade and float(quantidade) > 0:
+                # saldo atual
+                cur.execute(
+                    """
+                    SELECT
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN tipo_movimento IN ('entrada','ajuste')
+                                    THEN quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        )
+                        -
+                        COALESCE(
+                            SUM(
+                                CASE
+                                    WHEN tipo_movimento = 'saida'
+                                    THEN quantidade
+                                    ELSE 0
+                                END
+                            ),
+                            0
+                        )
+                    FROM movimentacao_estoque
+                    WHERE id_materia_prima = %s
+                    AND id_empresa = %s
+                    """,
+                    (
+                        id_mp,
+                        id_empresa
+                    )
+                )
+
+                saldo_atual = float(cur.fetchone()[0] or 0)
+
+                novo_saldo = float(quantidade or 0)
+
+                diferenca = novo_saldo - saldo_atual
+
+                if diferenca != 0:
+
+                    tipo_movimento = (
+                        "entrada"
+                        if diferenca > 0
+                        else "saida"
+                    )
 
                     cur.execute(
                         """
@@ -551,18 +653,18 @@ def atualizar_materia_prima(
                         (
                             %s,
                             %s,
-                            'entrada',
                             %s,
-                            'Ajuste manual de estoque'
+                            %s,
+                            'Ajuste por edição de matéria-prima'
                         )
                         """,
                         (
                             id_empresa,
                             id_mp,
-                            quantidade
+                            tipo_movimento,
+                            abs(diferenca)
                         )
                     )
-
 
         log_info(
             f"Matéria-prima ID {id_mp} atualizada."
@@ -571,11 +673,12 @@ def atualizar_materia_prima(
         return True
 
     except Exception as e:
+
         log_erro(
             f"Erro ao atualizar matéria-prima ID {id_mp}: {e}"
         )
+
         return False
- 
  
 # =========================================================
 # EXCLUIR MATÉRIA-PRIMA
@@ -654,12 +757,13 @@ def previsao_demanda(id_empresa: int) -> list[dict]:
                     LEFT JOIN (
                         SELECT id_materia_prima, 
                         SUM(CASE WHEN tipo_movimento IN ('entrada','ajuste') THEN quantidade ELSE -quantidade END) as estoque
-                        FROM movimentacao_estoque WHERE id_empresa = %s GROUP BY id_materia_prima
+                        FROM movimentacao_estoque mov
+                        WHERE mov.id_empresa = %s GROUP BY id_materia_prima
                     ) saldos ON mp.id_materia_prima = saldos.id_materia_prima
                     LEFT JOIN (
                         SELECT id_materia_prima, SUM(quantidade) as total_saida
-                        FROM movimentacao_estoque 
-                        WHERE id_empresa = %s AND tipo_movimento = 'saida' 
+                        FROM movimentacao_estoque mov
+                        WHERE mov.id_empresa = %s AND tipo_movimento = 'saida' 
                         AND data_movimento >= CURRENT_DATE - INTERVAL '30 days'
                         GROUP BY id_materia_prima
                     ) consumo ON mp.id_materia_prima = consumo.id_materia_prima
@@ -730,7 +834,7 @@ def obter_historico_movimentacoes(
                         AND s.id_empresa = mov.id_empresa
                     LEFT JOIN produtos p
                         ON mov.id_produto = p.id_produto
-                        AAND p.id_empresa = mov.id_empresa
+                        AND p.id_empresa = mov.id_empresa
                     WHERE mov.id_empresa = %s
                     ORDER BY
                         mov.data_movimento DESC,
@@ -930,9 +1034,9 @@ def vincular_insumo_subproduto(
                 cur.execute(
                     """
                     SELECT 1
-                    FROM subprodutos
-                    WHERE id_subproduto = %s
-                      AND id_empresa = %s
+                    FROM subprodutos mp
+                    WHERE mp.id_subproduto = %s
+                      AND mp.id_empresa = %s
                     """,
                     (
                         id_subproduto,

@@ -152,66 +152,82 @@ def limpar_logs():
     return redirect(url_for("auditoria.auditoria"))
 
 def gerar_codigo_convite():
-
-    return secrets.token_hex(8).upper()
+    return secrets.token_hex(6).upper()
 
 @auditoria_bp.route("/admin/convites")
 @login_required
 @superadmin_required
 def admin_convites():
 
+    try:
 
-    with admin_conn() as conn:
-        with conn.cursor() as cur:
+        with admin_conn() as conn:
+            with conn.cursor() as cur:
 
-            cur.execute("""
-                SELECT
-                    codigo,
-                    plano,
-                    utilizado,
-                    criado_em
-                FROM convites_empresa
-                ORDER BY id DESC
-            """)
+                cur.execute("""
+                    SELECT
+                        codigo,
+                        plano,
+                        utilizado,
+                        criado_em
+                    FROM convites_empresa
+                    ORDER BY id DESC
+                """)
 
-            convites = cur.fetchall()
+                convites = cur.fetchall()
 
-    return render_template(
-        "admin_convites.html",
-        convites=convites
-    )
+        return render_template(
+            "admin_convites.html",
+            convites=convites
+        )
+
+    except Exception as e:
+
+        log_erro(f"Erro admin_convites: {e}")
+
+        flash("Erro ao carregar convites.", "danger")
+
+        return redirect(url_for("main.dashboard"))
 
 @auditoria_bp.route("/admin/convite/gerar", methods=["POST"])
 @login_required
 @superadmin_required
 def gerar_convite():
 
-    codigo = secrets.token_hex(6).upper()
+    try:
 
-    with admin_conn() as conn:
-        with conn.cursor() as cur:
+        codigo = gerar_codigo_convite()
 
-            cur.execute("""
-                INSERT INTO convites_empresa
+        with admin_conn() as conn:
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    INSERT INTO convites_empresa
+                    (
+                        codigo,
+                        plano,
+                        criado_por
+                    )
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        %s
+                    )
+                """,
                 (
                     codigo,
-                    plano,
-                    criado_por
-                )
-                VALUES
-                (
-                    %s,
-                    %s,
-                    %s
-                )
-            """,
-            (
-                codigo,
-                "basic",
-                current_user.id
-            ))
+                    "basic",
+                    current_user.id
+                ))
 
-    flash(f"Convite criado: {codigo}")
+        flash(f"Convite criado: {codigo}", "success")
+
+    except Exception as e:
+
+        log_erro(f"Erro gerar_convite: {e}")
+
+        flash("Erro ao gerar convite.", "danger")
 
     return redirect(
         url_for("auditoria.admin_convites")

@@ -3,15 +3,7 @@ from flask import g
 
 
 
-__all__ = ["get_empresa_id", "set_empresa_context"]
-
-
-@app.before_request
-def set_empresa_context():
-    if getattr(current_user, "is_authenticated", False):
-        g.id_empresa = getattr(current_user, "id_empresa", None)
-    else:
-        g.id_empresa = None
+__all__ = ["get_empresa_id"]
 
 
 def get_empresa_id(strict=True):

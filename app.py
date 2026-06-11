@@ -55,6 +55,8 @@ def create_app():
             g.id_empresa = getattr(current_user, "id_empresa", None)
         else:
             g.id_empresa = None
+
+            
     
     # Registro dos Blueprints
     app.register_blueprint(auth_bp)

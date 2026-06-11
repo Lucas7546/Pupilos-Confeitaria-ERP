@@ -3,7 +3,6 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_wtf.csrf import CSRFProtect
 from flask import Flask, redirect, url_for
 from ape.extensions import init_extensions
-from modules.tenant import set_empresa_context
 # Importando seus Blueprints organizados
 from ape.routes.auth_routes import auth_bp
 from ape.routes.estoque_routes import estoque_bp

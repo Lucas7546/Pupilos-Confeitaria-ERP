@@ -1,9 +1,8 @@
 from flask_login import LoginManager, UserMixin, current_user, AnonymousUserMixin
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from modules.usuarios import buscar_usuario_global_cached
 from flask import session
-from modules.db import release_conn, get_conn_raw, get_pool
+from modules.db import get_pool
 from psycopg2.extras import DictCursor
 
 

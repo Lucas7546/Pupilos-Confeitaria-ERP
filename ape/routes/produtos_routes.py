@@ -5,7 +5,7 @@ from ape.services.log_service import registrar_log
 from utils.logger import log_erro
 from utils.helpers import _parse_float
 from modules.tenant_db import db_conn
-from modules import produtos, estoque
+from modules import produtos
 from psycopg2.extras import RealDictCursor
 from ape.extensions import limiter
 

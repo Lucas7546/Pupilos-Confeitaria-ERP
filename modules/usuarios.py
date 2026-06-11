@@ -1,6 +1,6 @@
 from flask_login import current_user
 
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash
 from psycopg2.extras import DictCursor
 from functools import lru_cache
 from utils.logger import log_info, log_erro

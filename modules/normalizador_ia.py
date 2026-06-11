@@ -1,7 +1,7 @@
 import json
 import os
 from google import genai
-from utils.logger import log_info, log_erro
+from utils.logger import log_erro
 
 # Inicialização do cliente com segurança
 api_key = os.getenv("GEMINI_API_KEY")

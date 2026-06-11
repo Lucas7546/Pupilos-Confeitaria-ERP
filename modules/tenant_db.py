@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 import traceback
 from flask_login import current_user
-from modules.db import release_conn, get_pool, get_conn_raw
+from modules.db import get_pool
 from modules.tenant import get_empresa_id
 
 

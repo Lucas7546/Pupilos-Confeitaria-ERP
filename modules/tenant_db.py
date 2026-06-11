@@ -11,7 +11,11 @@ def db_conn():
     conn.autocommit = False
 
     try:
+
+        aplicar_tenant(conn)
+
         yield conn
+
         conn.commit()
 
     except Exception:
@@ -19,7 +23,7 @@ def db_conn():
         raise
 
     finally:
-        conn.close()  # ❗ ISSO TEM QUE SER CLOSE REAL
+        conn.close()
 
 def get_conn():
     pool = get_pool()
@@ -54,12 +58,28 @@ def execute_secure(query, params=(), fetch=False):
             
 
 def aplicar_tenant(conn):
+
     id_empresa = get_empresa_id()
 
-    if not id_empresa:
-        raise Exception("Tenant não definido no contexto")
+    print("TENANT FLASK:", id_empresa)
 
     with conn.cursor() as cur:
-        cur.execute("""
-            SET LOCAL app.id_empresa = %s
-        """, (str(id_empresa),))
+
+        cur.execute(
+            "SET LOCAL app.id_empresa = %s",
+            (str(id_empresa),)
+        )
+
+        cur.execute(
+            """
+            SELECT current_setting(
+                'app.id_empresa',
+                true
+            )
+            """
+        )
+
+        print(
+            "TENANT POSTGRES:",
+            cur.fetchone()
+        )

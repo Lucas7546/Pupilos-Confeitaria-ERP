@@ -7,15 +7,17 @@ from modules.tenant import get_empresa_id
 
 @contextmanager
 def db_conn():
-    conn = get_conn_raw()
+    conn = get_pool().getconn()
     conn.autocommit = False
 
     try:
+        id_empresa = getattr(g, "id_empresa", None)
 
-        aplicar_tenant(conn)
+        if id_empresa:
+            with conn.cursor() as cur:
+                cur.execute("SET LOCAL app.id_empresa = %s", (str(id_empresa),))
 
         yield conn
-
         conn.commit()
 
     except Exception:
@@ -23,7 +25,7 @@ def db_conn():
         raise
 
     finally:
-        conn.close()
+        get_pool().putconn(conn)
 
 def get_conn():
     pool = get_pool()
@@ -33,24 +35,13 @@ def get_conn():
 
 
 def execute_secure(query, params=(), fetch=False):
-    id_empresa = get_empresa_id()
+    id_empresa = get_empresa_id(strict=False)
 
     if not id_empresa:
-        raise Exception("Empresa não definida")
+        raise Exception("Tenant obrigatório")
 
-    with db_conn() as conn:
+    with db_conn(with_tenant=True) as conn:
         with conn.cursor() as cur:
-
-            if isinstance(params, dict):
-                params["id_empresa"] = id_empresa
-
-            elif params is None:
-                params = [id_empresa]
-
-            elif isinstance(params, (list, tuple)):
-                params = list(params)
-                params.append(id_empresa)
-
             cur.execute(query, params)
 
             if fetch:
@@ -58,28 +49,10 @@ def execute_secure(query, params=(), fetch=False):
             
 
 def aplicar_tenant(conn):
+    id_empresa = get_empresa_id(strict=False)
 
-    id_empresa = get_empresa_id()
-
-    print("TENANT FLASK:", id_empresa)
+    if not id_empresa:
+        return  # login / contexto público
 
     with conn.cursor() as cur:
-
-        cur.execute(
-            "SET LOCAL app.id_empresa = %s",
-            (str(id_empresa),)
-        )
-
-        cur.execute(
-            """
-            SELECT current_setting(
-                'app.id_empresa',
-                true
-            )
-            """
-        )
-
-        print(
-            "TENANT POSTGRES:",
-            cur.fetchone()
-        )
+        cur.execute("SET LOCAL app.id_empresa = %s", (str(id_empresa),))

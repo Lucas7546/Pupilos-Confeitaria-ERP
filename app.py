@@ -42,17 +42,10 @@ def create_app():
     # EXTENSIONS PRIMEIRO
     init_extensions(app)
 
-    # CONTEXTO TENANT
     @app.before_request
     def set_empresa_context():
-        from flask_login import current_user
-        from flask import g
-
         if current_user.is_authenticated:
             g.id_empresa = current_user.id_empresa
-        else:
-            g.id_empresa = None
-
     
     # Registro dos Blueprints
     app.register_blueprint(auth_bp)

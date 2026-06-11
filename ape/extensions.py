@@ -3,7 +3,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from modules.usuarios import buscar_usuario_global_cached
 from flask import session
-from modules.db import release_conn, get_conn_raw
+from modules.db import release_conn, get_conn_raw, get_pool
 from psycopg2.extras import DictCursor
 
 
@@ -42,12 +42,10 @@ login_manager.login_view = "auth.login"
 login_manager.anonymous_user = AnonymousUser
 
 
-@login_manager.user_loader
 def load_user(user_id):
+    conn = get_pool().getconn()
     try:
-        conn = get_conn_raw()   # 👈 IMPORTANTE
-
-        with conn.cursor(cursor_factory=DictCursor) as cur:
+        with conn.cursor() as cur:
             cur.execute("""
                 SELECT id_usuario, username, nivel, id_empresa, ativo, is_superadmin
                 FROM usuarios
@@ -56,16 +54,13 @@ def load_user(user_id):
 
             user_data = cur.fetchone()
 
-        release_conn(conn)
-
-        if not user_data or not user_data.get("ativo"):
+        if not user_data:
             return None
 
         return User(user_data)
 
-    except Exception as e:
-        print(f"Erro load_user: {e}")
-        return None
+    finally:
+        get_pool().putconn(conn)
 # =============================================================
 # RATE LIMIT KEY (AGORA COM EMPRESA)
 # =============================================================

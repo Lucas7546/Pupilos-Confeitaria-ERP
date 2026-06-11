@@ -13,14 +13,16 @@ def set_empresa_context():
         g.id_empresa = None
 
 
-def get_empresa_id():
+def get_empresa_id(strict=True):
     if hasattr(g, "id_empresa") and g.id_empresa:
         return g.id_empresa
 
     if current_user and getattr(current_user, "is_authenticated", False):
         return current_user.id_empresa
 
-    raise Exception("SEM TENANT ATIVO")
+    if strict:
+        return None  # 👈 NÃO quebra login
+    return None
 # =========================================================
 # FILTRO PADRÃO SQL
 # =========================================================

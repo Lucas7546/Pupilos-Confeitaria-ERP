@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort
+from flask import Blueprint, render_template, request, redirect, g, url_for, flash, jsonify, abort
 from flask_login import login_required, current_user
 from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
@@ -28,7 +28,7 @@ def render_cadastro():
 @insumos_bp.route("/cadastrar-mp", methods=["POST"])
 @login_required
 @limiter.limit("15 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def cadastrar_mp():
     nome    = request.form.get("nome", "").strip()
     unidade = request.form.get("unidade", "").strip()
@@ -51,7 +51,7 @@ def cadastrar_mp():
 @insumos_bp.route("/editar-materia-prima/<int:id_mp>", methods=["POST"])
 @login_required
 @limiter.limit("15 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def processar_edicao_mp(id_mp):
     nome     = request.form.get("nome", "").strip()
     unidade  = request.form.get("unidade", "").strip()
@@ -77,7 +77,7 @@ def processar_edicao_mp(id_mp):
 @insumos_bp.route("/excluir-mp/<int:id_mp>", methods=["POST"])
 @login_required
 @limiter.limit("15 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 @acesso_requerido("estoque")
 def deletar_mp(id_mp):
     if estoque.excluir_materia_prima(id_mp):
@@ -90,7 +90,7 @@ def deletar_mp(id_mp):
 @insumos_bp.route('/registrar-compra', methods=['POST'])
 @login_required
 @limiter.limit("20 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def rota_registrar_compra():
     # Validação rigorosa
     id_mp = request.form.get('id_materia_prima')

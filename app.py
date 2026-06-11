@@ -39,15 +39,18 @@ def create_app():
     # EXTENSIONS PRIMEIRO
     init_extensions(app)
 
+    
     @app.before_request
     def set_empresa_context():
-        from flask import request, g
+        from flask import g, request
         from flask_login import current_user
 
-        if request.path.startswith('/static/') or request.path == '/favicon.ico':
+        # ignora estáticos
+        if request.path.startswith("/static/"):
             g.id_empresa = None
             return
 
+        # tenant sempre definido no contexto
         if getattr(current_user, "is_authenticated", False):
             g.id_empresa = getattr(current_user, "id_empresa", None)
         else:

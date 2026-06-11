@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, flash, url_for
+from flask import Blueprint, render_template, request, redirect, flash, url_for, g
 from flask_login import login_required, current_user
 from ape.extensions import limiter
 import os
@@ -24,7 +24,7 @@ compras_bp = Blueprint("compras", __name__)
 @login_required
 @acesso_requerido("estoque")
 @limiter.limit("10 per minute") # Limite do usuário
-@limiter.limit("50 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
+@limiter.limit("50 per hour", key_func=lambda: f"empresa:{g.id_empresa}")# Limite da empresa
 def compras_inteligentes():
     return render_template("compras_inteligentes.html")
 
@@ -36,7 +36,7 @@ def compras_inteligentes():
 @login_required
 @acesso_requerido("estoque")
 @limiter.limit("10 per minute") # Limite do usuário
-@limiter.limit("50 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
+@limiter.limit("50 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def processar_nota():
 
     caminho_imagem = None
@@ -122,7 +122,7 @@ def processar_nota():
 @limiter.limit("10 per minute")
 @limiter.limit(
     "50 per hour",
-    key_func=lambda: f"empresa:{current_user.id_empresa}"
+    key_func=lambda: f"empresa:{g.id_empresa}"
 )
 def confirmar_nota():
 

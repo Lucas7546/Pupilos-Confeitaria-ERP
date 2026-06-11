@@ -1,4 +1,4 @@
-from flask import ( Blueprint, request, jsonify, render_template, flash, redirect, url_for, session)
+from flask import ( Blueprint, request, jsonify, g, render_template, flash, redirect, url_for, session)
 from flask_login import login_required, current_user
 from ape.extensions import limiter
 from ape.services import ai_client
@@ -22,10 +22,6 @@ ALLOWED_MIME = {
 estoque_bp = Blueprint("estoque", __name__)
 
 
-@estoque_bp.before_request
-def carregar_tenant_estoque():
-    if not getattr(g, "id_empresa", None):
-        print("DEBUG: estoque sem tenant no g.id_empresa")
 
 @estoque_bp.route("/compras")
 @login_required
@@ -36,7 +32,7 @@ def pagina_compras():
 @login_required
 @acesso_requerido("estoque")
 @limiter.limit("10 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def registrar_producao():
     try:
         tipo_item   = request.form.get("tipo_item", "")
@@ -75,7 +71,7 @@ def registrar_producao():
 @login_required
 @acesso_requerido("estoque")
 @limiter.limit("10 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def escanear_inteligente():
 
     try:
@@ -262,7 +258,7 @@ def escanear_inteligente():
 @estoque_bp.route("/estoque", methods=["GET"])
 @login_required
 @limiter.limit("20 per minute")
-@limiter.limit("150 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}")
+@limiter.limit("150 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
 def estoque_painel():
 
     try:

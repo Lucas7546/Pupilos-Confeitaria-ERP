@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, g
 from flask_login import login_required, current_user
 from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
@@ -13,7 +13,7 @@ subprodutos_bp = Blueprint('subprodutos', __name__)
 @subprodutos_bp.route("/cadastrar-subproduto", methods=["POST"])
 @login_required
 @limiter.limit("15 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def cadastrar_subproduto():
     nome    = request.form.get("nome", "").strip()
     unidade = request.form.get("unidade", "").strip()
@@ -35,7 +35,7 @@ def cadastrar_subproduto():
 @login_required
 @acesso_requerido("estoque")
 @limiter.limit("15 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def deletar_subproduto(id_subproduto):
     if estoque.excluir_subproduto_banco(current_user.id_empresa, id_subproduto):
         registrar_log("EXCLUIR", "SUBPRODUTO", f"ID {id_subproduto}", current_user.username)
@@ -45,7 +45,7 @@ def deletar_subproduto(id_subproduto):
 @subprodutos_bp.route("/subprodutos/registrar-lote", methods=["POST"])
 @login_required
 @limiter.limit("15 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def registrar_lote():
     nome_comercial   = request.form.get("nome", "").strip()
     preco_venda_raw  = request.form.get("preco", "").strip()

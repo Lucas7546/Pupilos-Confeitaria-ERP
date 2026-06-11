@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, g
 from flask_login import login_required, current_user
 from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
@@ -18,7 +18,7 @@ vendas_bp = Blueprint('vendas', __name__)
 @login_required
 @acesso_requerido("vendas")
 @limiter.limit("15 per minute")
-@limiter.limit("100 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}")
+@limiter.limit("100 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
 def pagina_vendas():
 
     try:
@@ -45,7 +45,7 @@ def pagina_vendas():
 @vendas_bp.route("/vender", methods=["POST"])
 @login_required
 @limiter.limit("30 per minute")
-@limiter.limit("100 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}")
+@limiter.limit("100 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
 def vender():
     nome_produto = request.form.get("nome_produto", "").strip() # Pega o nome
     qtd_raw = request.form.get("quantidade", "")
@@ -88,7 +88,7 @@ def vender():
 @login_required
 @acesso_requerido("vendas")
 @limiter.limit("10 per minute")
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}")
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
 def central_importacoes():
     return render_template("central_importacoes.html")
 
@@ -96,7 +96,7 @@ def central_importacoes():
 @login_required
 @acesso_requerido("vendas")
 @limiter.limit("10 per minute")
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}")
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
 def importar_ifood():
 
     arquivo = request.files.get("arquivo")
@@ -158,7 +158,7 @@ def importar_ifood():
 @login_required
 @acesso_requerido("vendas")
 @limiter.limit("15 per minute")
-@limiter.limit("100 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}")
+@limiter.limit("100 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
 def deletar_venda(id_venda):
     if vendas.excluir_venda(id_venda):
         registrar_log("ESTORNO", "VENDAS", f"Venda {id_venda} cancelada por '{current_user.username}'", current_user.username)

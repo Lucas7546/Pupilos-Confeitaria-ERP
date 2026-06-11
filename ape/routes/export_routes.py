@@ -1,4 +1,4 @@
-from flask import Blueprint, request, flash, send_file, make_response, redirect, url_for
+from flask import Blueprint, request, flash, send_file, make_response, redirect, url_for, g
 from flask_login import login_required, current_user
 
 import io
@@ -25,7 +25,7 @@ export_bp = Blueprint("export", __name__)
 @login_required
 @acesso_requerido("estoque")
 @limiter.limit("10 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def exportar_previsao_csv():
 
     try:
@@ -97,7 +97,7 @@ def exportar_previsao_csv():
 @login_required
 @acesso_requerido("estoque")
 @limiter.limit("10 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def exportar_previsao_excel():
 
     try:
@@ -155,7 +155,7 @@ def exportar_previsao_excel():
 @export_bp.route("/exportar-previsao/pdf")
 @login_required
 @limiter.limit("10 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{current_user.id_empresa}") # Limite da empresa
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def exportar_previsao_pdf():
 
     try:

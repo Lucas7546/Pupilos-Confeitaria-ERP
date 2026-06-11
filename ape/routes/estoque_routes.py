@@ -8,6 +8,8 @@ from utils import logger, helpers
 from ape.services.log_service import registrar_log
 from modules.permissoes import acesso_requerido
 from datetime import datetime
+from flask import g
+
 
 
 

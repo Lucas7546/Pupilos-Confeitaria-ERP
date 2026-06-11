@@ -41,9 +41,13 @@ def create_app():
 
     @app.before_request
     def set_empresa_context():
+        from flask import request
+        # Ignora arquivos estáticos para não gastar conexão do banco
+        if request.path.startswith('/static/') or request.path == '/favicon.ico':
+            return
+
         from flask_login import current_user
         from flask import g
-
         if current_user.is_authenticated:
             g.id_empresa = current_user.id_empresa
     

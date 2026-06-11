@@ -11,7 +11,12 @@ def db_conn():
     conn.autocommit = False
 
     try:
-        id_empresa = getattr(g, "id_empresa", None)
+        from flask import has_request_context, g
+
+        id_empresa = None
+
+        if has_request_context():
+            id_empresa = getattr(g, "id_empresa", None)
 
         if id_empresa:
             with conn.cursor() as cur:

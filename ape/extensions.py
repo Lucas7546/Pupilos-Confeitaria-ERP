@@ -42,10 +42,11 @@ login_manager.login_view = "auth.login"
 login_manager.anonymous_user = AnonymousUser
 
 
+@login_manager.user_loader
 def load_user(user_id):
     conn = get_pool().getconn()
     try:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute("""
                 SELECT id_usuario, username, nivel, id_empresa, ativo, is_superadmin
                 FROM usuarios
@@ -54,7 +55,7 @@ def load_user(user_id):
 
             user_data = cur.fetchone()
 
-        if not user_data:
+        if not user_data or not user_data.get("ativo"):
             return None
 
         return User(user_data)

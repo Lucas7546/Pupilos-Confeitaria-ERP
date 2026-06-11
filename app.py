@@ -1,7 +1,4 @@
 import os
-from flask_login import current_user
-from modules.tenant_db import db_conn, get_conn
-from modules.tenant import get_empresa_id
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_wtf.csrf import CSRFProtect
 from flask import Flask, redirect, url_for, g
@@ -44,6 +41,9 @@ def create_app():
 
     @app.before_request
     def set_empresa_context():
+        from flask_login import current_user
+        from flask import g
+
         if current_user.is_authenticated:
             g.id_empresa = current_user.id_empresa
     

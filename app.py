@@ -1,7 +1,7 @@
 import os
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_wtf.csrf import CSRFProtect
-from flask import Flask, redirect, url_for, g
+from flask import Flask, redirect, url_for
 from ape.extensions import init_extensions
 from modules.tenant import set_empresa_context
 # Importando seus Blueprints organizados
@@ -41,15 +41,17 @@ def create_app():
 
     @app.before_request
     def set_empresa_context():
-        from flask import request
-        # Ignora arquivos estáticos para não gastar conexão do banco
+        from flask import request, g
+        from flask_login import current_user
+
         if request.path.startswith('/static/') or request.path == '/favicon.ico':
+            g.id_empresa = None
             return
 
-        from flask_login import current_user
-        from flask import g
-        if current_user.is_authenticated:
-            g.id_empresa = current_user.id_empresa
+        if getattr(current_user, "is_authenticated", False):
+            g.id_empresa = getattr(current_user, "id_empresa", None)
+        else:
+            g.id_empresa = None
     
     # Registro dos Blueprints
     app.register_blueprint(auth_bp)

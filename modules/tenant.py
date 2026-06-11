@@ -1,4 +1,4 @@
-from flask_login import current_user
+from flask_login import current_user, AnonymousUserMixin
 from flask import g
 
 
@@ -6,9 +6,10 @@ from flask import g
 __all__ = ["get_empresa_id", "set_empresa_context"]
 
 
+@app.before_request
 def set_empresa_context():
-    if current_user and getattr(current_user, "is_authenticated", False):
-        g.id_empresa = current_user.id_empresa
+    if getattr(current_user, "is_authenticated", False):
+        g.id_empresa = getattr(current_user, "id_empresa", None)
     else:
         g.id_empresa = None
 

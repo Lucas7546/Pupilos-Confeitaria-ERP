@@ -22,9 +22,8 @@ estoque_bp = Blueprint("estoque", __name__)
 
 @estoque_bp.before_request
 def carregar_tenant_estoque():
-    if 'id_empresa' not in session:
-        # Tenta recuperar de alguma forma ou força erro
-        print("DEBUG: Blueprint de estoque sem ID na sessão!")
+    if not getattr(g, "id_empresa", None):
+        print("DEBUG: estoque sem tenant no g.id_empresa")
 
 @estoque_bp.route("/compras")
 @login_required

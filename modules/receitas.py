@@ -2,6 +2,7 @@ from modules.tenant_db import db_conn
 from utils.logger import log_info, log_erro
 from flask_login import current_user
 from modules.tenant import get_empresa_id
+from flask import g
 
 
 # =========================================================
@@ -93,12 +94,9 @@ def cadastrar_receita(
 # =========================================================
 # LISTAR INGREDIENTES DE UM PRODUTO
 # =========================================================
-def listar_itens_receita(
-    id_empresa: int,
-    id_produto: int
-) -> list[tuple]:
-
+def listar_itens_receita(id_produto: int) -> list[tuple]:
     try:
+        id_empresa = get_empresa_id()
 
         if not id_empresa:
             raise Exception("Empresa não definida")
@@ -106,8 +104,7 @@ def listar_itens_receita(
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                cur.execute(
-                    """
+                cur.execute("""
                     SELECT
                         mp.id_materia_prima,
                         mp.nome,
@@ -121,21 +118,12 @@ def listar_itens_receita(
                     WHERE r.id_produto = %s
                       AND r.id_empresa = %s
                     ORDER BY mp.nome ASC
-                    """,
-                    (
-                        id_produto,
-                        id_empresa
-                    ),
-                )
+                """, (id_produto, id_empresa))
 
                 return cur.fetchall()
 
     except Exception as e:
-
-        log_erro(
-            f"Erro ao listar itens da receita | Produto {id_produto}: {e}"
-        )
-
+        log_erro(f"Erro ao listar receita: {e}")
         return []
 
 
@@ -143,13 +131,12 @@ def listar_itens_receita(
 # VALIDAR ESTOQUE ANTES DA VENDA
 # (estoque → receitas → estoque).
 # =========================================================
-def validar_estoque_suficiente(
-    id_produto: int,
-    quantidade_venda: int
-) -> bool:
-
+def validar_estoque_suficiente(id_produto: int, quantidade_venda: int) -> bool:
     try:
-        id_empresa = current_user.id_empresa
+        id_empresa = get_empresa_id()
+
+        if not id_empresa:
+            raise Exception("Empresa não definida")
 
         with db_conn() as conn:
             with conn.cursor() as cur:
@@ -158,7 +145,7 @@ def validar_estoque_suficiente(
                     SELECT id_materia_prima, id_subproduto, quantidade_utilizada
                     FROM receitas
                     WHERE id_produto = %s
-                    AND id_empresa = %s
+                      AND id_empresa = %s
                 """, (id_produto, id_empresa))
 
                 ingredientes = cur.fetchall()
@@ -175,7 +162,7 @@ def validar_estoque_suficiente(
                 if obter_saldo_materia_prima(id_mp) < qtd_necessaria:
                     return False
 
-            elif id_sub:
+            if id_sub:
                 from modules.estoque import obter_saldo_subproduto
                 if obter_saldo_subproduto(id_sub) < qtd_necessaria:
                     return False
@@ -183,16 +170,17 @@ def validar_estoque_suficiente(
         return True
 
     except Exception as e:
-        log_erro(f"Erro ao validar estoque (Prod: {id_produto}): {e}")
+        log_erro(f"Erro validar estoque: {e}")
         return False
-
 # =========================================================
 # CALCULAR CUSTO TOTAL DA RECEITA
 # =========================================================
 def calcular_custo_receita(id_produto: int) -> float:
-
     try:
-        id_empresa = current_user.id_empresa
+        id_empresa = get_empresa_id()
+
+        if not id_empresa:
+            raise Exception("Empresa não definida")
 
         with db_conn() as conn:
             with conn.cursor() as cur:
@@ -202,29 +190,22 @@ def calcular_custo_receita(id_produto: int) -> float:
                     FROM receitas r
                     JOIN materia_prima mp
                         ON mp.id_materia_prima = r.id_materia_prima
-                        AND mp.id_empresa = r.id_empresa
+                       AND mp.id_empresa = r.id_empresa
                     WHERE r.id_produto = %s
-                    AND r.id_empresa = %s
+                      AND r.id_empresa = %s
                 """, (id_produto, id_empresa))
 
                 linhas = cur.fetchall()
 
-        if not linhas:
-            return 0.0
-
-        custo_total = sum(
-            (float(qtd or 0) * float(preco or 0))
-            for qtd, preco in linhas
+        return round(
+            sum(float(q) * float(p) for q, p in linhas),
+            2
         )
 
-        return round(custo_total, 2)
-
     except Exception as e:
-        log_erro(f"Erro ao calcular custo da receita (Prod: {id_produto}): {e}")
+        log_erro(f"Erro custo receita: {e}")
         return 0.0
+
 # Alias de compatibilidade
 def listar_ingredientes_por_produto(id_produto: int) -> list[tuple]:
-    """
-    Alias de compatibilidade para listar_itens_receita.
-    """
     return listar_itens_receita(id_produto)

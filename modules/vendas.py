@@ -4,6 +4,7 @@ from modules.tenant_db import db_conn
 from modules.tenant import get_empresa_id
 from flask_login import current_user
 from utils.logger import log_info, log_erro
+from flask import g
 from modules.estoque import obter_saldo_subproduto, obter_saldo_materia_prima, obter_saldo_produto
 
 
@@ -291,10 +292,7 @@ def registrar_venda(
 # LISTAR VENDAS RECENTES
 # =========================================================
 def listar_vendas_recentes(limite: int = 10) -> list[dict]:
-
     try:
-        from modules.tenant import get_empresa_id
-
         id_empresa = get_empresa_id()
 
         if not id_empresa:
@@ -303,8 +301,7 @@ def listar_vendas_recentes(limite: int = 10) -> list[dict]:
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                cur.execute(
-                    """
+                cur.execute("""
                     SELECT
                         v.id_venda,
                         p.nome,
@@ -312,21 +309,20 @@ def listar_vendas_recentes(limite: int = 10) -> list[dict]:
                         v.valor_total,
                         v.data_venda
                     FROM vendas v
+
                     JOIN itens_venda iv
                         ON iv.id_venda = v.id_venda
-                        AND iv.id_empresa = v.id_empresa
+                       AND iv.id_empresa = %s
+
                     JOIN produtos p
                         ON p.id_produto = iv.id_produto
-                        AND iv.id_empresa = v.id_empresa
+                       AND p.id_empresa = %s
+
                     WHERE v.id_empresa = %s
+
                     ORDER BY v.data_venda DESC
                     LIMIT %s
-                    """,
-                    (
-                        id_empresa,
-                        limite
-                    ),
-                )
+                """, (id_empresa, id_empresa, id_empresa, limite))
 
                 rows = cur.fetchall()
 
@@ -336,187 +332,90 @@ def listar_vendas_recentes(limite: int = 10) -> list[dict]:
                 "nome_produto": r[1],
                 "quantidade": r[2],
                 "valor_total": float(r[3]),
-                "data": r[4].strftime("%d/%m/%Y %H:%M") if r[4] else "-",
+                "data": r[4].strftime("%d/%m/%Y %H:%M") if r[4] else "-"
             }
             for r in rows
         ]
 
     except Exception as e:
-
-        log_erro(f"Erro ao listar vendas recentes: {e}")
-
+        log_erro(f"Erro vendas recentes: {e}")
         return []
 
 # =========================================================
 # EXCLUIR / ESTORNAR VENDA
 # =========================================================
 def excluir_venda(id_venda: int) -> bool:
-
     try:
-        from modules.tenant import get_empresa_id
-
         id_empresa = get_empresa_id()
 
         if not id_empresa:
             raise Exception("Empresa não definida")
 
         with db_conn() as conn:
-
             with conn.cursor() as cur:
 
-                # =====================================
-                # VERIFICA SE A VENDA EXISTE
-                # =====================================
-
-                cur.execute(
-                    """
+                cur.execute("""
                     SELECT 1
                     FROM vendas
                     WHERE id_venda = %s
-                    AND id_empresa = %s
-                    """,
-                    (id_venda, id_empresa)
-                )
+                      AND id_empresa = %s
+                """, (id_venda, id_empresa))
 
                 if not cur.fetchone():
-
-                    log_info(
-                        f"Venda {id_venda} não encontrada para empresa {id_empresa}."
-                    )
-
                     return False
 
-                # =====================================
-                # BUSCA ITENS VENDIDOS
-                # =====================================
-
-                cur.execute(
-                    """
-                    SELECT
-                        id_produto,
-                        quantidade
+                cur.execute("""
+                    SELECT id_produto, quantidade
                     FROM itens_venda
                     WHERE id_venda = %s
-                    AND id_empresa = %s
-                    """,
-                    (id_venda, id_empresa)
-                )
+                      AND id_empresa = %s
+                """, (id_venda, id_empresa))
 
                 itens = cur.fetchall()
 
-                # =====================================
-                # DEVOLVE INSUMOS AO ESTOQUE
-                # =====================================
+                for id_produto, qtd_vendida in itens:
 
-                for id_produto, quantidade_vendida in itens:
-
-                    cur.execute(
-                        """
-                        SELECT
-                            id_materia_prima,
-                            id_subproduto,
-                            quantidade_utilizada
+                    cur.execute("""
+                        SELECT id_materia_prima, id_subproduto, quantidade_utilizada
                         FROM receitas
                         WHERE id_produto = %s
-                        AND id_empresa = %s
-                        """,
-                        (id_produto, id_empresa)
-                    )
+                          AND id_empresa = %s
+                    """, (id_produto, id_empresa))
 
                     ingredientes = cur.fetchall()
 
-                    for id_mp, id_subproduto, qtd_receita in ingredientes:
+                    for id_mp, id_sub, qtd in ingredientes:
 
-                        quantidade_estorno = float(qtd_receita) * float(quantidade_vendida)
-
-                        # =========================
-                        # MATÉRIA-PRIMA
-                        # =========================
+                        qtd_estorno = float(qtd) * float(qtd_vendida)
 
                         if id_mp:
-
-                            cur.execute(
-                                """
+                            cur.execute("""
                                 INSERT INTO movimentacao_estoque
-                                (
-                                    id_materia_prima,
-                                    tipo_movimento,
-                                    quantidade,
-                                    observacao,
-                                    id_empresa
-                                )
-                                VALUES (%s, 'entrada', %s, %s, %s)
-                                """,
-                                (
-                                    id_mp,
-                                    quantidade_estorno,
-                                    f"ESTORNO VENDA {id_venda}",
-                                    id_empresa
-                                )
-                            )
+                                (id_empresa, id_materia_prima, tipo_movimento, quantidade, observacao)
+                                VALUES (%s, %s, 'entrada', %s, %s)
+                            """, (id_empresa, id_mp, qtd_estorno, f"ESTORNO VENDA {id_venda}"))
 
-                        # =========================
-                        # SUBPRODUTO
-                        # =========================
-
-                        if id_subproduto:
-
-                            cur.execute(
-                                """
+                        if id_sub:
+                            cur.execute("""
                                 INSERT INTO movimentacao_estoque
-                                (
-                                    id_subproduto,
-                                    tipo_movimento,
-                                    quantidade,
-                                    observacao,
-                                    id_empresa
-                                )
-                                VALUES (%s, 'entrada', %s, %s, %s)
-                                """,
-                                (
-                                    id_subproduto,
-                                    quantidade_estorno,
-                                    f"ESTORNO VENDA {id_venda}",
-                                    id_empresa
-                                )
-                            )
+                                (id_empresa, id_subproduto, tipo_movimento, quantidade, observacao)
+                                VALUES (%s, %s, 'entrada', %s, %s)
+                            """, (id_empresa, id_sub, qtd_estorno, f"ESTORNO VENDA {id_venda}"))
 
-                # =====================================
-                # REMOVE ITENS
-                # =====================================
-
-                cur.execute(
-                    """
+                cur.execute("""
                     DELETE FROM itens_venda
-                    WHERE id_venda = %s
-                    AND id_empresa = %s
-                    """,
-                    (id_venda, id_empresa)
-                )
+                    WHERE id_venda = %s AND id_empresa = %s
+                """, (id_venda, id_empresa))
 
-                # =====================================
-                # REMOVE VENDA
-                # =====================================
-
-                cur.execute(
-                    """
+                cur.execute("""
                     DELETE FROM vendas
-                    WHERE id_venda = %s
-                    AND id_empresa = %s
-                    """,
-                    (id_venda, id_empresa)
-                )
-
-        log_info(
-            f"Venda {id_venda} excluída com estorno de estoque. Empresa: {id_empresa}"
-        )
+                    WHERE id_venda = %s AND id_empresa = %s
+                """, (id_venda, id_empresa))
 
         return True
 
     except Exception as e:
-
         log_erro(f"Erro ao excluir venda {id_venda}: {e}")
-
         return False
 
 
@@ -524,10 +423,7 @@ def excluir_venda(id_venda: int) -> bool:
 # CUSTO TOTAL DAS VENDAS
 # =========================================================
 def obter_custo_total_vendas(dias: int = 30) -> float:
-
     try:
-        from modules.tenant import get_empresa_id
-
         id_empresa = get_empresa_id()
 
         if not id_empresa:
@@ -538,29 +434,19 @@ def obter_custo_total_vendas(dias: int = 30) -> float:
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                cur.execute(
-                    """
+                cur.execute("""
                     SELECT
                         COALESCE(SUM(lucro), 0),
                         COALESCE(SUM(valor_total), 0)
                     FROM vendas
                     WHERE data_venda >= %s
-                    AND id_empresa = %s
-                    """,
-                    (data_inicio, id_empresa),
-                )
+                      AND id_empresa = %s
+                """, (data_inicio, id_empresa))
 
-                lucro_total, faturamento = cur.fetchone()
+                lucro, faturamento = cur.fetchone()
 
-        return round(
-            float(faturamento or 0) - float(lucro_total or 0),
-            2
-        )
+        return round(float(faturamento or 0) - float(lucro or 0), 2)
 
     except Exception as e:
-
-        log_erro(
-            f"Erro ao calcular custo total das vendas: {e}"
-        )
-
+        log_erro(f"Erro custo vendas: {e}")
         return 0.0

@@ -1,6 +1,7 @@
 from utils.logger import log_info, log_erro
 from modules.tenant import get_empresa_id
 from modules.tenant_db import db_conn
+from flask import g
  
 # =========================================================
 # ENTRADA DE ESTOQUE
@@ -603,12 +604,13 @@ def excluir_materia_prima(id_mp: int) -> bool:
 # PREVISÃO DE DEMANDA
 # =========================================================
 def previsao_demanda() -> list[dict]:
-    """Calcula previsão de consumo com uma única query otimizada."""
+    """Calcula previsão de consumo com base no tenant atual (g.id_empresa)."""
 
     try:
-        id_empresa = get_empresa_id()
+        id_empresa = getattr(g, "id_empresa", None)
+
         if not id_empresa:
-            raise Exception("Empresa não definida")
+            raise Exception("Empresa não definida no contexto (g.id_empresa)")
 
         with db_conn() as conn:
             with conn.cursor() as cur:

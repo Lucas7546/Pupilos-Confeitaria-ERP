@@ -412,8 +412,7 @@ def estoque_painel():
 def previsao_estoque():
 
     try:
-
-        previsoes = estoque.previsao_demanda(current_user.id_empresa)
+        previsoes = estoque.previsao_demanda()
 
         return render_template(
             "previsao.html",
@@ -421,16 +420,9 @@ def previsao_estoque():
         )
 
     except Exception as e:
+        logger.log_erro(f"Erro previsão estoque: {e}")
 
-        logger.log_erro(
-            f"Erro previsão estoque: {e}"
-        )
-
-        flash(
-            "Erro ao processar previsão",
-            "danger"
-        )
-
+        flash("Erro ao processar previsão", "danger")
         return redirect(url_for("main.dashboard"))
 
 

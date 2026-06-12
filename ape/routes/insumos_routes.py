@@ -17,7 +17,7 @@ def render_cadastro():
             "cadastro.html",
             produtos=produtos.listar_todos() or [],
             materias=estoque.listar_materia_prima() or [],
-            subprodutos=estoque.listar_subprodutos(current_user.id_empresa) or [],
+            subprodutos=estoque.listar_subprodutos() or [],
         )
     except Exception as e:
         log_erro(f"Erro ao renderizar cadastro: {e}")

@@ -1011,8 +1011,10 @@ def entrada_produto(id_produto: int, quantidade: float) -> bool:
 # BALANÇO DIÁRIO (chamada em /estoque/fechamento)
 # =========================================================
 def obter_balanco_diario() -> list[dict]:
+
     try:
         id_empresa = get_empresa_id()
+
         if not id_empresa:
             raise Exception("Empresa não definida")
 
@@ -1028,34 +1030,44 @@ def obter_balanco_diario() -> list[dict]:
                             SUM(
                                 CASE
                                     WHEN mov.tipo_movimento = 'entrada'
-                                    AND DATE(mov.data_movimento) = CURRENT_DATE
-                                    THEN mov.quantidade ELSE 0
+                                     AND DATE(mov.data_movimento) = CURRENT_DATE
+                                    THEN mov.quantidade
+                                    ELSE 0
                                 END
-                            ),0
+                            ),
+                            0
                         ) AS fabricado,
 
                         COALESCE(
                             (
                                 SELECT SUM(iv.quantidade)
                                 FROM itens_venda iv
-                                JOIN vendas v ON v.id_venda = iv.id_venda
+                                INNER JOIN vendas v
+                                    ON v.id_venda = iv.id_venda
                                 WHERE iv.id_produto = p.id_produto
+                                  AND v.id_empresa = %s
                                   AND DATE(v.data_venda) = CURRENT_DATE
-                            ),0
+                            ),
+                            0
                         ) AS vendido
 
                     FROM produtos p
 
                     LEFT JOIN movimentacao_estoque mov
                         ON mov.id_produto = p.id_produto
-                        AND mov.id_empresa = p.id_empresa
+                       AND mov.id_empresa = p.id_empresa
 
                     WHERE p.id_empresa = %s
 
-                    GROUP BY p.id_produto, p.nome
+                    GROUP BY
+                        p.id_produto,
+                        p.nome
 
                     ORDER BY p.nome
-                """, (id_empresa,))
+                """, (
+                    id_empresa,
+                    id_empresa
+                ))
 
                 rows = cur.fetchall()
 
@@ -1071,6 +1083,7 @@ def obter_balanco_diario() -> list[dict]:
         ]
 
     except Exception as e:
+
         log_erro(f"Erro balanco_diario: {e}")
         return []
     

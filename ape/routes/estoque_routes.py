@@ -9,6 +9,7 @@ from ape.services.log_service import registrar_log
 from modules.permissoes import acesso_requerido
 from datetime import datetime
 from flask import g
+from utils.logger import log_erro
 
 
 
@@ -437,9 +438,15 @@ def fechamento_diario():
 @login_required
 @acesso_requerido("estoque")
 def balanco_diario_page():
+
     print("BALANCO_DIARIO_VERSAO_NOVA")
-    
+
     try:
+
+        id_empresa = getattr(current_user, "id_empresa", None)
+
+        if not id_empresa:
+            raise Exception("Empresa não definida")
 
         data_param = request.args.get("data", "").strip()
 
@@ -472,16 +479,20 @@ def balanco_diario_page():
                 cur.execute("""
                     SELECT
                         iv.id_produto,
-                        COALESCE(SUM(iv.quantidade),0)
+                        COALESCE(SUM(iv.quantidade), 0)
                     FROM itens_venda iv
-                    JOIN vendas v
+                    INNER JOIN vendas v
                         ON v.id_venda = iv.id_venda
                     WHERE DATE(v.data_venda) = %s
+                      AND v.id_empresa = %s
                     GROUP BY iv.id_produto
-                """, (hoje_str,))
+                """, (
+                    hoje_str,
+                    id_empresa
+                ))
 
                 vendas_dia = {
-                    int(r[0]): int(r[1])
+                    int(r[0]): int(r[1] or 0)
                     for r in cur.fetchall()
                 }
 
@@ -492,15 +503,19 @@ def balanco_diario_page():
                 cur.execute("""
                     SELECT
                         produto_id,
-                        COALESCE(SUM(quantidade),0)
+                        COALESCE(SUM(quantidade), 0)
                     FROM movimentacao_produtos
                     WHERE tipo = 'entrada'
-                    AND DATE(data) = %s
+                      AND DATE(data) = %s
+                      AND id_empresa = %s
                     GROUP BY produto_id
-                """, (hoje_str,))
+                """, (
+                    hoje_str,
+                    id_empresa
+                ))
 
                 producao_dia = {
-                    int(r[0]): int(r[1])
+                    int(r[0]): int(r[1] or 0)
                     for r in cur.fetchall()
                 }
 
@@ -517,33 +532,38 @@ def balanco_diario_page():
                             SUM(
                                 CASE
                                     WHEN mp.tipo = 'entrada'
-                                        THEN mp.quantidade
+                                    THEN mp.quantidade
                                     ELSE 0
                                 END
-                            ),0
+                            ), 0
                         )
                         -
                         COALESCE(
                             SUM(
                                 CASE
                                     WHEN mp.tipo = 'saida'
-                                        THEN mp.quantidade
+                                    THEN mp.quantidade
                                     ELSE 0
                                 END
-                            ),0
+                            ), 0
                         ) AS saldo
 
                     FROM produtos p
 
                     LEFT JOIN movimentacao_produtos mp
-                        ON p.id_produto = mp.produto_id
+                        ON mp.produto_id = p.id_produto
+                       AND mp.id_empresa = p.id_empresa
+
+                    WHERE p.id_empresa = %s
 
                     GROUP BY
                         p.id_produto,
                         p.nome
 
                     ORDER BY p.nome
-                """)
+                """, (
+                    id_empresa,
+                ))
 
                 produtos_saldo = cur.fetchall()
 
@@ -555,7 +575,7 @@ def balanco_diario_page():
 
         for produto in produtos_saldo:
 
-            id_produto = produto[0]
+            id_produto = int(produto[0])
             nome_produto = produto[1]
             saldo_atual = int(produto[2] or 0)
 
@@ -607,7 +627,7 @@ def balanco_diario_page():
 
     except Exception as e:
 
-        logger.log_erro(
+        log_erro(
             f"Erro no balanço diário: {e}"
         )
 

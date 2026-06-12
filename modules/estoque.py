@@ -181,7 +181,9 @@ def cadastrar_materia(
 ) -> bool:
 
     try:
+
         id_empresa = get_empresa_id()
+
         if not id_empresa:
             raise Exception("Empresa não definida")
 
@@ -209,7 +211,7 @@ def cadastrar_materia(
 
                 id_mp = cur.fetchone()[0]
 
-                if estoque_inicial and float(estoque_inicial) > 0:
+                if float(estoque_inicial or 0) > 0:
 
                     cur.execute("""
                         INSERT INTO movimentacao_estoque
@@ -220,18 +222,30 @@ def cadastrar_materia(
                             quantidade,
                             observacao
                         )
-                        VALUES (%s, %s, 'entrada', %s, 'Estoque inicial')
+                        VALUES
+                        (
+                            %s,
+                            %s,
+                            'entrada',
+                            %s,
+                            'Estoque inicial'
+                        )
                     """, (
                         id_empresa,
                         id_mp,
                         float(estoque_inicial)
                     ))
 
-        log_info(f"Matéria-prima criada | ID {id_mp} | Empresa {id_empresa}")
+        log_info(
+            f"Matéria-prima criada | ID {id_mp} | Empresa {id_empresa}"
+        )
+
         return True
 
     except Exception as e:
+
         log_erro(f"Erro cadastrar_materia: {e}")
+
         return False
  
  
@@ -1013,6 +1027,7 @@ def entrada_produto(id_produto: int, quantidade: float) -> bool:
 def obter_balanco_diario() -> list[dict]:
 
     try:
+
         id_empresa = get_empresa_id()
 
         if not id_empresa:
@@ -1055,7 +1070,7 @@ def obter_balanco_diario() -> list[dict]:
 
                     LEFT JOIN movimentacao_estoque mov
                         ON mov.id_produto = p.id_produto
-                       AND mov.id_empresa = p.id_empresa
+                       AND mov.id_empresa = %s
 
                     WHERE p.id_empresa = %s
 
@@ -1065,8 +1080,9 @@ def obter_balanco_diario() -> list[dict]:
 
                     ORDER BY p.nome
                 """, (
-                    id_empresa,
-                    id_empresa
+                    id_empresa,  # subquery vendas
+                    id_empresa,  # join movimentacao
+                    id_empresa   # produtos
                 ))
 
                 rows = cur.fetchall()

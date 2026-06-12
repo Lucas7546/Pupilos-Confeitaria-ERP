@@ -40,7 +40,7 @@ def cadastrar_mp():
         flash("Nome, Unidade e Preço são obrigatórios.", "warning")
         return redirect(url_for("insumos.render_cadastro"))
 
-    if estoque.cadastrar_materia(nome, unidade, preco, est_at, est_min, current_user.id_empresa):
+    if estoque.cadastrar_materia(nome, unidade, preco, est_at, est_min):
         registrar_log("CADASTRO", "MATERIA_PRIMA", f"{nome} | R$ {preco}")
         flash(f"Insumo '{nome}' salvo!", "success")
     else:

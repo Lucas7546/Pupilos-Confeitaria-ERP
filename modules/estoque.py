@@ -2,6 +2,7 @@ from utils.logger import log_info, log_erro
 from modules.tenant import get_empresa_id
 from modules.tenant_db import db_conn
 from flask import g
+import traceback
  
 # =========================================================
 # ENTRADA DE ESTOQUE
@@ -199,7 +200,14 @@ def cadastrar_materia(
                         preco_unitario,
                         estoque_minimo
                     )
-                    VALUES (%s, %s, %s, %s, %s)
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s
+                    )
                     RETURNING id_materia_prima
                 """, (
                     id_empresa,
@@ -245,6 +253,7 @@ def cadastrar_materia(
     except Exception as e:
 
         log_erro(f"Erro cadastrar_materia: {e}")
+        traceback.print_exc()
 
         return False
  
@@ -311,6 +320,7 @@ def registrar_compra_estoque(id_materia_prima: int, quantidade_comprada, valor_t
 
     except Exception as e:
         log_erro(f"Erro crítico ao processar compra: {e}")
+        traceback.print_exc()
         return False
  
 # =========================================================
@@ -379,6 +389,7 @@ def ajustar_estoque(id_mp: int, novo_valor: float) -> bool:
 
     except Exception as e:
         log_erro(f"Erro ajustar_estoque: {e}")
+        traceback.print_exc()
         return False
  
 # =========================================================
@@ -452,6 +463,7 @@ def atualizar_materia_prima(id_mp: int, nome: str, preco: float, unidade: str, q
 
     except Exception as e:
         log_erro(f"Erro atualizar_materia_prima: {e}")
+        traceback.print_exc()
         return False
  
 # =========================================================
@@ -499,6 +511,7 @@ def excluir_materia_prima(id_mp: int) -> bool:
 
     except Exception as e:
         log_erro(f"Erro excluir_materia_prima: {e}")
+        traceback.print_exc()
         return False
 
 # =========================================================
@@ -588,6 +601,7 @@ def previsao_demanda() -> list[dict]:
 
     except Exception as e:
         log_erro(f"Erro previsao_demanda: {e}")
+        traceback.print_exc()
         return []
  
 # =========================================================
@@ -659,6 +673,7 @@ def obter_historico_movimentacoes() -> list[dict]:
 
     except Exception as e:
         log_erro(f"Erro historico: {e}")
+        traceback.print_exc()
         return []
  
  
@@ -727,6 +742,7 @@ def listar_subprodutos() -> list[tuple]:
 
     except Exception as e:
         log_erro(f"Erro listar_subprodutos: {e}")
+        traceback.print_exc()
         return []
  
  
@@ -795,6 +811,7 @@ def vincular_insumo_subproduto(id_subproduto: int, id_materia_prima: int, quanti
 
     except Exception as e:
         log_erro(f"Erro vincular_insumo_subproduto: {e}")
+        traceback.print_exc()
         return False
  
  
@@ -829,6 +846,7 @@ def excluir_subproduto_banco(id_subproduto: int) -> bool:
 
     except Exception as e:
         log_erro(f"Erro excluir_subproduto: {e}")
+        traceback.print_exc()
         return False
  
 # =========================================================
@@ -926,6 +944,7 @@ def entrada_subproduto(id_subproduto: int, quantidade: float) -> bool:
 
     except Exception as e:
         log_erro(f"Erro entrada_subproduto: {e}")
+        traceback.print_exc()
         return False
  
  
@@ -1018,6 +1037,7 @@ def entrada_produto(id_produto: int, quantidade: float) -> bool:
 
     except Exception as e:
         log_erro(f"Erro entrada_produto: {e}")
+        traceback.print_exc()
         return False
  
  
@@ -1143,6 +1163,7 @@ def obter_saldo_produto(id_produto: int) -> float:
 
     except Exception as e:
         log_erro(f"Erro ao consultar saldo produto {id_produto}: {e}")
+        traceback.print_exc()
         return 0.0
     
 def obter_saldo_materia_prima(id_mp: int) -> float:
@@ -1184,6 +1205,7 @@ def obter_saldo_materia_prima(id_mp: int) -> float:
 
     except Exception as e:
         log_erro(f"Erro ao consultar MP {id_mp}: {e}")
+        traceback.print_exc()
         return 0.0
     
 def obter_saldo_subproduto(id_subproduto: int) -> float:
@@ -1240,5 +1262,5 @@ def obter_saldo_subproduto(id_subproduto: int) -> float:
         log_erro(
             f"Erro ao consultar subproduto {id_subproduto}: {e}"
         )
-
+        traceback.print_exc()
         return 0.0

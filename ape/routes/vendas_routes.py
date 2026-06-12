@@ -18,7 +18,7 @@ vendas_bp = Blueprint('vendas', __name__)
 @login_required
 @acesso_requerido("vendas")
 @limiter.limit("15 per minute")
-@limiter.limit("100 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
+@limiter.limit("100 per hour", key_func=lambda: f"empresa:{getattr(g, 'id_empresa', 'global')}")
 def pagina_vendas():
 
     try:
@@ -33,19 +33,15 @@ def pagina_vendas():
 
         log_erro(f"Erro na página de vendas: {e}")
 
-        flash(
-            "Erro ao carregar vendas.",
-            "danger"
-        )
+        flash("Erro ao carregar vendas.", "danger")
 
-        return redirect(
-            url_for("main.dashboard")
-        )
+        return redirect(url_for("main.dashboard"))
+    
 
 @vendas_bp.route("/vender", methods=["POST"])
 @login_required
 @limiter.limit("30 per minute")
-@limiter.limit("100 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
+@limiter.limit("100 per hour", key_func=lambda: f"empresa:{getattr(g, 'id_empresa', 'global')}")
 def vender():
     nome_produto = request.form.get("nome_produto", "").strip() # Pega o nome
     qtd_raw = request.form.get("quantidade", "")
@@ -88,7 +84,7 @@ def vender():
 @login_required
 @acesso_requerido("vendas")
 @limiter.limit("10 per minute")
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{getattr(g, 'id_empresa', 'global')}")
 def central_importacoes():
     return render_template("central_importacoes.html")
 
@@ -96,7 +92,7 @@ def central_importacoes():
 @login_required
 @acesso_requerido("vendas")
 @limiter.limit("10 per minute")
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{getattr(g, 'id_empresa', 'global')}")
 def importar_ifood():
 
     arquivo = request.files.get("arquivo")
@@ -158,7 +154,7 @@ def importar_ifood():
 @login_required
 @acesso_requerido("vendas")
 @limiter.limit("15 per minute")
-@limiter.limit("100 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
+@limiter.limit("100 per hour", key_func=lambda: f"empresa:{getattr(g, 'id_empresa', 'global')}")
 def deletar_venda(id_venda):
     if vendas.excluir_venda(id_venda):
         registrar_log("ESTORNO", "VENDAS", f"Venda {id_venda} cancelada por '{current_user.username}'", current_user.username)

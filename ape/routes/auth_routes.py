@@ -26,6 +26,7 @@ def login():
         senha = request.form.get("senha", "").strip()
 
         try:
+
             user = validar_login(username, senha)
 
             if not user:
@@ -39,6 +40,9 @@ def login():
             session["username"] = user.username
             session["nivel"] = user.nivel
 
+            # ⚠️ NÃO definir empresa aqui
+            session.pop("id_empresa", None)
+
             registrar_log(
                 "LOGIN",
                 "AUTH",
@@ -51,8 +55,11 @@ def login():
             return redirect(url_for("main.dashboard"))
 
         except Exception as e:
+
             log_erro(f"Erro login: {e}")
+
             flash("Erro interno inesperado.", "danger")
+
             return render_template("login.html"), 500
 
     return render_template("login.html")
@@ -66,27 +73,43 @@ def login():
 def logout():
 
     try:
+
         registrar_log(
             "LOGOUT",
             "AUTH",
-            f"Usuário '{current_user.username}' saiu"
+            f"Usuário '{current_user.username}' saiu",
+            getattr(current_user, "username", "unknown")
         )
+
     except Exception as e:
         log_erro(f"Erro ao registrar logout: {e}")
 
-    logout_user()
-    session.clear()
+    try:
+        logout_user()
+    finally:
+        session.clear()
 
     return redirect(url_for("auth.login"))
 
 
 @auth_bp.route("/debug-user")
 @login_required
+@acesso_requerido("admin")
 def debug_user():
 
-    return {
-        "id": current_user.id,
-        "usuario": current_user.username,
-        "nivel": current_user.nivel,
-        "empresa": current_user.id_empresa
-    }
+    try:
+
+        return {
+            "id": current_user.id,
+            "usuario": current_user.username,
+            "nivel": current_user.nivel,
+            "empresa": current_user.id_empresa
+        }
+
+    except Exception as e:
+
+        log_erro(f"Erro debug_user: {e}")
+
+        return {
+            "erro": "falha ao obter usuário"
+        }, 500

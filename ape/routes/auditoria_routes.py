@@ -21,100 +21,156 @@ def _listar_logs(
     data_fim=None
 ) -> list:
 
-    query = """
-        SELECT
-            usuario,
-            acao,
-            modulo,
-            detalhe,
-            data
-        FROM logs
-        WHERE id_empresa = %s
-    """
-
-    params = [current_user.id_empresa]
-
-    if usuario:
-        query += " AND LOWER(usuario) LIKE LOWER(%s)"
-        params.append(f"%{usuario}%")
-
-    if acao:
-        query += " AND acao = %s"
-        params.append(acao)
-
-    if modulo:
-        query += " AND modulo = %s"
-        params.append(modulo)
-
-    if data_inicio:
-        query += " AND DATE(data) >= %s"
-        params.append(data_inicio)
-
-    if data_fim:
-        query += " AND DATE(data) <= %s"
-        params.append(data_fim)
-
-    query += " ORDER BY data DESC LIMIT %s"
-    params.append(limite)
-
     try:
+
+        id_empresa = getattr(current_user, "id_empresa", None)
+
+        if not id_empresa:
+            return []
+
+        query = """
+            SELECT
+                usuario,
+                acao,
+                modulo,
+                detalhe,
+                data
+            FROM logs
+            WHERE id_empresa = %s
+        """
+
+        params = [id_empresa]
+
+        if usuario:
+            query += " AND LOWER(usuario) LIKE LOWER(%s)"
+            params.append(f"%{usuario}%")
+
+        if acao:
+            query += " AND acao = %s"
+            params.append(acao)
+
+        if modulo:
+            query += " AND modulo = %s"
+            params.append(modulo)
+
+        if data_inicio:
+            query += " AND DATE(data) >= %s"
+            params.append(data_inicio)
+
+        if data_fim:
+            query += " AND DATE(data) <= %s"
+            params.append(data_fim)
+
+        query += " ORDER BY data DESC LIMIT %s"
+        params.append(limite)
 
         with db_conn() as conn:
             with conn.cursor() as cur:
-
                 cur.execute(query, params)
-
                 return cur.fetchall()
 
     except Exception as e:
-
         log_erro(f"Erro ao consultar logs: {e}")
-
         return []
 
 @auditoria_bp.route("/auditoria")
 @login_required
 @acesso_requerido("auditoria")
 def auditoria():
-    usuario_f = request.args.get("usuario", "").strip()
-    acao_f = request.args.get("acao", "").strip()
-    modulo_f = request.args.get("modulo", "").strip()
-    data_ini = request.args.get("data_inicio", "").strip()
-    data_fim = request.args.get("data_fim", "").strip()
-    
+
     try:
-        limite = max(1, min(int(request.args.get("limite", 100)), 1000))
-    except (ValueError, TypeError):
-        limite = 100
 
-    logs_data = _listar_logs(limite, usuario_f, acao_f, modulo_f, data_ini, data_fim)
-    
-    return render_template(
-        "auditoria.html",
-        logs=logs_data,
-        usuario_filtro=usuario_f, acao_filtro=acao_f, modulo_filtro=modulo_f,
-        data_inicio=data_ini, data_fim=data_fim, limite=limite,
-    )
+        usuario_f = request.args.get("usuario", "").strip()
+        acao_f = request.args.get("acao", "").strip()
+        modulo_f = request.args.get("modulo", "").strip()
+        data_ini = request.args.get("data_inicio", "").strip()
+        data_fim = request.args.get("data_fim", "").strip()
 
+        try:
+            limite = int(request.args.get("limite", 100))
+            limite = max(1, min(limite, 1000))
+        except (ValueError, TypeError):
+            limite = 100
+
+        logs_data = _listar_logs(
+            limite,
+            usuario_f,
+            acao_f,
+            modulo_f,
+            data_ini,
+            data_fim
+        ) or []
+
+        return render_template(
+            "auditoria.html",
+            logs=logs_data,
+            usuario_filtro=usuario_f,
+            acao_filtro=acao_f,
+            modulo_filtro=modulo_f,
+            data_inicio=data_ini,
+            data_fim=data_fim,
+            limite=limite,
+        )
+
+    except Exception as e:
+
+        log_erro(f"Erro auditoria: {e}")
+
+        return render_template(
+            "auditoria.html",
+            logs=[],
+            limite=100
+        )
 @auditoria_bp.route("/logs/exportar")
 @login_required
 @superadmin_required
 def exportar_logs():
-    logs_brutos = _listar_logs(limite=1000)
-    logs_fmt = []
-    for log in logs_brutos:
-        try:
-            u, a, m, d, dt = log[:5]
-            logs_fmt.append({"usuario": u, "acao": a, "modulo": m, "detalhe": d, "data": str(dt)})
-        except (IndexError, TypeError):
-            continue
 
-    registrar_log("EXPORT_LOGS", "AUDITORIA", "Backup exportado via JSON")
-    return Response(
-        json.dumps(logs_fmt, indent=4, ensure_ascii=False),
-        mimetype="application/json",
-        headers={"Content-Disposition": "attachment; filename=auditoria_pupilos.json"},
-    )
+    try:
+
+        logs_brutos = _listar_logs(limite=1000) or []
+
+        logs_fmt = []
+
+        for log in logs_brutos:
+
+            try:
+                u, a, m, d, dt = log[:5]
+
+                logs_fmt.append({
+                    "usuario": u,
+                    "acao": a,
+                    "modulo": m,
+                    "detalhe": d,
+                    "data": str(dt)
+                })
+
+            except Exception:
+                continue
+
+        registrar_log(
+            "EXPORT_LOGS",
+            "AUDITORIA",
+            "Backup exportado via JSON"
+        )
+
+        return Response(
+            json.dumps(logs_fmt, indent=4, ensure_ascii=False),
+            mimetype="application/json",
+            headers={
+                "Content-Disposition": "attachment; filename=auditoria.json"
+            },
+        )
+
+    except Exception as e:
+
+        log_erro(f"Erro exportar logs: {e}")
+
+        return Response(
+            json.dumps({"erro": "falha exportação"}),
+            mimetype="application/json",
+            status=500
+        )
 
 
 @auditoria_bp.route("/logs/limpar", methods=["POST"])
@@ -124,6 +180,12 @@ def limpar_logs():
 
     try:
 
+        id_empresa = getattr(current_user, "id_empresa", None)
+
+        if not id_empresa:
+            flash("Empresa inválida.", "danger")
+            return redirect(url_for("auditoria.auditoria"))
+
         with db_conn() as conn:
             with conn.cursor() as cur:
 
@@ -132,7 +194,7 @@ def limpar_logs():
                     DELETE FROM logs
                     WHERE id_empresa = %s
                     """,
-                    (current_user.id_empresa,)
+                    (id_empresa,)
                 )
 
         registrar_log(
@@ -145,13 +207,12 @@ def limpar_logs():
 
     except Exception as e:
 
-        log_erro(f"Erro ao limpar logs: {e}")
-
+        log_erro(f"Erro limpar logs: {e}")
         flash("Erro ao limpar logs.", "danger")
 
     return redirect(url_for("auditoria.auditoria"))
 
-def gerar_codigo_convite():
+def gerar_codigo_convite() -> str:
     return secrets.token_hex(6).upper()
 
 @auditoria_bp.route("/admin/convites")
@@ -174,7 +235,7 @@ def admin_convites():
                     ORDER BY id DESC
                 """)
 
-                convites = cur.fetchall()
+                convites = cur.fetchall() or []
 
         return render_template(
             "admin_convites.html",
@@ -209,26 +270,24 @@ def gerar_convite():
                         criado_por
                     )
                     VALUES
-                    (
-                        %s,
-                        %s,
-                        %s
-                    )
-                """,
-                (
+                    (%s, %s, %s)
+                """, (
                     codigo,
                     "basic",
                     current_user.id
                 ))
+
+        registrar_log(
+            "CREATE",
+            "CONVITE",
+            f"Convite gerado: {codigo}"
+        )
 
         flash(f"Convite criado: {codigo}", "success")
 
     except Exception as e:
 
         log_erro(f"Erro gerar_convite: {e}")
-
         flash("Erro ao gerar convite.", "danger")
 
-    return redirect(
-        url_for("auditoria.admin_convites")
-    )
+    return redirect(url_for("auditoria.admin_convites"))

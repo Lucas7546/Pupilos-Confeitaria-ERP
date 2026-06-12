@@ -25,11 +25,17 @@ def listar_usuarios_view():
 @login_required
 @acesso_requerido("admin")
 def deletar_user(id):
-    if usuarios.excluir_usuario(id):
-        registrar_log("EXCLUIR_USUARIO", "USUARIOS", f"ID {id} removido", current_user.username)
+    if usuarios.excluir_usuario(id, current_user.id_empresa):
+        registrar_log(
+            "EXCLUIR_USUARIO",
+            "USUARIOS",
+            f"ID {id} removido",
+            current_user.username
+        )
         flash("Usuário removido!", "success")
     else:
         flash("Erro ao remover usuário.", "danger")
+
     return redirect(url_for("usuarios.listar_usuarios_view"))
 
 @usuarios_bp.route("/criar", methods=["POST"])

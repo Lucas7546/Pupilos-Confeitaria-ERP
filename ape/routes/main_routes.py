@@ -14,33 +14,48 @@ main_bp = Blueprint('main', __name__)
 def dashboard():
 
     valores_vazios = {
-        "faturamento": 0,
+        "faturamento": 0.0,
         "total_vendas": 0,
-        "lucro": 0
+        "lucro": 0.0,
+        "dias_grafico": [],
+        "valores_grafico": [],
     }
 
     try:
+
         id_empresa = get_empresa_id()
 
         if not id_empresa:
             raise Exception("Empresa não definida no contexto")
 
-        resumo_diario  = vendas.obter_resumo_periodo(1)  or valores_vazios
-        resumo_semanal = vendas.obter_resumo_periodo(7)  or valores_vazios
-        resumo_mensal  = vendas.obter_resumo_periodo(30) or valores_vazios
+        resumo_diario = vendas.obter_resumo_periodo(1) or valores_vazios
+        resumo_semanal = vendas.obter_resumo_periodo(7) or valores_vazios
+        resumo_mensal = vendas.obter_resumo_periodo(30) or valores_vazios
 
         capacidade = produtos.calcular_capacidade_geral()
 
+        # garante estrutura mínima do gráfico
         if isinstance(resumo_semanal, dict):
-            resumo_semanal.setdefault('valores_grafico', [0, 0, 0, 0, 0, 0, 0])
-            resumo_semanal.setdefault('dias_grafico', ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'])
+
+            resumo_semanal.setdefault("valores_grafico", [])
+            resumo_semanal.setdefault("dias_grafico", [])
 
         insumos = estoque.listar_materia_prima()
 
-        criticos = [
-            item for item in insumos
-            if float(item[4] or 0) <= float(item[3] or 0)
-        ]
+        # critico mais seguro (sem índice mágico)
+        criticos = []
+
+        for item in insumos:
+
+            try:
+                saldo = float(item[4] or 0)
+                minimo = float(item[3] or 0)
+
+                if saldo <= minimo:
+                    criticos.append(item)
+
+            except Exception:
+                continue
 
         return render_template(
             "dashboard.html",
@@ -52,6 +67,7 @@ def dashboard():
         )
 
     except Exception as e:
+
         log_erro(f"Erro no dashboard: {e}")
 
         return render_template(

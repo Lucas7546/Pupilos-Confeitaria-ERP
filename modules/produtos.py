@@ -1,6 +1,7 @@
 from modules.tenant_db import db_conn
 from utils.logger import log_info, log_erro
 from flask_login import current_user
+from modules.tenant import get_empresa_id
 
 def cadastrar_produto(
     nome: str,
@@ -9,14 +10,15 @@ def cadastrar_produto(
 ) -> bool:
 
     try:
+        id_empresa = get_empresa_id()
 
-        id_empresa = current_user.id_empresa
+        if not id_empresa:
+            raise Exception("Empresa não definida")
 
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                cur.execute(
-                    """
+                cur.execute("""
                     INSERT INTO produtos
                     (
                         nome,
@@ -24,49 +26,34 @@ def cadastrar_produto(
                         categoria,
                         id_empresa
                     )
-                    VALUES
-                    (
-                        %s,
-                        %s,
-                        %s,
-                        %s
-                    )
-                    """,
-                    (
-                        nome,
-                        preco_venda,
-                        categoria,
-                        id_empresa
-                    ),
-                )
+                    VALUES (%s, %s, %s, %s)
+                """, (
+                    nome,
+                    preco_venda,
+                    categoria,
+                    id_empresa
+                ))
 
-
-        log_info(
-            f"Produto '{nome}' cadastrado. Empresa {id_empresa}"
-        )
-
+        log_info(f"Produto '{nome}' cadastrado. Empresa {id_empresa}")
         return True
 
     except Exception as e:
-
-        log_erro(
-            f"Erro ao cadastrar produto '{nome}': {e}"
-        )
-
+        log_erro(f"Erro ao cadastrar produto '{nome}': {e}")
         return False
 
 
 def buscar_produto_por_nome(nome: str) -> list[tuple]:
 
     try:
+        id_empresa = get_empresa_id()
 
-        id_empresa = current_user.id_empresa
+        if not id_empresa:
+            raise Exception("Empresa não definida")
 
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                cur.execute(
-                    """
+                cur.execute("""
                     SELECT
                         id_produto,
                         nome,
@@ -74,38 +61,33 @@ def buscar_produto_por_nome(nome: str) -> list[tuple]:
                         categoria
                     FROM produtos
                     WHERE nome ILIKE %s
-                    AND ativo = 1
+                    AND ativo = TRUE
                     AND id_empresa = %s
                     ORDER BY nome ASC
-                    """,
-                    (
-                        f"%{nome}%",
-                        id_empresa
-                    ),
-                )
+                """, (
+                    f"%{nome}%",
+                    id_empresa
+                ))
 
                 return cur.fetchall()
 
     except Exception as e:
-
-        log_erro(
-            f"Erro ao buscar produto '{nome}': {e}"
-        )
-
+        log_erro(f"Erro ao buscar produto '{nome}': {e}")
         return []
 
 
 def listar_todos() -> list[tuple]:
 
     try:
+        id_empresa = get_empresa_id()
 
-        id_empresa = current_user.id_empresa
+        if not id_empresa:
+            raise Exception("Empresa não definida")
 
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                cur.execute(
-                    """
+                cur.execute("""
                     SELECT
                         id_produto,
                         nome,
@@ -114,18 +96,12 @@ def listar_todos() -> list[tuple]:
                     FROM produtos
                     WHERE id_empresa = %s
                     ORDER BY nome ASC
-                    """,
-                    (id_empresa,)
-                )
+                """, (id_empresa,))
 
                 return cur.fetchall()
 
     except Exception as e:
-
-        log_erro(
-            f"Erro ao listar produtos: {e}"
-        )
-
+        log_erro(f"Erro ao listar produtos: {e}")
         return []
 
 
@@ -136,49 +112,44 @@ def vincular_insumo(
 ) -> bool:
 
     try:
+        id_empresa = get_empresa_id()
 
-        id_empresa = current_user.id_empresa
+        if not id_empresa:
+            raise Exception("Empresa não definida")
 
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                cur.execute(
-                    """
+                cur.execute("""
                     SELECT id_receita
                     FROM receitas
                     WHERE id_produto = %s
                     AND id_materia_prima = %s
                     AND id_empresa = %s
-                    """,
-                    (
-                        id_produto,
-                        id_materia,
-                        id_empresa
-                    ),
-                )
+                """, (
+                    id_produto,
+                    id_materia,
+                    id_empresa
+                ))
 
                 existe = cur.fetchone()
 
                 if existe:
 
-                    cur.execute(
-                        """
+                    cur.execute("""
                         UPDATE receitas
                         SET quantidade_utilizada = %s
                         WHERE id_receita = %s
                         AND id_empresa = %s
-                        """,
-                        (
-                            quantidade,
-                            existe[0],
-                            id_empresa
-                        ),
-                    )
+                    """, (
+                        float(quantidade),
+                        existe[0],
+                        id_empresa
+                    ))
 
                 else:
 
-                    cur.execute(
-                        """
+                    cur.execute("""
                         INSERT INTO receitas
                         (
                             id_produto,
@@ -186,31 +157,18 @@ def vincular_insumo(
                             quantidade_utilizada,
                             id_empresa
                         )
-                        VALUES
-                        (
-                            %s,
-                            %s,
-                            %s,
-                            %s
-                        )
-                        """,
-                        (
-                            id_produto,
-                            id_materia,
-                            quantidade,
-                            id_empresa
-                        ),
-                    )
-
+                        VALUES (%s, %s, %s, %s)
+                    """, (
+                        id_produto,
+                        id_materia,
+                        float(quantidade),
+                        id_empresa
+                    ))
 
         return True
 
     except Exception as e:
-
-        log_erro(
-            f"Erro ao vincular insumo (Prod: {id_produto}, MP: {id_materia}): {e}"
-        )
-
+        log_erro(f"Erro ao vincular insumo (Prod: {id_produto}, MP: {id_materia}): {e}")
         return False
 
 def vincular_subproduto_ao_produto(
@@ -220,86 +178,66 @@ def vincular_subproduto_ao_produto(
 ) -> bool:
 
     try:
+        id_empresa = get_empresa_id()
 
-        id_empresa = current_user.id_empresa
+        if not id_empresa:
+            raise Exception("Empresa não definida")
 
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                cur.execute(
-                    """
+                cur.execute("""
                     SELECT id_receita
                     FROM receitas
                     WHERE id_produto = %s
                     AND id_subproduto = %s
                     AND id_empresa = %s
-                    """,
-                    (
-                        id_produto,
-                        id_subproduto,
-                        id_empresa
-                    ),
-                )
+                """, (
+                    id_produto,
+                    id_subproduto,
+                    id_empresa
+                ))
 
                 existe = cur.fetchone()
 
                 if existe:
 
-                    cur.execute(
-                        """
+                    cur.execute("""
                         UPDATE receitas
                         SET quantidade_utilizada = %s
                         WHERE id_receita = %s
                         AND id_empresa = %s
-                        """,
-                        (
-                            quantidade,
-                            existe[0],
-                            id_empresa
-                        ),
-                    )
+                    """, (
+                        float(quantidade),
+                        existe[0],
+                        id_empresa
+                    ))
 
                 else:
 
-                    cur.execute(
-                        """
+                    cur.execute("""
                         INSERT INTO receitas
                         (
                             id_produto,
                             id_subproduto,
-                            id_materia_prima,
                             quantidade_utilizada,
                             id_empresa
                         )
-                        VALUES
-                        (
-                            %s,
-                            %s,
-                            NULL,
-                            %s,
-                            %s
-                        )
-                        """,
-                        (
-                            id_produto,
-                            id_subproduto,
-                            quantidade,
-                            id_empresa
-                        ),
-                    )
-
-
+                        VALUES (%s, %s, %s, %s)
+                    """, (
+                        id_produto,
+                        id_subproduto,
+                        float(quantidade),
+                        id_empresa
+                    ))
 
         return True
 
     except Exception as e:
-
         log_erro(
             f"Erro ao vincular subproduto {id_subproduto} ao produto {id_produto}: {e}"
         )
-
         return False
-
 
 def calcular_cenarios_preco(
     id_produto: int,
@@ -313,18 +251,24 @@ def calcular_cenarios_preco(
         custo_base = calcular_custo_receita(id_produto)
 
         if custo_base <= 0:
-
             return {
                 "atual": float(preco_venda_atual),
                 "ponto_equilibrio": 0.0,
-                "lucro_30": 0.0,
+                "preco_margem_30": 0.0,
                 "custo_real": 0.0
             }
 
+        margem_30 = custo_base / 0.70  # margem de 30%
+
         return {
             "atual": float(preco_venda_atual),
-            "ponto_equilibrio": round(custo_base * 1.10, 2),
-            "lucro_30": round(custo_base / 0.70, 2),
+
+            # break-even simples (custo puro)
+            "ponto_equilibrio": round(custo_base, 2),
+
+            # preço para margem de 30%
+            "preco_margem_30": round(margem_30, 2),
+
             "custo_real": round(custo_base, 2),
         }
 
@@ -340,162 +284,122 @@ def calcular_cenarios_preco(
 # =========================================================
 # CAPACIDADE GERAL DE PRODUÇÃO
 # =========================================================
-def calcular_capacidade_geral(*args, **kwargs):
-
+def calcular_capacidade_geral():
     try:
 
         id_empresa = current_user.id_empresa
 
-        produtos_lista = buscar_produto_por_nome("")
-
-        if not produtos_lista:
+        if not id_empresa:
             return []
 
-        ids_produtos = [p[0] for p in produtos_lista]
-
         with db_conn() as conn:
-
             with conn.cursor() as cur:
 
-                cur.execute(
-                    """
-                    SELECT
-                        id_produto,
-                        id_materia_prima,
-                        quantidade_utilizada
+                # =========================
+                # PRODUTOS
+                # =========================
+                cur.execute("""
+                    SELECT id_produto, nome
+                    FROM produtos
+                    WHERE id_empresa = %s
+                    AND ativo = 1
+                """, (id_empresa,))
+
+                produtos_lista = cur.fetchall()
+
+                if not produtos_lista:
+                    return []
+
+                ids_produtos = [p[0] for p in produtos_lista]
+
+                # =========================
+                # RECEITAS
+                # =========================
+                cur.execute("""
+                    SELECT id_produto, id_materia_prima, quantidade_utilizada
                     FROM receitas
                     WHERE id_produto = ANY(%s)
-                    AND id_materia_prima IS NOT NULL
                     AND id_empresa = %s
-                    """,
-                    (
-                        ids_produtos,
-                        id_empresa
-                    ),
-                )
+                    AND id_materia_prima IS NOT NULL
+                """, (ids_produtos, id_empresa))
 
                 receitas = cur.fetchall()
 
-                ids_mps = list(
-                    {
-                        r[1]
-                        for r in receitas
-                        if r[1] is not None
-                    }
-                )
+                ids_mps = list({r[1] for r in receitas if r[1]})
 
-                saldos: dict[int, float] = {}
+                # =========================
+                # SALDOS MP
+                # =========================
+                saldos = {}
 
                 if ids_mps:
 
-                    cur.execute(
-                        """
+                    cur.execute("""
                         SELECT
-                            me.id_materia_prima,
-                            COALESCE(
-                                SUM(
-                                    CASE
-                                        WHEN me.tipo_movimento IN ('entrada','ajuste')
-                                        THEN me.quantidade
-                                        ELSE 0
-                                    END
-                                ),
-                                0
-                            )
+                            id_materia_prima,
+                            COALESCE(SUM(
+                                CASE
+                                    WHEN tipo_movimento IN ('entrada','ajuste') THEN quantidade
+                                    ELSE 0
+                                END
+                            ),0)
                             -
-                            COALESCE(
-                                SUM(
-                                    CASE
-                                        WHEN me.tipo_movimento = 'saida'
-                                        THEN me.quantidade
-                                        ELSE 0
-                                    END
-                                ),
-                                0
-                            )
-                        FROM movimentacao_estoque me
-                        WHERE me.id_materia_prima = ANY(%s)
-                        AND me.id_empresa = %s
-                        GROUP BY me.id_materia_prima
-                        """,
-                        (
-                            ids_mps,
-                            id_empresa
-                        ),
-                    )
+                            COALESCE(SUM(
+                                CASE
+                                    WHEN tipo_movimento = 'saida' THEN quantidade
+                                    ELSE 0
+                                END
+                            ),0)
+                        FROM movimentacao_estoque
+                        WHERE id_materia_prima = ANY(%s)
+                        AND id_empresa = %s
+                        GROUP BY id_materia_prima
+                    """, (ids_mps, id_empresa))
 
-                    saldos = {
-                        row[0]: float(row[1])
-                        for row in cur.fetchall()
-                    }
+                    saldos = {r[0]: float(r[1]) for r in cur.fetchall()}
 
-        receitas_por_produto: dict[int, list[tuple]] = {}
+        # =========================
+        # AGRUPA RECEITAS
+        # =========================
+        receitas_por_produto = {}
 
         for id_produto, id_mp, qtd in receitas:
+            receitas_por_produto.setdefault(id_produto, []).append((id_mp, float(qtd)))
 
-            receitas_por_produto.setdefault(
-                id_produto,
-                []
-            ).append(
-                (
-                    id_mp,
-                    qtd
-                )
-            )
-
+        # =========================
+        # CÁLCULO FINAL
+        # =========================
         resultado = []
 
-        for produto in produtos_lista:
+        for id_produto, nome in produtos_lista:
 
-            id_produto = produto[0]
-            nome_produto = produto[1]
-
-            ingredientes = receitas_por_produto.get(
-                id_produto,
-                []
-            )
+            ingredientes = receitas_por_produto.get(id_produto, [])
 
             if not ingredientes:
                 continue
 
             limites = []
 
-            for id_mp, qtd_necessaria in ingredientes:
+            for id_mp, qtd in ingredientes:
 
-                if not qtd_necessaria:
+                if not qtd or qtd <= 0:
                     continue
 
-                qtd_necessaria = float(qtd_necessaria)
+                saldo = saldos.get(id_mp, 0.0)
 
-                if qtd_necessaria <= 0:
-                    continue
-
-                saldo = saldos.get(
-                    id_mp,
-                    0.0
-                )
-
-                limites.append(
-                    saldo // qtd_necessaria
-                )
+                limites.append(saldo / qtd)
 
             if limites:
 
-                resultado.append(
-                    {
-                        "nome": nome_produto,
-                        "qtd": int(min(limites))
-                    }
-                )
+                resultado.append({
+                    "nome": nome,
+                    "qtd": int(min(limites))
+                })
 
         return resultado
 
     except Exception as e:
-
-        log_erro(
-            f"Erro ao calcular capacidade geral: {e}"
-        )
-
+        log_erro(f"Erro ao calcular capacidade geral: {e}")
         return []
 
 
@@ -508,55 +412,28 @@ def excluir_produto(id_produto: int) -> bool:
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                cur.execute(
-                    """
+                # desativa produto
+                cur.execute("""
+                    UPDATE produtos
+                    SET ativo = 0
+                    WHERE id_produto = %s
+                    AND id_empresa = %s
+                """, (id_produto, id_empresa))
+
+                # remove receita (opcional)
+                cur.execute("""
                     DELETE FROM receitas
                     WHERE id_produto = %s
                     AND id_empresa = %s
-                    """,
-                    (
-                        id_produto,
-                        id_empresa
-                    )
-                )
+                """, (id_produto, id_empresa))
 
-                cur.execute(
-                    """
-                    DELETE FROM itens_venda
-                    WHERE id_produto = %s
-                    AND id_empresa = %s
-                    """,
-                    (
-                        id_produto,
-                        id_empresa
-                    )
-                )
-
-                cur.execute(
-                    """
-                    DELETE FROM produtos
-                    WHERE id_produto = %s
-                    AND id_empresa = %s
-                    """,
-                    (
-                        id_produto,
-                        id_empresa
-                    )
-                )
-
-
-
-        log_info(
-            f"Produto {id_produto} excluído. Empresa {id_empresa}"
-        )
+        log_info(f"Produto {id_produto} desativado. Empresa {id_empresa}")
 
         return True
 
     except Exception as e:
 
-        log_erro(
-            f"Erro ao excluir produto {id_produto}: {e}"
-        )
+        log_erro(f"Erro ao excluir produto {id_produto}: {e}")
 
         return False
 
@@ -571,36 +448,31 @@ def update_produto(
 
         id_empresa = current_user.id_empresa
 
+        if not nome or preco <= 0:
+            return False
+
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                cur.execute(
-                    """
+                cur.execute("""
                     UPDATE produtos
                     SET nome = %s,
                         preco_venda = %s
                     WHERE id_produto = %s
                     AND id_empresa = %s
-                    """,
-                    (
-                        nome,
-                        preco,
-                        id_produto,
-                        id_empresa
-                    ),
-                )
+                """, (
+                    nome.strip(),
+                    float(preco),
+                    id_produto,
+                    id_empresa
+                ))
 
-
-        log_info(
-            f"Produto ID {id_produto} atualizado."
-        )
+        log_info(f"Produto ID {id_produto} atualizado.")
 
         return True
 
     except Exception as e:
 
-        log_erro(
-            f"Erro ao atualizar produto ID {id_produto}: {e}"
-        )
+        log_erro(f"Erro ao atualizar produto ID {id_produto}: {e}")
 
         return False

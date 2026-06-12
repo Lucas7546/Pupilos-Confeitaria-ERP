@@ -8,6 +8,7 @@ from modules.tenant import get_empresa_id
 # CADASTRAR / ATUALIZAR RECEITA
 # =========================================================
 def cadastrar_receita(
+    id_empresa: int,
     id_produto: int,
     id_materia_prima: int,
     quantidade: float
@@ -15,7 +16,8 @@ def cadastrar_receita(
 
     try:
 
-        id_empresa = current_user.id_empresa
+        if not id_empresa:
+            raise Exception("Empresa não definida")
 
         with db_conn() as conn:
             with conn.cursor() as cur:
@@ -25,8 +27,8 @@ def cadastrar_receita(
                     SELECT 1
                     FROM receitas
                     WHERE id_produto = %s
-                    AND id_materia_prima = %s
-                    AND id_empresa = %s
+                      AND id_materia_prima = %s
+                      AND id_empresa = %s
                     """,
                     (
                         id_produto,
@@ -42,8 +44,8 @@ def cadastrar_receita(
                         UPDATE receitas
                         SET quantidade_utilizada = %s
                         WHERE id_produto = %s
-                        AND id_materia_prima = %s
-                        AND id_empresa = %s
+                          AND id_materia_prima = %s
+                          AND id_empresa = %s
                         """,
                         (
                             float(quantidade),
@@ -64,13 +66,7 @@ def cadastrar_receita(
                             quantidade_utilizada,
                             id_empresa
                         )
-                        VALUES
-                        (
-                            %s,
-                            %s,
-                            %s,
-                            %s
-                        )
+                        VALUES (%s, %s, %s, %s)
                         """,
                         (
                             id_produto,
@@ -80,9 +76,8 @@ def cadastrar_receita(
                         ),
                     )
 
-
         log_info(
-            f"Receita: Produto {id_produto}, MP {id_materia_prima}, Empresa {id_empresa}"
+            f"Receita atualizada | Produto {id_produto} | MP {id_materia_prima} | Empresa {id_empresa}"
         )
 
         return True
@@ -90,20 +85,23 @@ def cadastrar_receita(
     except Exception as e:
 
         log_erro(
-            f"Erro ao cadastrar receita (Prod: {id_produto}, MP: {id_materia_prima}): {e}"
+            f"Erro ao cadastrar receita: {e}"
         )
 
         return False
 
-
 # =========================================================
 # LISTAR INGREDIENTES DE UM PRODUTO
 # =========================================================
-def listar_itens_receita(id_produto: int) -> list[tuple]:
+def listar_itens_receita(
+    id_empresa: int,
+    id_produto: int
+) -> list[tuple]:
 
     try:
 
-        id_empresa = current_user.id_empresa
+        if not id_empresa:
+            raise Exception("Empresa não definida")
 
         with db_conn() as conn:
             with conn.cursor() as cur:
@@ -119,9 +117,9 @@ def listar_itens_receita(id_produto: int) -> list[tuple]:
                     FROM receitas r
                     JOIN materia_prima mp
                         ON mp.id_materia_prima = r.id_materia_prima
-                        AND mp.id_empresa = r.id_empresa
+                       AND mp.id_empresa = r.id_empresa
                     WHERE r.id_produto = %s
-                    AND r.id_empresa = %s
+                      AND r.id_empresa = %s
                     ORDER BY mp.nome ASC
                     """,
                     (
@@ -135,7 +133,7 @@ def listar_itens_receita(id_produto: int) -> list[tuple]:
     except Exception as e:
 
         log_erro(
-            f"Erro ao listar itens da receita (Prod: {id_produto}): {e}"
+            f"Erro ao listar itens da receita | Produto {id_produto}: {e}"
         )
 
         return []
@@ -151,119 +149,41 @@ def validar_estoque_suficiente(
 ) -> bool:
 
     try:
-
         id_empresa = current_user.id_empresa
 
         with db_conn() as conn:
-
             with conn.cursor() as cur:
 
-                cur.execute(
-                    """
-                    SELECT
-                        id_materia_prima,
-                        id_subproduto,
-                        quantidade_utilizada
+                cur.execute("""
+                    SELECT id_materia_prima, id_subproduto, quantidade_utilizada
                     FROM receitas
                     WHERE id_produto = %s
                     AND id_empresa = %s
-                    """,
-                    (
-                        id_produto,
-                        id_empresa
-                    )
-                )
+                """, (id_produto, id_empresa))
 
                 ingredientes = cur.fetchall()
 
         if not ingredientes:
             return True
 
-        from modules.estoque import calcular_estoque
+        for id_mp, id_sub, qtd_util in ingredientes:
 
-        for (
-            id_materia_prima,
-            id_subproduto,
-            quantidade_utilizada
-        ) in ingredientes:
+            qtd_necessaria = float(qtd_util) * float(quantidade_venda)
 
-            quantidade_necessaria = (
-                float(quantidade_utilizada)
-                * float(quantidade_venda)
-            )
-
-            # ==========================
-            # MATÉRIA-PRIMA
-            # ==========================
-
-            if id_materia_prima:
-
-                estoque_atual = calcular_estoque(
-                    id_materia_prima
-                )
-
-                if estoque_atual < quantidade_necessaria:
+            if id_mp:
+                from modules.estoque import obter_saldo_materia_prima
+                if obter_saldo_materia_prima(id_mp) < qtd_necessaria:
                     return False
 
-            # ==========================
-            # SUBPRODUTO
-            # ==========================
-
-            if id_subproduto:
-
-                with db_conn() as conn:
-
-                    with conn.cursor() as cur:
-
-                        cur.execute(
-                            """
-                            SELECT
-                                COALESCE(
-                                    SUM(
-                                        CASE
-                                            WHEN tipo_movimento IN ('entrada', 'ajuste')
-                                            THEN quantidade
-                                            ELSE 0
-                                        END
-                                    ),
-                                    0
-                                )
-                                -
-                                COALESCE(
-                                    SUM(
-                                        CASE
-                                            WHEN tipo_movimento = 'saida'
-                                            THEN quantidade
-                                            ELSE 0
-                                        END
-                                    ),
-                                    0
-                                )
-                            FROM movimentacao_estoque
-                            WHERE id_subproduto = %s
-                            AND id_empresa = %s
-                            """,
-                            (
-                                id_subproduto,
-                                id_empresa
-                            )
-                        )
-
-                        saldo = float(
-                            cur.fetchone()[0] or 0
-                        )
-
-                if saldo < quantidade_necessaria:
+            elif id_sub:
+                from modules.estoque import obter_saldo_subproduto
+                if obter_saldo_subproduto(id_sub) < qtd_necessaria:
                     return False
 
         return True
 
     except Exception as e:
-
-        log_erro(
-            f"Erro ao validar estoque (Prod: {id_produto}): {e}"
-        )
-
+        log_erro(f"Erro ao validar estoque (Prod: {id_produto}): {e}")
         return False
 
 # =========================================================
@@ -272,49 +192,39 @@ def validar_estoque_suficiente(
 def calcular_custo_receita(id_produto: int) -> float:
 
     try:
-
         id_empresa = current_user.id_empresa
 
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                cur.execute(
-                    """
-                    SELECT
-                        r.quantidade_utilizada,
-                        mp.preco_unitario
+                cur.execute("""
+                    SELECT r.quantidade_utilizada, mp.preco_unitario
                     FROM receitas r
                     JOIN materia_prima mp
                         ON mp.id_materia_prima = r.id_materia_prima
                         AND mp.id_empresa = r.id_empresa
                     WHERE r.id_produto = %s
                     AND r.id_empresa = %s
-                    """,
-                    (
-                        id_produto,
-                        id_empresa
-                    ),
-                )
+                """, (id_produto, id_empresa))
 
                 linhas = cur.fetchall()
 
-        return round(
-            sum(
-                float(qtd or 0)
-                * float(preco or 0)
-                for qtd, preco in linhas
-            ),
-            2
+        if not linhas:
+            return 0.0
+
+        custo_total = sum(
+            (float(qtd or 0) * float(preco or 0))
+            for qtd, preco in linhas
         )
+
+        return round(custo_total, 2)
 
     except Exception as e:
-
-        log_erro(
-            f"Erro ao calcular custo da receita (Prod: {id_produto}): {e}"
-        )
-
+        log_erro(f"Erro ao calcular custo da receita (Prod: {id_produto}): {e}")
         return 0.0
-
 # Alias de compatibilidade
 def listar_ingredientes_por_produto(id_produto: int) -> list[tuple]:
+    """
+    Alias de compatibilidade para listar_itens_receita.
+    """
     return listar_itens_receita(id_produto)

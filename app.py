@@ -44,16 +44,14 @@ def create_app():
         from flask import g, request
         from flask_login import current_user
 
-        # ignora estáticos
         if request.path.startswith("/static/"):
             g.id_empresa = None
             return
 
-        # tenant sempre definido no contexto
-        if getattr(current_user, "is_authenticated", False):
+        if current_user.is_authenticated:
             g.id_empresa = getattr(current_user, "id_empresa", None)
         else:
-            g.id_empresa = None
+            g.id_empresa = None  # NÃO usa -1 em sistema sério
 
             
     

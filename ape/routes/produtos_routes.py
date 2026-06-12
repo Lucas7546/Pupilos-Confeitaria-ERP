@@ -187,3 +187,5 @@ def editar_item_ficha(id_produto):
         flash(f"Erro ao salvar: {e}", "danger")
 
     return redirect(url_for("produtos.ficha_tecnica", id_produto=id_produto))
+
+

@@ -639,3 +639,4 @@ def balanco_diario_page():
         return redirect(
             url_for("estoque.estoque_painel")
         )
+    

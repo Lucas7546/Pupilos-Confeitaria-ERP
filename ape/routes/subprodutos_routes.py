@@ -10,6 +10,16 @@ from ape.extensions import limiter
 
 subprodutos_bp = Blueprint('subprodutos', __name__)
 
+
+@subprodutos_bp.route('/historico-subproduto/<int:id_subproduto>')
+@login_required
+def historico_subproduto(id_subproduto):
+    historico = estoque.buscar_historico_subproduto(id_subproduto)
+    # Aqui você precisaria de um template 'historico_subproduto.html'
+    # Por enquanto, para testar se funciona, podemos retornar o próprio histórico:
+    return render_template('historico_subproduto.html', historico=historico, id_sub=id_subproduto)
+
+
 @subprodutos_bp.route("/cadastrar-subproduto", methods=["POST"])
 @login_required
 @limiter.limit("15 per minute") # Limite do usuário
@@ -88,3 +98,5 @@ def registrar_lote():
         flash(f"Erro: {e}", "danger")
 
     return redirect(url_for("estoque.estoque_painel"))
+
+

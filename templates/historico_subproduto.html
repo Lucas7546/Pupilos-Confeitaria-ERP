@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>Histórico do Subproduto #{{ id_sub }}</h3>
+        <a href="{{ url_for('subprodutos.listar') }}" class="btn btn-secondary">Voltar</a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Quantidade</th>
+                        <th>Observação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in historico %}
+                    <tr>
+                        <td>{{ item[3].strftime('%d/%m/%Y %H:%M') if item[3] else '-' }}</td>
+                        <td>
+                            <span class="badge {{ 'bg-success' if item[0] == 'entrada' else 'bg-danger' }}">
+                                {{ item[0]|upper }}
+                            </span>
+                        </td>
+                        <td>{{ "%.2f"|format(item[1]) }}</td>
+                        <td>{{ item[2] }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center">Nenhuma movimentação encontrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

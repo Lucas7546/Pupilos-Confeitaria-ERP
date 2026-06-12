@@ -1264,3 +1264,18 @@ def obter_saldo_subproduto(id_subproduto: int) -> float:
         )
         traceback.print_exc()
         return 0.0
+
+
+def cadastrar_subproduto_banco(id_empresa, nome, unidade, est_min):
+    try:
+        with db_conn() as conn:
+            with conn.cursor() as cur:
+                # Inserindo o novo subproduto no banco
+                cur.execute("""
+                    INSERT INTO subprodutos (id_empresa, nome, unidade_medida, estoque_minimo, ativo)
+                    VALUES (%s, %s, %s, %s, 1)
+                """, (id_empresa, nome, unidade, est_min))
+        return True
+    except Exception as e:
+        log_erro(f"Erro ao cadastrar subproduto no banco: {e}")
+        return False

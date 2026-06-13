@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="bi bi-gear"></i> Configurações</h2>
+    
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5>Meu Plano</h5>
+                    <p>Plano atual: <strong>{{ plano|upper }}</strong></p>
+                    <button class="btn btn-outline-primary btn-sm">Mudar de Plano</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5><i class="bi bi-chat-left-dots"></i> Suporte e Feedback</h5>
+                    <form action="{{ url_for('feedback.enviar_feedback') }}" method="POST">
+                        <select name="tipo" class="form-select mb-2">
+                            <option value="melhoria">💡 Sugestão</option>
+                            <option value="bug">🐛 Reportar Bug</option>
+                        </select>
+                        <textarea name="mensagem" class="form-control mb-2" rows="2" placeholder="Como podemos melhorar?" required></textarea>
+                        <button type="submit" class="btn btn-primary btn-sm">Enviar</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6>Meus Feedbacks</h6>
+                    <table class="table table-sm">
+                        {% for f in feedbacks %}
+                        <tr>
+                            <td>{{ f[3]|upper }}</td>
+                            <td>{{ f[4] }}</td>
+                            <td><span class="badge bg-secondary">{{ f[5] }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -479,6 +479,14 @@
     ========================================================= -->
 
     <main class="main-content animate-page">
+        <div class="d-flex justify-content-end align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25">
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-white fw-bold">{{ current_user.nome }}</span>
+                <a href="{{ url_for('empresas.configuracoes') }}" class="text-warning text-decoration-none">
+                    <i class="bi bi-gear-fill fs-4"></i>
+                </a>
+            </div>
+        </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
 

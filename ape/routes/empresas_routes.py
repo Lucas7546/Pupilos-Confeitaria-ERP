@@ -1,4 +1,5 @@
-from flask import Blueprint, request, redirect, flash, url_for
+from flask import Blueprint, request, redirect, flash, url_for, render_template, g
+from flask_login import login_required
 from modules.tenant_db import db_conn
 from modules.empresas import criar_empresa
 from modules.usuarios import (
@@ -60,8 +61,7 @@ def cadastro_empresa():
                 convite = cur.fetchone()
 
         if not convite:
-            flash("Código de convite inválido.", "danger")
-            return redirect(url_for("auth.login"))
+            return redirect(url_for("empresas.convite_invalido"))
 
         # =========================
         # CRIAR EMPRESA
@@ -108,3 +108,32 @@ def cadastro_empresa():
 
         flash("Erro interno ao criar empresa.", "danger")
         return redirect(url_for("auth.login"))
+    
+
+
+@empresas_bp.route("/convite-invalido")
+def convite_invalido():
+    return render_template("convite_invalido.html")
+
+
+
+@empresas_bp.route("/configuracoes")
+@login_required
+def configuracoes():
+    try:
+        with db_conn() as conn:
+            with conn.cursor() as cur:
+                # Busca o plano
+                cur.execute("SELECT plano FROM empresas WHERE id_empresa = %s", (g.id_empresa,))
+                resultado = cur.fetchone()
+                plano_atual = resultado[0] if resultado else "basic"
+                
+                # Busca os feedbacks da empresa
+                cur.execute("SELECT * FROM feedback WHERE id_empresa = %s ORDER BY data_criacao DESC", (g.id_empresa,))
+                feedbacks = cur.fetchall()
+                
+        return render_template("configuracoes.html", plano=plano_atual, feedbacks=feedbacks)
+    except Exception as e:
+        log_erro(f"Erro ao carregar configurações: {e}")
+        flash("Erro ao carregar painel de configurações.", "danger")
+        return redirect(url_for("main.dashboard"))

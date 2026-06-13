@@ -14,7 +14,7 @@ def enviar_feedback():
     
     if not mensagem:
         flash("A mensagem não pode estar vazia.", "warning")
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for("main.dashboard"))
     
     try:
         with db_conn() as conn:
@@ -30,7 +30,7 @@ def enviar_feedback():
         log_erro(f"Erro ao salvar feedback: {e}")
         flash("Erro ao enviar feedback, tente novamente mais tarde.", "danger")
         
-    return redirect(url_for("dashboard.index"))
+    redirect(url_for("main.dashboard"))
 
 
 @feedback_bp.route("/painel-feedback")

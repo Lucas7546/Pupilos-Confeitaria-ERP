@@ -4,6 +4,13 @@ from functools import wraps
 from utils.logger import log_erro
 
 
+PLANOS_ORDEM = {
+    "basic": 1,
+    "medio": 2,
+    "premium": 3
+}
+
+
 def get_plano_empresa():
 
     try:
@@ -44,49 +51,22 @@ def get_plano_empresa():
         return "basic"
 
 def plano_requerido(plano_minimo):
-
-    ordem = {
-        "basic": 1,
-        "premium": 2
-    }
-
     def decorator(func):
-
         @wraps(func)
         def wrapper(*args, **kwargs):
-
             try:
+                plano_atual = get_plano_empresa()
+                nivel_atual = PLANOS_ORDEM.get(plano_atual, 0)
+                nivel_exigido = PLANOS_ORDEM.get(plano_minimo, 0)
 
-                plano = get_plano_empresa()
-
-                if ordem.get(plano, 0) < ordem.get(plano_minimo, 0):
-
-                    flash(
-                        "Seu plano não permite acessar essa funcionalidade.",
-                        "warning"
-                    )
-
-                    return redirect(
-                        url_for("main.dashboard")
-                    )
-
+                if nivel_atual < nivel_exigido:
+                    flash(f"Este recurso exige o plano {plano_minimo.upper()} ou superior.", "warning")
+                    return redirect(url_for("empresas.upgrade_necessario"))
+                
                 return func(*args, **kwargs)
-
             except Exception as e:
-
-                log_erro(
-                    f"Erro na validação de plano: {e}"
-                )
-
-                flash(
-                    "Erro ao validar seu plano.",
-                    "danger"
-                )
-
-                return redirect(
-                    url_for("main.dashboard")
-                )
-
+                log_erro(f"Erro no decorador de plano: {e}")
+                flash("Erro ao verificar permissões.", "danger")
+                return redirect(url_for("main.dashboard"))
         return wrapper
-
     return decorator

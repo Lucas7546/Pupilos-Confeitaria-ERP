@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="text-center mb-5 animate-in">
+        <h1 class="display-5 fw-bold text-white">Escolha o seu <span class="text-warning">Nível de Poder</span></h1>
+        <p class="text-white-50">Desbloqueie ferramentas avançadas para escalar sua operação.</p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+        
+        <div class="col-md-4">
+            <div class="card h-100 bg-dark-card border-0 p-4 shadow-lg position-relative">
+                <h4 class="text-white">Basic</h4>
+                <h2 class="text-white fw-bold my-3">Grátis</h2>
+                <ul class="list-unstyled text-white-50 mb-4">
+                    <li><i class="bi bi-check2 text-success me-2"></i> Estoque & Vendas</li>
+                    <li><i class="bi bi-check2 text-success me-2"></i> Previsão de Demanda</li>
+                    <li><i class="bi bi-check2 text-success me-2"></i> Painel Financeiro</li>
+                    <li><i class="bi bi-people me-2"></i> 10 Usuários</li>
+                </ul>
+                <button class="btn btn-outline-light mt-auto">Atual</button>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 bg-dark-card border-2 border-warning p-4 shadow-lg">
+                <div class="badge bg-warning text-dark mb-3 w-50">RECOMENDADO</div>
+                <h4 class="text-warning">Médio</h4>
+                <h2 class="text-white fw-bold my-3">R$ XX,XX</h2>
+                <ul class="list-unstyled text-white-50 mb-4">
+                    <li><i class="bi bi-check2-all text-warning me-2"></i> <strong>Tudo do Básico</strong></li>
+                    <li><i class="bi bi-tag text-info me-2"></i> Precificação Inteligente</li>
+                    <li><i class="bi bi-graph-up-arrow text-info me-2"></i> Fluxo de Caixa</li>
+                    <li><i class="bi bi-shield-check text-info me-2"></i> Relatório Fiscal</li>
+                    <li><i class="bi bi-people-fill text-warning me-2"></i> 20 Usuários</li>
+                </ul>
+                <button class="btn btn-warning mt-auto fw-bold">Assinar Plano Médio</button>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 bg-dark-card border-0 p-4 shadow-lg">
+                <h4 class="text-info">Premium</h4>
+                <h2 class="text-white fw-bold my-3">R$ XX,XX</h2>
+                <ul class="list-unstyled text-white-50 mb-4">
+                    <li><i class="bi bi-check2-all text-info me-2"></i> <strong>Tudo do Médio</strong></li>
+                    <li><i class="bi bi-camera text-info me-2"></i> Compras via Nota (IA)</li>
+                    <li><i class="bi bi-cloud-arrow-down text-info me-2"></i> Importação iFood/Keetas</li>
+                    <li><i class="bi bi-person-gear text-info me-2"></i> Gestão de Equipe</li>
+                    <li><i class="bi bi-people-fill text-info me-2"></i> 30 Usuários</li>
+                </ul>
+                <button class="btn btn-info mt-auto fw-bold text-white">Assinar Premium</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .bg-dark-card { background: #1e293b; border-radius: 20px; transition: 0.3s; }
+    .card:hover { transform: translateY(-10px); border: 1px solid rgba(255,255,255,0.1); }
+    .list-unstyled li { margin-bottom: 12px; }
+    .animate-in { animation: fadeIn 0.8s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+{% endblock %}

@@ -1,50 +1,88 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2><i class="bi bi-gear"></i> Configurações</h2>
+<div class="container py-4">
+    <h2 class="text-white fw-bold mb-4">
+        <i class="bi bi-gear text-warning me-2"></i> Configurações
+    </h2>
     
-    <div class="row mt-4">
+    <div class="row g-4">
         <div class="col-md-4">
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <h5>Meu Plano</h5>
-                    <p>Plano atual: <strong>{{ plano|upper }}</strong></p>
-                    <button class="btn btn-outline-primary btn-sm">Mudar de Plano</button>
-                </div>
+            <div class="card bg-dark-card border-0 p-4 h-100">
+                <h5 class="text-white mb-3">Meu Plano</h5>
+                <p class="text-white-50 small">Plano atual:</p>
+                <h3 class="text-warning fw-bold mb-4">{{ plano|upper }}</h3>
+                <a href="{{ url_for('empresas.upgrade_necessario') }}" class="btn btn-warning fw-bold">
+                    <i class="bi bi-stars"></i> Mudar de Plano
+                </a>
             </div>
         </div>
 
         <div class="col-md-8">
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <h5><i class="bi bi-chat-left-dots"></i> Suporte e Feedback</h5>
-                    <form action="{{ url_for('feedback.enviar_feedback') }}" method="POST">
-                        <select name="tipo" class="form-select mb-2">
-                            <option value="melhoria">💡 Sugestão</option>
-                            <option value="bug">🐛 Reportar Bug</option>
-                        </select>
-                        <textarea name="mensagem" class="form-control mb-2" rows="2" placeholder="Como podemos melhorar?" required></textarea>
-                        <button type="submit" class="btn btn-primary btn-sm">Enviar</button>
-                    </form>
-                </div>
+            <div class="card bg-dark-card border-0 p-4 mb-4">
+                <h5 class="text-white mb-3"><i class="bi bi-chat-left-dots text-info me-2"></i> Suporte e Feedback</h5>
+                <form action="{{ url_for('feedback.enviar_feedback') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <select name="tipo" class="form-control bg-dark text-white border-0 mb-2">
+                        <option value="melhoria">💡 Sugestão</option>
+                        <option value="bug">🐛 Reportar Bug</option>
+                    </select>
+                    <textarea name="mensagem" class="form-control bg-dark text-white border-0 mb-2" rows="2" placeholder="Como podemos melhorar?" required></textarea>
+                    <button type="submit" class="btn btn-info text-white fw-bold px-4">Enviar</button>
+                </form>
             </div>
 
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h6>Meus Feedbacks</h6>
-                    <table class="table table-sm">
-                        {% for f in feedbacks %}
-                        <tr>
-                            <td>{{ f[3]|upper }}</td>
-                            <td>{{ f[4] }}</td>
-                            <td><span class="badge bg-secondary">{{ f[5] }}</span></td>
-                        </tr>
-                        {% endfor %}
+            <div class="card bg-dark-card border-0 p-4 mb-4">
+                <h5 class="text-white mb-3"><i class="bi bi-shield-lock text-danger me-2"></i> Segurança</h5>
+                <form action="{{ url_for('auth.trocar_senha') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label text-white-50 small">Nova Senha</label>
+                        <input type="password" name="nova_senha" class="form-control bg-dark text-white border-0" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn btn-outline-danger btn-sm fw-bold">Atualizar Senha</button>
+                </form>
+            </div>
+
+            <div class="card bg-dark-card border-0 p-4">
+                <h6 class="text-white mb-3">Meus Feedbacks</h6>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead class="text-white-50 small">
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Mensagem</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in feedbacks %}
+                            <tr>
+                                <td class="text-info">{{ f[3]|upper }}</td>
+                                <td class="text-white">{{ f[4] }}</td>
+                                <td><span class="badge bg-secondary">{{ f[5] }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .bg-dark-card { 
+        background: #1e293b; 
+        border-radius: 20px; 
+    }
+    .form-control { 
+        border: 1px solid rgba(255,255,255,0.1) !important; 
+    }
+    .form-control:focus { 
+        background: #0f172a !important; 
+        color: white !important; 
+        box-shadow: 0 0 0 0.2rem rgba(6, 182, 212, 0.25);
+    }
+</style>
 {% endblock %}

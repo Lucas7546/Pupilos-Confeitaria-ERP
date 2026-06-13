@@ -42,8 +42,9 @@ def create_app():
     
     @app.before_request
     def set_empresa_context():
-        from flask import g, request
+        from flask import g, request, session
         from flask_login import current_user
+        from modules.planos import get_plano_empresa
 
         if request.path.startswith("/static/"):
             g.id_empresa = None
@@ -51,10 +52,16 @@ def create_app():
 
         if current_user.is_authenticated:
             g.id_empresa = getattr(current_user, "id_empresa", None)
+            if "plano" not in session or session.get("id_empresa_cache") != g.id_empresa:
+                session["plano"] = get_plano_empresa()
+                session["id_empresa_cache"] = g.id_empresa
         else:
             g.id_empresa = None  # NÃO usa -1 em sistema sério
 
-            
+    @app.context_processor
+    def inject_plano():
+        from flask import session
+        return dict(plano=session.get("plano", "basic"))            
     
     # Registro dos Blueprints
     app.register_blueprint(auth_bp)

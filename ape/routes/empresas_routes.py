@@ -137,3 +137,8 @@ def configuracoes():
         log_erro(f"Erro ao carregar configurações: {e}")
         flash("Erro ao carregar painel de configurações.", "danger")
         return redirect(url_for("main.dashboard"))
+    
+@empresas_bp.route("/upgrade-necessario")
+@login_required
+def upgrade_necessario():
+    return render_template("upgrade.html")

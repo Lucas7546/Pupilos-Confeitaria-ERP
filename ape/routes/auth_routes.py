@@ -8,9 +8,13 @@ from utils.logger import log_erro
 from modules.permissoes import acesso_requerido
 from ape.extensions import limiter
 from ape.services.log_service import registrar_log
-
+from modules.usuarios import atualizar_senha
+from modules.planos import get_plano_empresa
 
 auth_bp = Blueprint("auth", __name__)
+
+
+
 
 
 # =============================================================
@@ -65,6 +69,7 @@ def login():
     return render_template("login.html")
 
 
+
 # =============================================================
 # LOGOUT
 # =============================================================
@@ -113,3 +118,15 @@ def debug_user():
         return {
             "erro": "falha ao obter usuário"
         }, 500
+    
+
+
+@auth_bp.route("/trocar-senha", methods=["POST"])
+@login_required
+def trocar_senha():
+    nova_senha = request.form.get("nova_senha")
+    id_user = current_user.id
+    
+    atualizar_senha(id_user, nova_senha)
+    flash("Senha alterada com sucesso!", "success")
+    return redirect(url_for("main.configuracoes"))

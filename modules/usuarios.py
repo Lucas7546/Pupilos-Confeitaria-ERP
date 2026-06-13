@@ -7,7 +7,6 @@ from utils.logger import log_info, log_erro
 from modules.tenant_db import get_conn, db_conn
 from modules.db import release_conn
 
-
 def buscar_usuario_global(id_usuario: int):
     conn = get_conn()
     try:
@@ -610,6 +609,17 @@ def alterar_status(id_usuario: int, novo_status: int) -> bool:
     
 
 
+def atualizar_senha(id_usuario, nova_senha_plana):
+    # Gera o hash da nova senha
+    nova_senha_hash = generate_password_hash(nova_senha_plana)
+    
+    with db_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE usuarios SET senha = %s WHERE id = %s",
+                (nova_senha_hash, id_usuario)
+            )
+            conn.commit()
 
 
 

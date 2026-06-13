@@ -7,6 +7,7 @@ from modules import estoque
 from utils.logger import log_erro
 from modules.tenant_db import db_conn
 from ape.extensions import limiter
+from modules.tenant import get_empresa_id
 
 subprodutos_bp = Blueprint('subprodutos', __name__)
 
@@ -97,6 +98,39 @@ def registrar_lote():
         log_erro(f"Erro ao registrar lote: {e}")
         flash(f"Erro: {e}", "danger")
 
+    return redirect(url_for("estoque.estoque_painel"))
+
+
+
+@subprodutos_bp.route('/ajustar-subproduto/<int:id_subproduto>', methods=['POST'])
+@login_required
+def ajustar_estoque_subproduto(id_subproduto):
+    try:
+        nova_qtd = request.form.get("quantidade")
+        observacao = request.form.get("observacao", "Ajuste manual")
+        
+        if not nova_qtd:
+            flash("Quantidade inválida.", "danger")
+            return redirect(url_for("estoque.estoque_painel"))
+            
+        qtd = float(nova_qtd)
+        # Certifique-se que g.id_empresa está disponível ou use get_empresa_id()
+        id_empresa = get_empresa_id() 
+        
+        with db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO movimentacao_estoque 
+                    (id_empresa, id_subproduto, tipo_movimento, quantidade, observacao)
+                    VALUES (%s, %s, 'ajuste', %s, %s)
+                """, (id_empresa, id_subproduto, qtd, observacao))
+        
+        registrar_log("AJUSTE", "SUBPRODUTOS", f"ID {id_subproduto}: {qtd}", current_user.username)
+        flash("Ajuste registrado!", "success")
+    except Exception as e:
+        log_erro(f"Erro ao ajustar: {e}")
+        flash("Erro ao salvar ajuste.", "danger")
+        
     return redirect(url_for("estoque.estoque_painel"))
 
 

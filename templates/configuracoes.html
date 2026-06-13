@@ -2,16 +2,16 @@
 
 {% block content %}
 <div class="container py-4">
-    <div class="mb-3">
-    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left"></i> Voltar ao Inicio
-    </a>
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="text-white fw-bold m-0">
+            <i class="bi bi-gear text-warning me-2"></i> Configurações
+        </h2>
     </div>
-    <h2 class="text-white fw-bold mb-4">
-        <i class="bi bi-gear text-warning me-2"></i> Configurações
-    </h2>
-    
-    <div class="row g-4">
+      
+     <div class="row g-4">
         <div class="col-md-4">
             <div class="card bg-dark-card border-0 p-4 h-100">
                 <h5 class="text-white mb-3">Meu Plano</h5>

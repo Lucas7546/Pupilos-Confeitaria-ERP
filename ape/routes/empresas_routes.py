@@ -2,11 +2,7 @@ from flask import Blueprint, request, redirect, flash, url_for, render_template,
 from flask_login import login_required
 from modules.tenant_db import db_conn
 from modules.empresas import criar_empresa
-from modules.usuarios import (
-    criar_usuario_empresa,
-    buscar_usuario
-)
-
+from modules.usuarios import (criar_usuario_empresa, buscar_usuario)
 from utils.logger import log_erro
 
 

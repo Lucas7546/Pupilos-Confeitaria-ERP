@@ -524,16 +524,20 @@ def criar_usuario_empresa(
     senha,
     nivel,
     id_empresa,
-    conn=None
+    cursor=None
 ):
 
-    senha_hash = generate_password_hash(senha)
+    try:
 
-    if conn:
+        senha_hash = generate_password_hash(senha)
 
-        with conn.cursor() as cur:
+        # =========================
+        # USANDO TRANSAÇÃO EXISTENTE
+        # =========================
 
-            cur.execute("""
+        if cursor:
+
+            cursor.execute("""
                 INSERT INTO usuarios
                 (
                     username,
@@ -547,49 +551,55 @@ def criar_usuario_empresa(
                     %s,
                     %s,
                     %s,
-                    1,
+                    TRUE,
                     %s
                 )
-            """,
-            (
+            """, (
                 username.lower().strip(),
                 senha_hash,
                 nivel,
                 id_empresa
             ))
 
-    else:
+        # =========================
+        # FUNCIONAMENTO ANTIGO
+        # =========================
 
-        with db_conn() as conn:
+        else:
 
-            with conn.cursor() as cur:
+            with db_conn() as conn:
+                with conn.cursor() as cur:
 
-                cur.execute("""
-                    INSERT INTO usuarios
-                    (
-                        username,
-                        senha,
+                    cur.execute("""
+                        INSERT INTO usuarios
+                        (
+                            username,
+                            senha,
+                            nivel,
+                            ativo,
+                            id_empresa
+                        )
+                        VALUES
+                        (
+                            %s,
+                            %s,
+                            %s,
+                            TRUE,
+                            %s
+                        )
+                    """, (
+                        username.lower().strip(),
+                        senha_hash,
                         nivel,
-                        ativo,
                         id_empresa
-                    )
-                    VALUES
-                    (
-                        %s,
-                        %s,
-                        %s,
-                        1,
-                        %s
-                    )
-                """,
-                (
-                    username.lower().strip(),
-                    senha_hash,
-                    nivel,
-                    id_empresa
-                ))
+                    ))
 
-    return True
+                    conn.commit()
+
+        return True
+
+    except Exception as e:
+        raise Exception(f"Erro ao criar usuário: {e}")
  
 
 def alterar_status(id_usuario: int, novo_status: int) -> bool:

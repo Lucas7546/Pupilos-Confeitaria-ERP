@@ -13,7 +13,7 @@
             </p>
         </div>
 
-        <form method="POST" action="{{ url_for('auditoria.gerar_convite') }}">
+        <form method="POST" action="{{ url_for('empresas.gerar_convite') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-warning fw-bold px-4 py-2">
                 <i class="bi bi-plus-lg me-2"></i> GERAR NOVO CONVITE
@@ -27,39 +27,59 @@
                 <thead class="text-white-50 small text-uppercase">
                     <tr>
                         <th>Código</th>
-                        <th>Plano</th>
+                        <th>Empresa/ Responsável</th>
                         <th>Status</th>
-                        <th>Data de Criação</th>
+                        <th>Data</th>
+                        <th>Ações</th> 
                     </tr>
                 </thead>
                 <tbody class="border-0">
                     {% for convite in convites %}
                     <tr>
-                        <td class="font-monospace fw-bold text-warning">{{ convite[0] }}</td>
+                        <td class="font-monospace fw-bold text-warning">{{ convite[1] }}</td>
+                        
                         <td>
-                            <span class="badge bg-secondary bg-opacity-20 text-light border border-light border-opacity-10">
-                                {{ convite[1]|upper }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if convite[2] %}
-                                <span class="text-success small">
-                                    <i class="bi bi-check-circle-fill me-1"></i> Utilizado
-                                </span>
+                            {% if convite[4] %}
+                                <div class="fw-bold text-white">
+                                    {{ convite[4] }}
+                                </div>
+                                <small class="text-white-50">
+                                    <i class="bi bi-person-fill me-1"></i>
+                                     {{ convite[5] }}
+
+                                </small>
                             {% else %}
-                                <span class="text-warning small">
-                                    <i class="bi bi-clock-fill me-1"></i> Disponível
-                                </span>
+                                <span class="text-muted">---</span>
                             {% endif %}
                         </td>
-                        <td class="text-white-50">
-                            {{ convite[3].strftime('%d/%m/%Y %H:%M') }}
+                        
+                        <td>
+                            {% if convite[2] %} 
+                                <span class="text-success small"><i class="bi bi-check-circle-fill me-1"></i> Utilizado</span>
+                            {% else %}
+                                <span class="text-warning small"><i class="bi bi-clock-fill me-1"></i> Disponível</span>
+                            {% endif %}
                         </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="4" class="text-center text-white-50 py-5">
-                            Nenhum convite gerado ainda.
+                        
+                        <td class="text-white-50">{{ convite[3].strftime('%d/%m/%Y %H:%M') }}</td>
+                        
+                        <td>
+                            {% if not convite[2] %}
+                            <form action="{{ url_for('empresas.excluir_convite', id_convite=convite[0]) }}" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Excluir convite?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if convite[6] %} <form action="{{ url_for('empresas.excluir_empresa', id_empresa=convite[6]) }}" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('Excluir empresa permanentemente?')">
+                                    <i class="bi bi-building-dash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

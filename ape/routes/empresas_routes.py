@@ -20,12 +20,12 @@ def cadastro_empresa():
     username = request.form.get("username", "").strip().lower()
     senha = request.form.get("senha", "").strip()
     plano = request.form.get("plano", "basic")
-
     codigo_convite = request.form.get("codigo_convite", "").strip().upper()
 
     # =========================
     # VALIDAÇÕES BÁSICAS
     # =========================
+
     if not nome_empresa or not responsavel or not username:
         flash("Preencha todos os campos obrigatórios.", "danger")
         return redirect(url_for("auth.login"))
@@ -34,77 +34,107 @@ def cadastro_empresa():
         flash("A senha deve ter pelo menos 6 caracteres.", "danger")
         return redirect(url_for("auth.login"))
 
-    if buscar_usuario(username):
-        flash("Este nome de usuário já está em uso.", "warning")
-        return redirect(url_for("auth.login"))
-
     try:
 
-        # =========================
-        # VALIDAR CONVITE
-        # =========================
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                cur.execute("""
-                    SELECT id
-                    FROM convites_empresa
-                    WHERE codigo = %s
-                      AND utilizado = FALSE
-                    LIMIT 1
-                """, (codigo_convite,))
-
-                convite = cur.fetchone()
-
-        if not convite:
-            return redirect(url_for("empresas.convite_invalido"))
-
-        # =========================
-        # CRIAR EMPRESA
-        # =========================
-        id_empresa = criar_empresa(
-            nome=nome_empresa,
-            responsavel=responsavel,
-            plano=plano
-        )
-
-        # =========================
-        # CRIAR USUÁRIO DONO
-        # =========================
-        criar_usuario_empresa(
-            username=username,
-            senha=senha,
-            nivel="dono",
-            id_empresa=id_empresa
-        )
-
-        # =========================
-        # MARCAR CONVITE COMO USADO
-        # =========================
-        with db_conn() as conn:
-            with conn.cursor() as cur:
+                # =========================
+                # RESERVA O CONVITE
+                # =========================
 
                 cur.execute("""
                     UPDATE convites_empresa
                     SET utilizado = TRUE
                     WHERE codigo = %s
                       AND utilizado = FALSE
+                    RETURNING id
                 """, (codigo_convite,))
 
+                convite = cur.fetchone()
 
-        # =========================
-        # SUCESSO
-        # =========================
-        flash("Empresa criada com sucesso. Faça seu login!", "success")
+                if not convite:
+                    flash("Convite inválido ou já utilizado.", "danger")
+                    return redirect(url_for("empresas.convite_invalido"))
+
+                # =========================
+                # VERIFICA USUÁRIO
+                # =========================
+
+                cur.execute("""
+                    SELECT 1
+                    FROM usuarios
+                    WHERE LOWER(username) = LOWER(%s)
+                    LIMIT 1
+                """, (username,))
+
+                if cur.fetchone():
+                    flash("Este nome de usuário já está em uso.", "warning")
+                    return redirect(url_for("auth.login"))
+
+                # =========================
+                # CRIA EMPRESA + PLANO
+                # =========================
+
+                id_empresa = criar_empresa(
+                    nome=nome_empresa,
+                    responsavel=responsavel,
+                    plano=plano,
+                    cursor=cur
+                )
+
+                # =========================
+                # CRIA USUÁRIO DONO
+                # =========================
+
+                criar_usuario_empresa(
+                    username=username,
+                    senha=senha,
+                    nivel="dono",
+                    id_empresa=id_empresa,
+                    cursor=cur
+                )
+
+                # =========================
+                # ATUALIZA DADOS DO CONVITE
+                # =========================
+
+                cur.execute("""
+                    UPDATE convites_empresa
+                    SET
+                        id_empresa_usada = %s,
+                        nome_empresa_usada = %s,
+                        nome_responsavel_usado = %s
+                    WHERE id = %s
+                """, (
+                    id_empresa,
+                    nome_empresa,
+                    responsavel,
+                    convite[0]
+                ))
+
+                conn.commit()
+
+        flash(
+            "Empresa criada com sucesso. Faça seu login!",
+            "success"
+        )
+
         return redirect(url_for("auth.login"))
 
     except Exception as e:
 
-        log_erro(f"Erro no cadastro da empresa {nome_empresa}: {e}")
+        log_erro(
+            f"Erro no cadastro da empresa "
+            f"{nome_empresa} ({codigo_convite}): {e}"
+        )
 
-        flash("Erro interno ao criar empresa.", "danger")
+        flash(
+            "Erro interno ao criar empresa. Tente novamente.",
+            "danger"
+        )
+
         return redirect(url_for("auth.login"))
-    
 
 
 @empresas_bp.route("/convite-invalido")
@@ -138,3 +168,45 @@ def configuracoes():
 @login_required
 def upgrade_necessario():
     return render_template("upgrade.html")
+
+
+@empresas_bp.route("/excluir-convite/<int:id_convite>", methods=["POST"])
+@login_required
+def excluir_convite(id_convite):
+    with db_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM convites_empresa WHERE id = %s AND utilizado = FALSE", (id_convite,))
+            conn.commit()
+    flash("Convite removido com sucesso.", "info")
+    # CORREÇÃO AQUI: redirecionar para a listagem
+    return redirect(url_for('empresas.lista_convites'))
+
+@empresas_bp.route("/lista-convites")
+@login_required
+def lista_convites():
+    with db_conn() as conn:
+        with conn.cursor() as cur:
+            # Selecionando todos os campos que agora existem
+            cur.execute("""
+                SELECT id, codigo, utilizado, data_criacao, 
+                       nome_empresa_usada, nome_responsavel_usado, id_empresa_usada
+                FROM convites_empresa 
+                ORDER BY utilizado ASC, data_criacao DESC
+            """)
+            convites = cur.fetchall()
+    return render_template("admin/convites.html", convites=convites)
+
+
+@empresas_bp.route("/excluir-empresa/<int:id_empresa>", methods=["POST"])
+@login_required
+def excluir_empresa(id_empresa):
+    # Lógica de exclusão que definimos antes
+    with db_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM convites_empresa WHERE id_empresa_usada = %s", (id_empresa,))
+            cur.execute("DELETE FROM usuarios WHERE id_empresa = %s", (id_empresa,))
+            cur.execute("DELETE FROM empresa_planos WHERE id_empresa = %s", (id_empresa,))
+            cur.execute("DELETE FROM empresas WHERE id_empresa = %s", (id_empresa,))
+            conn.commit()
+    flash("Empresa e dados associados removidos com sucesso.", "success")
+    return redirect(url_for('empresas.lista_convites'))

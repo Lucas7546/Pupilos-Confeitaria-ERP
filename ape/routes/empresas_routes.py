@@ -187,17 +187,29 @@ def excluir_convite(id_convite):
 @login_required
 @superadmin_required
 def lista_convites():
+
     with db_conn() as conn:
         with conn.cursor() as cur:
-            # Selecionando todos os campos que agora existem
+
             cur.execute("""
-                SELECT id, codigo, utilizado, data_criacao, 
-                       nome_empresa_usada, nome_responsavel_usado, id_empresa_usada
-                FROM convites_empresa 
-                ORDER BY utilizado ASC, data_criacao DESC
+                SELECT
+                    id,
+                    codigo,
+                    utilizado,
+                    criado_em,
+                    nome_empresa_usada,
+                    nome_responsavel_usado,
+                    id_empresa_usada
+                FROM convites_empresa
+                ORDER BY utilizado ASC, criado_em DESC
             """)
+
             convites = cur.fetchall()
-    return render_template("admin/convites.html", convites=convites)
+
+    return render_template(
+        "admin/convites.html",
+        convites=convites
+    )
 
 
 @empresas_bp.route("/excluir-empresa/<int:id_empresa>", methods=["POST"])

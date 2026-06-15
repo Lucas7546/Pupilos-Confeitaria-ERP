@@ -8,8 +8,6 @@ try:
 
     print("Conectado ao banco com sucesso! Iniciando migração de cargos...")
 
-    # Se a coluna 'nivel' for um ENUM, precisamos adicionar os novos valores antes de atualizar os usuários
-    # O 'IF NOT EXISTS' evita erros caso você rode o script mais de uma vez
     try:
         cursor.execute("ALTER TYPE nivel_usuario_enum ADD VALUE IF NOT EXISTS 'socios';")
         cursor.execute("ALTER TYPE nivel_usuario_enum ADD VALUE IF NOT EXISTS 'colaborador';")

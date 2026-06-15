@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, Response, flash, redirect, url_for, abort
+from flask import Blueprint, render_template, request, Response, flash, redirect, url_for
 from flask_login import login_required, current_user
 from modules.permissoes import acesso_requerido
 from modules.decorators import superadmin_required
@@ -215,40 +215,6 @@ def limpar_logs():
 def gerar_codigo_convite() -> str:
     return secrets.token_hex(6).upper()
 
-@auditoria_bp.route("/admin/convites")
-@login_required
-@superadmin_required
-def admin_convites():
-
-    try:
-
-        with admin_conn() as conn:
-            with conn.cursor() as cur:
-
-                cur.execute("""
-                    SELECT
-                        codigo,
-                        plano,
-                        utilizado,
-                        criado_em
-                    FROM convites_empresa
-                    ORDER BY id DESC
-                """)
-
-                convites = cur.fetchall() or []
-
-        return render_template(
-            "admin_convites.html",
-            convites=convites
-        )
-
-    except Exception as e:
-
-        log_erro(f"Erro admin_convites: {e}")
-
-        flash("Erro ao carregar convites.", "danger")
-
-        return redirect(url_for("main.dashboard"))
 
 @auditoria_bp.route("/admin/convite/gerar", methods=["POST"])
 @login_required

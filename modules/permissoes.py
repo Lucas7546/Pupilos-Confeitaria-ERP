@@ -10,7 +10,7 @@ from utils.logger import log_erro
 PERMISSOES: dict[str, list[str]] = {
     "admin":       ["usuarios", "estoque", "vendas", "financeiro", "cadastro", "auditoria", "produtos"],
     "socios":      ["estoque", "vendas", "financeiro", "cadastro", "auditoria", "produtos"],
-    "dono":        ["estoque", "vendas", "financeiro", "cadastro", "auditoria", "produtos"],
+    "dono":        ["estoque", "vendas", "financeiro", "cadastro", "usuarios", "produtos"],
     "financeiro":  ["financeiro", "vendas", "cadastro"],
     "colaborador": ["estoque", "vendas"],
     "ti":          ["usuarios", "auditoria"],

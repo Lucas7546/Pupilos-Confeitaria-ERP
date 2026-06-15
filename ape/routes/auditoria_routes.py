@@ -290,4 +290,4 @@ def gerar_convite():
         log_erro(f"Erro gerar_convite: {e}")
         flash("Erro ao gerar convite.", "danger")
 
-    return redirect(url_for("auditoria.admin_convites"))
+    return redirect(url_for("empresas.lista_convites"))

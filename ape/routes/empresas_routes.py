@@ -4,6 +4,7 @@ from modules.tenant_db import db_conn
 from modules.empresas import criar_empresa
 from modules.usuarios import (criar_usuario_empresa, buscar_usuario)
 from utils.logger import log_erro
+from modules.decorators import superadmin_required
 
 
 empresas_bp = Blueprint(
@@ -172,6 +173,7 @@ def upgrade_necessario():
 
 @empresas_bp.route("/excluir-convite/<int:id_convite>", methods=["POST"])
 @login_required
+@superadmin_required
 def excluir_convite(id_convite):
     with db_conn() as conn:
         with conn.cursor() as cur:
@@ -183,6 +185,7 @@ def excluir_convite(id_convite):
 
 @empresas_bp.route("/lista-convites")
 @login_required
+@superadmin_required
 def lista_convites():
     with db_conn() as conn:
         with conn.cursor() as cur:
@@ -199,6 +202,7 @@ def lista_convites():
 
 @empresas_bp.route("/excluir-empresa/<int:id_empresa>", methods=["POST"])
 @login_required
+@superadmin_required
 def excluir_empresa(id_empresa):
     # Lógica de exclusão que definimos antes
     with db_conn() as conn:

@@ -206,10 +206,7 @@ def lista_convites():
 
             convites = cur.fetchall()
 
-    return render_template(
-        "admin/convites.html",
-        convites=convites
-    )
+    return render_template("admin_convites.html", convites=convites)
 
 
 @empresas_bp.route("/excluir-empresa/<int:id_empresa>", methods=["POST"])

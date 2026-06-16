@@ -42,6 +42,7 @@ def deletar_user(id):
 @usuarios_bp.route("/criar", methods=["POST"])
 @login_required
 @acesso_requerido("admin")
+@limite_usuarios_required
 def criar_usuario():
     username = request.form.get("username", "").strip().lower()
     senha    = request.form.get("senha", "").strip()

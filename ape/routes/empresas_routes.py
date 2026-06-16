@@ -167,7 +167,7 @@ def configuracoes():
     
 @empresas_bp.route("/upgrade-necessario")
 @login_required
-def upgrade_necessario():
+def upgrade():
     return render_template("upgrade.html")
 
 

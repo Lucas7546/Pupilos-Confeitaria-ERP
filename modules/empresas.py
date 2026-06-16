@@ -1,42 +1,28 @@
 from modules.tenant_db import db_conn
 
 
+Aqui estão as duas funções corrigidas. Copie e substitua no seu arquivo onde elas estão declaradas para garantir que todos os TRUE sejam eliminados e substituídos por 1.
+
+1. Função criar_empresa Corrigida:
+Python
 def criar_empresa(nome, responsavel, plano="basic", cursor=None):
-
     try:
-
         # =========================
         # USANDO TRANSAÇÃO EXISTENTE
         # =========================
         if cursor:
-
             cursor.execute("""
-                INSERT INTO empresas (
-                    nome,
-                    responsavel,
-                    plano
-                )
+                INSERT INTO empresas (nome, responsavel, plano)
                 VALUES (%s, %s, %s)
                 RETURNING id_empresa
-            """, (
-                nome,
-                responsavel,
-                plano
-            ))
+            """, (nome, responsavel, plano))
 
             id_empresa = cursor.fetchone()[0]
 
             cursor.execute("""
-                INSERT INTO empresa_planos (
-                    id_empresa,
-                    plano,
-                    ativo
-                )
-                VALUES (%s, %s, TRUE)
-            """, (
-                id_empresa,
-                plano
-            ))
+                INSERT INTO empresa_planos (id_empresa, plano, ativo)
+                VALUES (%s, %s, 1)
+            """, (id_empresa, plano))
 
             return id_empresa
 
@@ -44,37 +30,20 @@ def criar_empresa(nome, responsavel, plano="basic", cursor=None):
         # FUNCIONAMENTO ANTIGO
         # =========================
         else:
-
             with db_conn() as conn:
                 with conn.cursor() as cur:
-
                     cur.execute("""
-                        INSERT INTO empresas (
-                            nome,
-                            responsavel,
-                            plano
-                        )
+                        INSERT INTO empresas (nome, responsavel, plano)
                         VALUES (%s, %s, %s)
                         RETURNING id_empresa
-                    """, (
-                        nome,
-                        responsavel,
-                        plano
-                    ))
+                    """, (nome, responsavel, plano))
 
                     id_empresa = cur.fetchone()[0]
 
                     cur.execute("""
-                        INSERT INTO empresa_planos (
-                            id_empresa,
-                            plano,
-                            ativo
-                        )
-                        VALUES (%s, %s, TRUE)
-                    """, (
-                        id_empresa,
-                        plano
-                    ))
+                        INSERT INTO empresa_planos (id_empresa, plano, ativo)
+                        VALUES (%s, %s, 1)
+                    """, (id_empresa, plano))
 
                     conn.commit()
 
@@ -82,7 +51,6 @@ def criar_empresa(nome, responsavel, plano="basic", cursor=None):
 
     except Exception as e:
         raise Exception(f"Erro ao criar empresa: {e}")
-
 
 def buscar_empresa_nome(nome):
 

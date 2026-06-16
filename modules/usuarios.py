@@ -519,41 +519,18 @@ def atualizar_nivel(id_usuario: int, novo_nivel: str) -> bool:
 
         return False
 
-def criar_usuario_empresa(
-    username,
-    senha,
-    nivel,
-    id_empresa,
-    cursor=None
-):
-
+def criar_usuario_empresa(username, senha, nivel, id_empresa, cursor=None):
     try:
-
         senha_hash = generate_password_hash(senha)
 
         # =========================
         # USANDO TRANSAÇÃO EXISTENTE
         # =========================
-
         if cursor:
-
             cursor.execute("""
                 INSERT INTO usuarios
-                (
-                    username,
-                    senha,
-                    nivel,
-                    ativo,
-                    id_empresa
-                )
-                VALUES
-                (
-                    %s,
-                    %s,
-                    %s,
-                    TRUE,
-                    %s
-                )
+                (username, senha, nivel, ativo, id_empresa)
+                VALUES (%s, %s, %s, 1, %s)
             """, (
                 username.lower().strip(),
                 senha_hash,
@@ -564,36 +541,19 @@ def criar_usuario_empresa(
         # =========================
         # FUNCIONAMENTO ANTIGO
         # =========================
-
         else:
-
             with db_conn() as conn:
                 with conn.cursor() as cur:
-
                     cur.execute("""
                         INSERT INTO usuarios
-                        (
-                            username,
-                            senha,
-                            nivel,
-                            ativo,
-                            id_empresa
-                        )
-                        VALUES
-                        (
-                            %s,
-                            %s,
-                            %s,
-                            TRUE,
-                            %s
-                        )
+                        (username, senha, nivel, ativo, id_empresa)
+                        VALUES (%s, %s, %s, 1, %s)
                     """, (
                         username.lower().strip(),
                         senha_hash,
                         nivel,
                         id_empresa
                     ))
-
                     conn.commit()
 
         return True

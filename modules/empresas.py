@@ -3,7 +3,6 @@ from modules.tenant_db import db_conn
 
 def criar_empresa(nome, responsavel, plano="basic", cursor=None):
     try:
-        # Se um cursor foi passado, usamos ele para manter a transação
         if cursor:
             cursor.execute("""
                 INSERT INTO empresas (nome, responsavel, plano)
@@ -13,15 +12,14 @@ def criar_empresa(nome, responsavel, plano="basic", cursor=None):
 
             id_empresa = cursor.fetchone()[0]
 
-            # O (1)::boolean resolve o conflito entre inteiro e booleano
+            # O banco é INTEGER, então enviamos o número 1
             cursor.execute("""
                 INSERT INTO empresa_planos (id_empresa, plano, ativo)
-                VALUES (%s, %s, (1)::boolean)
+                VALUES (%s, %s, 1)
             """, (id_empresa, plano))
 
             return id_empresa
 
-        # Caso contrário, abrimos uma nova conexão
         else:
             with db_conn() as conn:
                 with conn.cursor() as cur:
@@ -35,7 +33,7 @@ def criar_empresa(nome, responsavel, plano="basic", cursor=None):
 
                     cur.execute("""
                         INSERT INTO empresa_planos (id_empresa, plano, ativo)
-                        VALUES (%s, %s, (1)::boolean)
+                        VALUES (%s, %s, 1)
                     """, (id_empresa, plano))
 
                     conn.commit()

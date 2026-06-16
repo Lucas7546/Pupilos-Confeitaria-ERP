@@ -523,25 +523,22 @@ def criar_usuario_empresa(username, senha, nivel, id_empresa, cursor=None):
     try:
         senha_hash = generate_password_hash(senha)
 
-        # Se um cursor foi passado, usamos ele
         if cursor:
             cursor.execute("""
                 INSERT INTO usuarios (username, senha, nivel, ativo, id_empresa)
-                VALUES (%s, %s, %s, (1)::boolean, %s)
+                VALUES (%s, %s, %s, 1, %s)
             """, (
                 username.lower().strip(),
                 senha_hash,
                 nivel,
                 id_empresa
             ))
-
-        # Caso contrário, abrimos uma nova conexão
         else:
             with db_conn() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
                         INSERT INTO usuarios (username, senha, nivel, ativo, id_empresa)
-                        VALUES (%s, %s, %s, (1)::boolean, %s)
+                        VALUES (%s, %s, %s, 1, %s)
                     """, (
                         username.lower().strip(),
                         senha_hash,
@@ -554,7 +551,6 @@ def criar_usuario_empresa(username, senha, nivel, id_empresa, cursor=None):
 
     except Exception as e:
         raise Exception(f"Erro ao criar usuário: {e}")
- 
 
 def alterar_status(id_usuario: int, novo_status: int) -> bool:
     try:

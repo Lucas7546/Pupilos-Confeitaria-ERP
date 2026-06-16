@@ -280,25 +280,28 @@ def listar_solicitacoes():
 @auditoria_bp.route("/admin/aprovar-upgrade/<uuid:id_solicitacao>", methods=["POST"])
 @superadmin_required
 def aprovar_upgrade(id_solicitacao):
-    # Usa o db_admin_conn para garantir acesso total
-    with db_admin_conn() as conn:
-        with conn.cursor(cursor_factory=DictCursor) as cur:
-            # 1. Pega os dados da solicitação
-            cur.execute("SELECT id_empresa, plano_desejado FROM solicitacoes_upgrade WHERE id_solicitacao = %s", (str(id_solicitacao),))
-            solicitacao = cur.fetchone()
-            
-            if solicitacao:
+    try:
+        with db_admin_conn() as conn:
+            with conn.cursor(cursor_factory=DictCursor) as cur:
+                # 1. Busca
+                cur.execute("SELECT id_empresa, plano_desejado FROM solicitacoes_upgrade WHERE id_solicitacao = %s", (str(id_solicitacao),))
+                solicitacao = cur.fetchone()
+                
+                if not solicitacao:
+                    flash("Solicitação não encontrada.", "danger")
+                    return redirect(url_for("auditoria.listar_solicitacoes"))
+
                 id_empresa = solicitacao['id_empresa']
                 novo_plano = solicitacao['plano_desejado']
                 
-                # 2. Atualiza a empresa
+                # 2. Executa as atualizações
                 cur.execute("UPDATE empresas SET plano = %s WHERE id_empresa = %s", (novo_plano, id_empresa))
-                
-                # 3. Marca a solicitação como aprovada
                 cur.execute("UPDATE solicitacoes_upgrade SET status = 'aprovado' WHERE id_solicitacao = %s", (str(id_solicitacao),))
                 
-                flash(f"Plano atualizado para {novo_plano} com sucesso!", "success")
-            else:
-                flash("Solicitação não encontrada.", "danger")
+                # O bloco 'with conn' faz o commit automático ao final
+                flash(f"Plano atualizado para {novo_plano.upper()} com sucesso!", "success")
+    except Exception as e:
+        print(f"Erro crítico na aprovação: {e}")
+        flash("Erro ao processar a aprovação. Verifique o banco de dados.", "danger")
                 
     return redirect(url_for("auditoria.listar_solicitacoes"))

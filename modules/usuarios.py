@@ -523,14 +523,11 @@ def criar_usuario_empresa(username, senha, nivel, id_empresa, cursor=None):
     try:
         senha_hash = generate_password_hash(senha)
 
-        # =========================
-        # USANDO TRANSAÇÃO EXISTENTE
-        # =========================
+        # Se um cursor foi passado, usamos ele
         if cursor:
             cursor.execute("""
-                INSERT INTO usuarios
-                (username, senha, nivel, ativo, id_empresa)
-                VALUES (%s, %s, %s, 1, %s)
+                INSERT INTO usuarios (username, senha, nivel, ativo, id_empresa)
+                VALUES (%s, %s, %s, (1)::boolean, %s)
             """, (
                 username.lower().strip(),
                 senha_hash,
@@ -538,16 +535,13 @@ def criar_usuario_empresa(username, senha, nivel, id_empresa, cursor=None):
                 id_empresa
             ))
 
-        # =========================
-        # FUNCIONAMENTO ANTIGO
-        # =========================
+        # Caso contrário, abrimos uma nova conexão
         else:
             with db_conn() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
-                        INSERT INTO usuarios
-                        (username, senha, nivel, ativo, id_empresa)
-                        VALUES (%s, %s, %s, 1, %s)
+                        INSERT INTO usuarios (username, senha, nivel, ativo, id_empresa)
+                        VALUES (%s, %s, %s, (1)::boolean, %s)
                     """, (
                         username.lower().strip(),
                         senha_hash,

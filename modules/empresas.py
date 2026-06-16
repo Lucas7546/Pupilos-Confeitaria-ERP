@@ -1,10 +1,9 @@
 from modules.tenant_db import db_conn
 
+
 def criar_empresa(nome, responsavel, plano="basic", cursor=None):
     try:
-        # =========================
-        # USANDO TRANSAÇÃO EXISTENTE
-        # =========================
+        # Se um cursor foi passado, usamos ele para manter a transação
         if cursor:
             cursor.execute("""
                 INSERT INTO empresas (nome, responsavel, plano)
@@ -14,16 +13,15 @@ def criar_empresa(nome, responsavel, plano="basic", cursor=None):
 
             id_empresa = cursor.fetchone()[0]
 
+            # O (1)::boolean resolve o conflito entre inteiro e booleano
             cursor.execute("""
                 INSERT INTO empresa_planos (id_empresa, plano, ativo)
-                VALUES (%s, %s, 1)
+                VALUES (%s, %s, (1)::boolean)
             """, (id_empresa, plano))
 
             return id_empresa
 
-        # =========================
-        # FUNCIONAMENTO ANTIGO
-        # =========================
+        # Caso contrário, abrimos uma nova conexão
         else:
             with db_conn() as conn:
                 with conn.cursor() as cur:
@@ -37,11 +35,10 @@ def criar_empresa(nome, responsavel, plano="basic", cursor=None):
 
                     cur.execute("""
                         INSERT INTO empresa_planos (id_empresa, plano, ativo)
-                        VALUES (%s, %s, 1)
+                        VALUES (%s, %s, (1)::boolean)
                     """, (id_empresa, plano))
 
                     conn.commit()
-
                     return id_empresa
 
     except Exception as e:

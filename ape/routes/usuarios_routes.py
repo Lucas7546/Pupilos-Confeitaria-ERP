@@ -9,7 +9,7 @@ from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
 from utils.logger import log_erro
 from werkzeug.security import generate_password_hash
-from modules.tenant_db import db_conn
+from modules.tenant_db import db_conn, db_admin_conn
 from flask_login import current_user
 
 usuarios_bp = Blueprint('usuarios', __name__)
@@ -99,10 +99,28 @@ def toggle_usuario(id_usuario):
 
 @usuarios_bp.route("/admin/config")
 @login_required
-@acesso_requerido("usuarios")
+@acesso_requerido("admin")
 def area_admin():
     lista = usuarios.listar_usuarios() or []
-    return render_template("admin_panel.html", total_usuarios=len(lista), usuarios=lista)
+    
+    # Adicionando a busca pelo número de pendências
+    count_pendentes = 0
+    try:
+        with db_admin_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM solicitacoes_upgrade WHERE status = 'pendente'")
+                resultado = cur.fetchone()
+                if resultado:
+                    count_pendentes = resultado[0]
+    except Exception as e:
+        print(f"Erro ao contar pendências: {e}")
+
+    return render_template(
+        "admin_panel.html", 
+        total_usuarios=len(lista), 
+        usuarios=lista,
+        count_pendentes=count_pendentes # Passa para o HTML
+    )
 
 @usuarios_bp.route("/editar/<int:id_usuario>", methods=["GET"])
 @login_required

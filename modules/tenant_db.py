@@ -2,6 +2,7 @@ from contextlib import contextmanager
 import traceback
 from flask_login import current_user
 from modules.db import get_pool
+from psycopg2.extras import DictCursor
 from modules.tenant import get_empresa_id
 
 
@@ -65,10 +66,8 @@ def aplicar_tenant(conn):
 @contextmanager
 def db_admin_conn():
     conn = get_pool().getconn()
-    conn.autocommit = False  # Importante para manter o padrão
+    conn.autocommit = False
     try:
-        # Aqui NENHUM 'SET LOCAL' é executado. 
-        # Portanto, o RLS não terá um 'app.id_empresa' para filtrar.
         yield conn
         conn.commit()
     except Exception:

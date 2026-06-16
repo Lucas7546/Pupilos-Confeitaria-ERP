@@ -1,10 +1,5 @@
 from modules.tenant_db import db_conn
 
-
-Aqui estão as duas funções corrigidas. Copie e substitua no seu arquivo onde elas estão declaradas para garantir que todos os TRUE sejam eliminados e substituídos por 1.
-
-1. Função criar_empresa Corrigida:
-Python
 def criar_empresa(nome, responsavel, plano="basic", cursor=None):
     try:
         # =========================

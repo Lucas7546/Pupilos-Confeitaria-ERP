@@ -8,7 +8,6 @@
     </div>
 
     <div class="row g-4 justify-content-center">
-        
         <div class="col-md-4">
             <div class="card h-100 bg-dark-card border-0 p-4 shadow-lg position-relative">
                 <h4 class="text-white">Basic</h4>
@@ -20,7 +19,7 @@
                     <li><i class="bi bi-check2 text-success me-2"></i> Painel Financeiro</li>
                     <li><i class="bi bi-people me-2"></i> 10 Usuários</li>
                 </ul>
-                <button class="btn btn-outline-light mt-auto">Atual</button>
+                <button class="btn btn-outline-light mt-auto" disabled>Atual</button>
             </div>
         </div>
 
@@ -35,7 +34,11 @@
                     <li><i class="bi bi-person-gear text-info me-2"></i> Gestão de Equipe</li>
                     <li><i class="bi bi-people-fill text-warning me-2"></i> 20 Usuários</li>
                 </ul>
-                <button class="btn btn-warning mt-auto fw-bold">Assinar Plano Médio</button>
+                <form action="{{ url_for('empresas.solicitar_upgrade') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="plano" value="medio">
+                    <button type="submit" class="btn btn-warning w-100 mt-auto fw-bold">Assinar Plano Médio</button>
+                </form>
             </div>
         </div>
 
@@ -49,18 +52,13 @@
                     <li><i class="bi bi-cloud-arrow-down text-info me-2"></i> Importação iFood/Keetas</li>
                     <li><i class="bi bi-people-fill text-info me-2"></i> 30 Usuários</li>
                 </ul>
-                <button class="btn btn-info mt-auto fw-bold text-white">Assinar Premium</button>
+                <form action="{{ url_for('empresas.solicitar_upgrade') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="plano" value="premium">
+                    <button type="submit" class="btn btn-info w-100 mt-auto fw-bold text-white">Assinar Premium</button>
+                </form>
             </div>
         </div>
-
     </div>
 </div>
-
-<style>
-    .bg-dark-card { background: #1e293b; border-radius: 20px; transition: 0.3s; }
-    .card:hover { transform: translateY(-10px); border: 1px solid rgba(255,255,255,0.1); }
-    .list-unstyled li { margin-bottom: 12px; }
-    .animate-in { animation: fadeIn 0.8s ease; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-</style>
 {% endblock %}

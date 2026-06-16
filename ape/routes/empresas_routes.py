@@ -1,10 +1,11 @@
 from flask import Blueprint, request, redirect, flash, url_for, render_template, g
 from flask_login import login_required, current_user
-from modules.tenant_db import db_conn
+from modules.tenant_db import db_conn, db_admin_conn
 from modules.empresas import criar_empresa
 from modules.usuarios import (criar_usuario_empresa, buscar_usuario)
 from utils.logger import log_erro
 from modules.decorators import superadmin_required
+import uuid
 from psycopg2.extras import DictCursor
 
 
@@ -237,14 +238,34 @@ def excluir_empresa(id_empresa):
 def solicitar_upgrade():
     plano = request.form.get("plano") # "medio" ou "premium"
     
-    with db_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO solicitacoes_upgrade (id_empresa, plano_desejado) VALUES (%s, %s)",
-                (current_user.id_empresa, plano)
-            )
+    # Validação simples para evitar erros
+    if not plano:
+        flash("Erro: Plano não selecionado.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    try:
+        # Usamos db_admin_conn porque a tabela solicitacoes_upgrade 
+        # está no banco administrativo central
+        with db_admin_conn() as conn:
+            with conn.cursor() as cur:
+                # Geramos o UUID aqui, pois a coluna id_solicitacao é do tipo uuid
+                novo_id = str(uuid.uuid4())
+                
+                cur.execute(
+                    """
+                    INSERT INTO solicitacoes_upgrade 
+                    (id_solicitacao, id_empresa, plano_desejado, status, data_criacao) 
+                    VALUES (%s, %s, %s, 'pendente', NOW())
+                    """,
+                    (novo_id, current_user.id_empresa, plano)
+                )
             
-    flash(f"Solicitação para o plano {plano.upper()} enviada com sucesso! Entraremos em contato.", "success")
+        flash(f"Solicitação para o plano {plano.upper()} enviada com sucesso! Entraremos em contato.", "success")
+        
+    except Exception as e:
+        print(f"Erro ao salvar solicitação: {e}")
+        flash("Erro ao processar sua solicitação. Tente novamente mais tarde.", "danger")
+    
     return redirect(url_for("main.dashboard"))
 
 

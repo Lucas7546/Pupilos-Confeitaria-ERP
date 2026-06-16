@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
 import uuid
+from modules.planos import plano_requerido
 from utils.logger import log_erro
 from ape.extensions import limiter
 import os
@@ -83,6 +84,7 @@ def vender():
 @vendas_bp.route("/importacoes")
 @login_required
 @acesso_requerido("vendas")
+@plano_requerido("premium")
 @limiter.limit("10 per minute")
 @limiter.limit("60 per hour", key_func=lambda: f"empresa:{getattr(g, 'id_empresa', 'global')}")
 def central_importacoes():
@@ -91,6 +93,7 @@ def central_importacoes():
 @vendas_bp.route("/importar-ifood", methods=["POST"])
 @login_required
 @acesso_requerido("vendas")
+@plano_requerido("premium")
 @limiter.limit("10 per minute")
 @limiter.limit("60 per hour", key_func=lambda: f"empresa:{getattr(g, 'id_empresa', 'global')}")
 def importar_ifood():
@@ -169,6 +172,7 @@ def deletar_venda(id_venda):
 @vendas_bp.route("/importacao-preview", methods=["POST"])
 @login_required
 @acesso_requerido("vendas")
+@plano_requerido("premium")
 def importacao_preview():
 
     arquivo = request.files.get("arquivo")
@@ -188,6 +192,7 @@ def importacao_preview():
 @vendas_bp.route("/importacao-confirmar", methods=["POST"])
 @login_required
 @acesso_requerido("vendas")
+@plano_requerido("premium")
 def importacao_confirmar():
 
     try:

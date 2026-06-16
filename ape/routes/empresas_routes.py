@@ -223,3 +223,7 @@ def excluir_empresa(id_empresa):
             conn.commit()
     flash("Empresa e dados associados removidos com sucesso.", "success")
     return redirect(url_for('empresas.lista_convites'))
+
+
+
+

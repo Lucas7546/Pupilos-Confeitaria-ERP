@@ -8,7 +8,7 @@ import tempfile
 from ape.services.log_service import registrar_log
 from utils.logger import log_erro
 from modules.tenant_db import db_conn
-
+from modules.planos import plano_requerido
 from modules.ocr_notas import analisar_nota, limpar_e_parsear_json
 from utils.helpers import validar_imagem_segura
 from modules.ocr_notas import enriquecer_itens_nota
@@ -23,6 +23,7 @@ compras_bp = Blueprint("compras", __name__)
 @compras_bp.route("/compras-inteligentes")
 @login_required
 @acesso_requerido("estoque")
+@plano_requerido("premium")
 @limiter.limit("10 per minute") # Limite do usuário
 @limiter.limit("50 per hour", key_func=lambda: f"empresa:{g.id_empresa}")# Limite da empresa
 def compras_inteligentes():
@@ -35,6 +36,7 @@ def compras_inteligentes():
 @compras_bp.route("/processar-nota", methods=["POST"])
 @login_required
 @acesso_requerido("estoque")
+@plano_requerido("premium")
 @limiter.limit("10 per minute") # Limite do usuário
 @limiter.limit("50 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def processar_nota():
@@ -119,6 +121,7 @@ def processar_nota():
 @compras_bp.route("/confirmar-nota", methods=["POST"])
 @login_required
 @acesso_requerido("estoque")
+@plano_requerido("premium")
 @limiter.limit("10 per minute")
 @limiter.limit(
     "50 per hour",

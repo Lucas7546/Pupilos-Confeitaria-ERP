@@ -3,7 +3,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required 
 
 # Seus módulos internos
-from modules import usuarios                            
+from modules import usuarios   
+from modules.decorators import limite_usuarios_required                         
 from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
 from utils.logger import log_erro
@@ -121,6 +122,7 @@ def editar_usuario_page(id_usuario):
 @usuarios_bp.route("/novo")
 @login_required
 @acesso_requerido("admin")
+@limite_usuarios_required
 def novo_usuario():
     return render_template("novo_usuario.html")
 

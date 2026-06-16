@@ -67,7 +67,7 @@ def obter_resumo_periodo(dias: int = 7) -> dict:
 
     except Exception as e:
         log_erro(f"Erro ao obter resumo de vendas: {e}")
-
+        print(f"DEBUG: Dias gráfico: {len(grafico)} | Total faturamento: {faturamento}")
         return {
             "faturamento": 0.0,
             "total_vendas": 0,

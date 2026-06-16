@@ -39,7 +39,7 @@ def limite_usuarios_required(f):
             if total_atual >= limite_maximo:
                 flash(f"Limite de usuários atingido ({limite_maximo} usuários no plano {plano_atual.upper()}).", "warning")
                 # Redireciona para onde o usuário faz o upgrade
-                return redirect(url_for("empresas.upgrade_necessario"))
+                return redirect(url_for("empresas.upgrade", motivo="limite_usuarios", limite=limite_maximo))
             
             return f(*args, **kwargs)
             

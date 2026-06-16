@@ -61,7 +61,7 @@ def plano_requerido(plano_minimo):
 
                 if nivel_atual < nivel_exigido:
                     flash(f"Este recurso exige o plano {plano_minimo.upper()} ou superior.", "warning")
-                    return redirect(url_for("empresas.upgrade_necessario"))
+                    return redirect(url_for("empresas.upgrade", recurso=func.__name__))
                 
                 return func(*args, **kwargs)
             except Exception as e:

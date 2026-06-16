@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, g
+from flask import Blueprint, render_template, request, redirect, url_for, flash, g, jsonify
 from flask_login import login_required, current_user
 from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
@@ -188,4 +188,26 @@ def editar_item_ficha(id_produto):
 
     return redirect(url_for("produtos.ficha_tecnica", id_produto=id_produto))
 
+
+@produtos_bp.route("/api/atualizar-precos", methods=["POST"])
+@login_required
+def atualizar_precos_api():
+    try:
+        data = request.json
+        itens = data.get("itens", [])
+        
+        with db_conn() as conn:
+            with conn.cursor() as cur:
+                for item in itens:
+                    # Atualiza o preço de venda para cada produto enviado
+                    cur.execute("""
+                        UPDATE produtos 
+                        SET preco_venda = %s 
+                        WHERE id_produto = %s AND id_empresa = %s
+                    """, (item["novo_preco"], item["id"], current_user.id_empresa))
+        
+        return jsonify({"status": "sucesso"}), 200
+    except Exception as e:
+        log_erro(f"Erro ao aplicar preços em massa: {e}")
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
 

@@ -4,6 +4,7 @@ from ape.extensions import limiter
 from ape.services import ai_client
 from modules.tenant_db import db_conn
 from modules import estoque, produtos
+from modules.planos import plano_requerido
 from utils import logger, helpers
 from ape.services.log_service import registrar_log
 from modules.permissoes import acesso_requerido
@@ -71,6 +72,7 @@ def registrar_producao():
 @estoque_bp.route("/escanear-inteligente", methods=["POST"])
 @login_required
 @acesso_requerido("estoque")
+@plano_requerido("premium")
 @limiter.limit("10 per minute") # Limite do usuário
 @limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def escanear_inteligente():

@@ -522,36 +522,19 @@ def atualizar_nivel(id_usuario: int, novo_nivel: str) -> bool:
 def criar_usuario_empresa(username, senha, nivel, id_empresa, cursor=None):
     try:
         senha_hash = generate_password_hash(senha)
-
         if cursor:
-            cursor.execute("""
-                INSERT INTO usuarios (username, senha, nivel, ativo, id_empresa)
-                VALUES (%s, %s, %s, 1, %s)
-            """, (
-                username.lower().strip(),
-                senha_hash,
-                nivel,
-                id_empresa
-            ))
+            # O banco agora é INTEGER, o valor é 1
+            cursor.execute("INSERT INTO usuarios (username, senha, nivel, ativo, id_empresa) VALUES (%s, %s, %s, 1, %s)", 
+                          (username.lower().strip(), senha_hash, nivel, id_empresa))
         else:
             with db_conn() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("""
-                        INSERT INTO usuarios (username, senha, nivel, ativo, id_empresa)
-                        VALUES (%s, %s, %s, 1, %s)
-                    """, (
-                        username.lower().strip(),
-                        senha_hash,
-                        nivel,
-                        id_empresa
-                    ))
+                    cur.execute("INSERT INTO usuarios (username, senha, nivel, ativo, id_empresa) VALUES (%s, %s, %s, 1, %s)", 
+                                (username.lower().strip(), senha_hash, nivel, id_empresa))
                     conn.commit()
-
         return True
-
     except Exception as e:
         raise Exception(f"Erro ao criar usuário: {e}")
-
 def alterar_status(id_usuario: int, novo_status: int) -> bool:
     try:
         id_empresa = current_user.id_empresa

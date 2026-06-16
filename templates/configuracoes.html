@@ -55,6 +55,8 @@
                     <table class="table table-dark table-hover align-middle mb-0">
                         <thead class="text-white-50 small">
                             <tr>
+                                <th>Data</th>
+                                <th>Usuário</th>
                                 <th>Tipo</th>
                                 <th>Mensagem</th>
                                 <th>Status</th>
@@ -63,9 +65,19 @@
                         <tbody>
                             {% for f in feedbacks %}
                             <tr>
-                                <td class="text-info">{{ f[3]|upper }}</td>
-                                <td class="text-white">{{ f[4] }}</td>
-                                <td><span class="badge bg-secondary">{{ f[5] }}</span></td>
+                                <td>{{ f['data_criacao'].strftime('%d/%m %H:%M') }}</td>
+                                <td>{{ f['usuario'] }}</td>
+                                <td>
+                                    <span class="badge {{ 'bg-info text-dark' if f['tipo'] == 'melhoria' else 'bg-danger' }}">
+                                        {{ f['tipo']|upper }}
+                                    </span>
+                                </td>
+                                <td>{{ f['mensagem'] }}</td>
+                                <td><span class="badge bg-secondary">{{ f['status'] }}</span></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-white-50">Nenhum feedback enviado.</td>
                             </tr>
                             {% endfor %}
                         </tbody>

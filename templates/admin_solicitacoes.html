@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="mb-4">
+        <h2 class="text-white fw-bold">
+            <i class="bi bi-shield-lock-fill text-warning me-2"></i>Painel de Administração
+        </h2>
+        <p class="text-white-50">Gerenciamento centralizado de solicitações e feedbacks.</p>
+    </div>
+    
+    <ul class="nav nav-tabs border-0 mb-4" id="adminTab" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active bg-transparent text-white border-0 px-4 py-2" data-bs-toggle="tab" data-bs-target="#upgrades" type="button">
+                <i class="bi bi-arrow-up-circle me-2"></i>Solicitações de Upgrade
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link bg-transparent text-white-50 border-0 px-4 py-2" data-bs-toggle="tab" data-bs-target="#feedbacks" type="button">
+                <i class="bi bi-chat-left-dots me-2"></i>Feedbacks dos Clientes
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="adminTabContent">
+        
+        <div class="tab-pane fade show active" id="upgrades">
+            <div class="card bg-dark-card border-0 shadow-lg p-4">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle border-secondary border-opacity-10">
+                        <thead class="text-white-50 small text-uppercase">
+                            <tr>
+                                <th>Empresa (ID)</th>
+                                <th>Plano Desejado</th>
+                                <th>Data Solicitação</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in pendentes %}
+                            <tr>
+                                <td><span class="text-warning fw-bold">#{{ s.id_empresa }}</span></td>
+                                <td><span class="badge bg-primary bg-opacity-20 text-primary border border-primary">{{ s.plano_desejado | upper }}</span></td>
+                                <td>{{ s.data_criacao.strftime('%d/%m/%Y %H:%M') if s.data_criacao else 'N/A' }}</td>
+                                <td class="text-end">
+                                    <form action="{{ url_for('auditoria.aprovar_upgrade', id_solicitacao=s.id_solicitacao) }}" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-check-lg me-1"></i>Aprovar
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="text-center text-white-50 py-4">Nenhuma solicitação pendente no momento.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="feedbacks">
+            <div class="card bg-dark-card border-0 shadow-lg p-4">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle border-secondary border-opacity-10">
+                        <thead class="text-white-50 small text-uppercase">
+                            <tr>
+                                <th>Data</th>
+                                <th>Empresa (ID)</th>
+                                <th>Usuário</th>
+                                <th>Tipo</th>
+                                <th>Mensagem</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in feedbacks %}
+                            <tr>
+                                <td class="text-white-50">{{ f.data_criacao.strftime('%d/%m %H:%M') if f.data_criacao else 'N/A' }}</td>
+                                <td><span class="badge bg-secondary">ID: {{ f.id_empresa }}</span></td>
+                                <td class="text-white">{{ f.usuario_origem }}</td>
+                                <td>
+                                    <span class="badge {{ 'bg-info text-dark' if f.tipo == 'melhoria' else 'bg-danger text-white' }}">
+                                        {{ f.tipo | upper }}
+                                    </span>
+                                </td>
+                                <td class="text-truncate" style="max-width: 300px;" title="{{ f.mensagem }}">{{ f.mensagem }}</td>
+                                <td><span class="badge bg-dark border border-secondary text-white-50">{{ f.status | capitalize }}</span></td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" class="text-center text-white-50 py-4">Nenhum feedback disponível.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-dark-card { background: #1e293b !important; border-radius: 20px; }
+    .nav-tabs .nav-link.active { border-bottom: 2px solid #ffc107 !important; color: #ffc107 !important; }
+    .table { --bs-table-bg: transparent; color: #cbd5e1; }
+</style>
+{% endblock %}

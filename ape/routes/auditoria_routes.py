@@ -3,10 +3,11 @@ from flask_login import login_required, current_user
 from modules.permissoes import acesso_requerido
 from modules.decorators import superadmin_required
 from ape.services.log_service import registrar_log
+from psycopg2.extras import DictCursor
 import json
 import secrets
 from modules.admin_db import admin_conn
-from modules.tenant_db import db_conn
+from modules.tenant_db import db_conn, db_admin_conn
 from utils.logger import log_erro
 
 auditoria_bp = Blueprint('auditoria', __name__)
@@ -257,3 +258,47 @@ def gerar_convite():
         flash("Erro ao gerar convite.", "danger")
 
     return redirect(url_for("empresas.lista_convites"))
+
+
+
+@auditoria_bp.route("/admin/solicitacoes")
+@superadmin_required
+def listar_solicitacoes():
+    with db_admin_conn() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            # Busca solicitações pendentes
+            cur.execute("SELECT * FROM solicitacoes_upgrade WHERE status = 'pendente'")
+            pendentes = cur.fetchall()
+            
+            # Busca feedbacks (ordenados pelos mais recentes)
+            cur.execute("SELECT * FROM feedback ORDER BY data_criacao DESC")
+            feedbacks = cur.fetchall()
+            
+    return render_template("admin_solicitacoes.html", pendentes=pendentes, feedbacks=feedbacks)
+
+
+@auditoria_bp.route("/admin/aprovar-upgrade/<uuid:id_solicitacao>", methods=["POST"])
+@superadmin_required
+def aprovar_upgrade(id_solicitacao):
+    # Usa o db_admin_conn para garantir acesso total
+    with db_admin_conn() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            # 1. Pega os dados da solicitação
+            cur.execute("SELECT id_empresa, plano_desejado FROM solicitacoes_upgrade WHERE id_solicitacao = %s", (str(id_solicitacao),))
+            solicitacao = cur.fetchone()
+            
+            if solicitacao:
+                id_empresa = solicitacao['id_empresa']
+                novo_plano = solicitacao['plano_desejado']
+                
+                # 2. Atualiza a empresa
+                cur.execute("UPDATE empresas SET plano = %s WHERE id_empresa = %s", (novo_plano, id_empresa))
+                
+                # 3. Marca a solicitação como aprovada
+                cur.execute("UPDATE solicitacoes_upgrade SET status = 'aprovado' WHERE id_solicitacao = %s", (str(id_solicitacao),))
+                
+                flash(f"Plano atualizado para {novo_plano} com sucesso!", "success")
+            else:
+                flash("Solicitação não encontrada.", "danger")
+                
+    return redirect(url_for("auditoria.listar_solicitacoes"))

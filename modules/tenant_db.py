@@ -61,3 +61,18 @@ def aplicar_tenant(conn):
 
     with conn.cursor() as cur:
         cur.execute("SET LOCAL app.id_empresa = %s", (str(id_empresa),))
+
+@contextmanager
+def db_admin_conn():
+    conn = get_pool().getconn()
+    conn.autocommit = False  # Importante para manter o padrão
+    try:
+        # Aqui NENHUM 'SET LOCAL' é executado. 
+        # Portanto, o RLS não terá um 'app.id_empresa' para filtrar.
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        get_pool().putconn(conn)

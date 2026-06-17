@@ -9,7 +9,7 @@ def validar_login(username: str, senha: str):
     if not usuario:
         return None
 
-    if not usuario.get("ativo" or 0) == 0:
+    if not usuario.get("ativo"):
         return None
 
     if not usuario.get("senha"):

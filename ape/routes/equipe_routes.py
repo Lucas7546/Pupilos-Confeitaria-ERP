@@ -10,7 +10,7 @@ equipe_bp = Blueprint('equipe', __name__)
 @equipe_bp.route("/equipe")
 @login_required
 @acesso_requerido("usuarios")
-@plano_requerido("medio")
+@plano_requerido("pro")
 def gerenciar_equipe():
 
     try:

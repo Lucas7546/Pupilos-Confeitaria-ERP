@@ -240,7 +240,7 @@ def gerar_convite():
                     (%s, %s, %s)
                 """, (
                     codigo,
-                    "basic",
+                    "starter",
                     current_user.id
                 ))
 

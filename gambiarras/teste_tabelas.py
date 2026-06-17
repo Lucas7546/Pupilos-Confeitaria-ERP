@@ -11,7 +11,7 @@ with db_conn() as conn:
             CREATE TABLE IF NOT EXISTS empresas (
                 id_empresa SERIAL PRIMARY KEY,
                 nome VARCHAR(120) NOT NULL,
-                plano VARCHAR(20) DEFAULT 'basic',
+                plano VARCHAR(20) DEFAULT 'starter',
                 status BOOLEAN DEFAULT TRUE,
                 data_criacao TIMESTAMP DEFAULT NOW()
             );

@@ -5,9 +5,9 @@ from utils.logger import log_erro
 
 
 PLANOS_ORDEM = {
-    "basic": 1,
-    "medio": 2,
-    "premium": 3
+    "starter": 1,
+    "pro": 2,
+    "enterprise": 3
 }
 
 
@@ -18,7 +18,7 @@ def get_plano_empresa():
         id_empresa = getattr(g, "id_empresa", None)
 
         if id_empresa is None:
-            return "basic"
+            return "starter"
 
         with db_conn() as conn:
             with conn.cursor() as cur:
@@ -38,7 +38,7 @@ def get_plano_empresa():
                 row = cur.fetchone()
 
         if not row:
-            return "basic"
+            return "starter"
 
         return row[0]
 
@@ -48,7 +48,7 @@ def get_plano_empresa():
             f"Erro ao obter plano da empresa: {e}"
         )
 
-        return "basic"
+        return "starter"
 
 def plano_requerido(plano_minimo):
     def decorator(func):

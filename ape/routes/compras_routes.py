@@ -23,7 +23,7 @@ compras_bp = Blueprint("compras", __name__)
 @compras_bp.route("/compras-inteligentes")
 @login_required
 @acesso_requerido("estoque")
-@plano_requerido("premium")
+@plano_requerido("enterprise")
 @limiter.limit("10 per minute") # Limite do usuário
 @limiter.limit("50 per hour", key_func=lambda: f"empresa:{g.id_empresa}")# Limite da empresa
 def compras_inteligentes():
@@ -36,7 +36,7 @@ def compras_inteligentes():
 @compras_bp.route("/processar-nota", methods=["POST"])
 @login_required
 @acesso_requerido("estoque")
-@plano_requerido("premium")
+@plano_requerido("enterprise")
 @limiter.limit("10 per minute") # Limite do usuário
 @limiter.limit("50 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def processar_nota():
@@ -121,7 +121,7 @@ def processar_nota():
 @compras_bp.route("/confirmar-nota", methods=["POST"])
 @login_required
 @acesso_requerido("estoque")
-@plano_requerido("premium")
+@plano_requerido("enterprise")
 @limiter.limit("10 per minute")
 @limiter.limit(
     "50 per hour",

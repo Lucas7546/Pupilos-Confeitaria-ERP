@@ -1,7 +1,7 @@
 from modules.tenant_db import db_conn
 
 
-def criar_empresa(nome, responsavel, plano="basic", cursor=None):
+def criar_empresa(nome, responsavel, plano="starter", cursor=None):
     try:
         if cursor:
             cursor.execute("INSERT INTO empresas (nome, responsavel, plano) VALUES (%s, %s, %s) RETURNING id_empresa", (nome, responsavel, plano))

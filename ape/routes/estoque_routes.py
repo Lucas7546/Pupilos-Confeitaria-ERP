@@ -72,7 +72,7 @@ def registrar_producao():
 @estoque_bp.route("/escanear-inteligente", methods=["POST"])
 @login_required
 @acesso_requerido("estoque")
-@plano_requerido("premium")
+@plano_requerido("enterprise")
 @limiter.limit("10 per minute") # Limite do usuário
 @limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
 def escanear_inteligente():

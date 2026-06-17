@@ -61,7 +61,7 @@ def create_app():
     @app.context_processor
     def inject_plano():
         from flask import session
-        return dict(plano=session.get("plano", "basic"))            
+        return dict(plano=session.get("plano", "starter"))            
     
     # Registro dos Blueprints
     app.register_blueprint(auth_bp)

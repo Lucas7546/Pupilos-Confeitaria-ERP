@@ -5,6 +5,7 @@ from ape.services.log_service import registrar_log
 from utils.logger import log_erro
 from utils.helpers import _parse_float
 from modules.tenant_db import db_conn
+from modules.planos import plano_requerido
 from modules import produtos
 from psycopg2.extras import RealDictCursor
 from ape.extensions import limiter
@@ -65,6 +66,7 @@ def deletar_produto(id_produto):
 
 @produtos_bp.route("/precificacao")
 @login_required
+@plano_requerido("pro")
 def precificacao():
     try:
         with db_conn() as conn:

@@ -22,7 +22,7 @@ def cadastro_empresa():
     responsavel = request.form.get("responsavel", "").strip()
     username = request.form.get("username", "").strip().lower()
     senha = request.form.get("senha", "").strip()
-    plano = request.form.get("plano", "basic")
+    plano = request.form.get("plano", "starter")
     codigo_convite = request.form.get("codigo_convite", "").strip().upper()
 
     # =========================
@@ -156,7 +156,7 @@ def configuracoes():
                 # 1. Busca o plano
                 cur.execute("SELECT plano FROM empresas WHERE id_empresa = %s", (g.id_empresa,))
                 resultado = cur.fetchone()
-                plano_atual = resultado['plano'] if resultado else "basic"
+                plano_atual = resultado['plano'] if resultado else "starter"
                 
                 # 2. Busca os feedbacks usando nomes de colunas explícitos
                 cur.execute("""
@@ -235,7 +235,7 @@ def excluir_empresa(id_empresa):
 @empresas_bp.route("/solicitar-upgrade", methods=["POST"])
 @login_required
 def solicitar_upgrade():
-    plano = request.form.get("plano") # "medio" ou "premium"
+    plano = request.form.get("plano") # "PRO" ou "enterprise"
     
     # Validação simples para evitar erros
     if not plano:

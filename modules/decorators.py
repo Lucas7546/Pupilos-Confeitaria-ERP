@@ -27,7 +27,7 @@ def limite_usuarios_required(f):
             tenant_id = current_user.id_empresa
             
             # 2. Define os limites baseados no plano
-            limites = {'basico': 10, 'medio': 20, 'premium': 30}
+            limites = {'starter': 10, 'pro': 20, 'enterprise': 35}
             limite_maximo = limites.get(plano_atual, 10)
             
             # 3. Conta usuários usando sua query segura

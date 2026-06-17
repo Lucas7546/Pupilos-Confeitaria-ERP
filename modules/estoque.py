@@ -1295,7 +1295,7 @@ def buscar_historico_subproduto(id_subproduto):
                         data_movimentacao 
                     FROM movimentacao_estoque 
                     WHERE id_subproduto = %s AND id_empresa = %s
-                    ORDER BY data_movimentacao DESC
+                    ORDER BY data_movimento DESC
                 """, (id_subproduto, id_empresa))
                 return cur.fetchall()
     except Exception as e:

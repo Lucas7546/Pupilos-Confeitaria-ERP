@@ -1,8 +1,6 @@
 from modules.tenant_db import db_conn
 from utils.logger import log_info, log_erro
-from flask_login import current_user
 from modules.tenant import get_empresa_id
-from flask import g
 
 
 # =========================================================
@@ -16,50 +14,38 @@ def cadastrar_receita(
 ) -> bool:
 
     try:
-
         if not id_empresa:
             raise Exception("Empresa não definida")
 
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                cur.execute(
-                    """
+                cur.execute("""
                     SELECT 1
                     FROM receitas
                     WHERE id_produto = %s
                       AND id_materia_prima = %s
                       AND id_empresa = %s
-                    """,
-                    (
-                        id_produto,
-                        id_materia_prima,
-                        id_empresa
-                    ),
-                )
+                """, (id_produto, id_materia_prima, id_empresa))
 
                 if cur.fetchone():
 
-                    cur.execute(
-                        """
+                    cur.execute("""
                         UPDATE receitas
                         SET quantidade_utilizada = %s
                         WHERE id_produto = %s
                           AND id_materia_prima = %s
                           AND id_empresa = %s
-                        """,
-                        (
-                            float(quantidade),
-                            id_produto,
-                            id_materia_prima,
-                            id_empresa
-                        ),
-                    )
+                    """, (
+                        float(quantidade),
+                        id_produto,
+                        id_materia_prima,
+                        id_empresa
+                    ))
 
                 else:
 
-                    cur.execute(
-                        """
+                    cur.execute("""
                         INSERT INTO receitas
                         (
                             id_produto,
@@ -68,14 +54,12 @@ def cadastrar_receita(
                             id_empresa
                         )
                         VALUES (%s, %s, %s, %s)
-                        """,
-                        (
-                            id_produto,
-                            id_materia_prima,
-                            float(quantidade),
-                            id_empresa
-                        ),
-                    )
+                    """, (
+                        id_produto,
+                        id_materia_prima,
+                        float(quantidade),
+                        id_empresa
+                    ))
 
         log_info(
             f"Receita atualizada | Produto {id_produto} | MP {id_materia_prima} | Empresa {id_empresa}"
@@ -84,22 +68,18 @@ def cadastrar_receita(
         return True
 
     except Exception as e:
-
-        log_erro(
-            f"Erro ao cadastrar receita: {e}"
-        )
-
+        log_erro(f"Erro ao cadastrar receita: {e}")
         return False
 
+
 # =========================================================
-# LISTAR INGREDIENTES DE UM PRODUTO
+# LISTAR INGREDIENTES
 # =========================================================
 def listar_itens_receita(id_produto: int) -> list[tuple]:
     try:
         id_empresa = get_empresa_id()
-
         if not id_empresa:
-            raise Exception("Empresa não definida")
+            return []
 
         with db_conn() as conn:
             with conn.cursor() as cur:
@@ -128,15 +108,13 @@ def listar_itens_receita(id_produto: int) -> list[tuple]:
 
 
 # =========================================================
-# VALIDAR ESTOQUE ANTES DA VENDA
-# (estoque → receitas → estoque).
+# VALIDAR ESTOQUE
 # =========================================================
 def validar_estoque_suficiente(id_produto: int, quantidade_venda: int) -> bool:
     try:
         id_empresa = get_empresa_id()
-
         if not id_empresa:
-            raise Exception("Empresa não definida")
+            return False
 
         with db_conn() as conn:
             with conn.cursor() as cur:
@@ -153,34 +131,36 @@ def validar_estoque_suficiente(id_produto: int, quantidade_venda: int) -> bool:
         if not ingredientes:
             return True
 
+        from modules.estoque import (
+            obter_saldo_materia_prima,
+            obter_saldo_subproduto
+        )
+
         for id_mp, id_sub, qtd_util in ingredientes:
 
             qtd_necessaria = float(qtd_util) * float(quantidade_venda)
 
-            if id_mp:
-                from modules.estoque import obter_saldo_materia_prima
-                if obter_saldo_materia_prima(id_mp) < qtd_necessaria:
-                    return False
+            if id_mp and obter_saldo_materia_prima(id_mp) < qtd_necessaria:
+                return False
 
-            if id_sub:
-                from modules.estoque import obter_saldo_subproduto
-                if obter_saldo_subproduto(id_sub) < qtd_necessaria:
-                    return False
+            if id_sub and obter_saldo_subproduto(id_sub) < qtd_necessaria:
+                return False
 
         return True
 
     except Exception as e:
         log_erro(f"Erro validar estoque: {e}")
         return False
+
+
 # =========================================================
-# CALCULAR CUSTO TOTAL DA RECEITA
+# CUSTO RECEITA
 # =========================================================
 def calcular_custo_receita(id_produto: int) -> float:
     try:
         id_empresa = get_empresa_id()
-
         if not id_empresa:
-            raise Exception("Empresa não definida")
+            return 0.0
 
         with db_conn() as conn:
             with conn.cursor() as cur:
@@ -206,6 +186,9 @@ def calcular_custo_receita(id_produto: int) -> float:
         log_erro(f"Erro custo receita: {e}")
         return 0.0
 
-# Alias de compatibilidade
-def listar_ingredientes_por_produto(id_produto: int) -> list[tuple]:
+
+# =========================================================
+# ALIAS
+# =========================================================
+def listar_ingredientes_por_produto(id_produto: int):
     return listar_itens_receita(id_produto)

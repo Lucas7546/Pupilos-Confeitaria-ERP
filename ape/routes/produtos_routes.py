@@ -4,7 +4,7 @@ from modules.permissoes import acesso_requerido
 from ape.services.log_service import registrar_log
 from utils.logger import log_erro
 from utils.helpers import _parse_float
-from modules.tenant_db import db_conn
+from modules.tenant_db import db_conn, get_empresa_id
 from modules.planos import plano_requerido
 from modules import produtos
 from psycopg2.extras import RealDictCursor
@@ -105,18 +105,22 @@ def precificacao():
 @login_required
 def ficha_tecnica(id_produto):
     try:
+        id_empresa = get_empresa_id()
+        if not id_empresa:
+            raise Exception("Empresa não definida")
+
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                # Produto
-                cur.execute(
-                    """
+                # =========================
+                # PRODUTO
+                # =========================
+                cur.execute("""
                     SELECT id_produto, nome, preco_venda
                     FROM produtos
-                    WHERE id_produto = %s AND id_empresa = %s
-                    """,
-                    (id_produto, current_user.id_empresa),
-                )
+                    WHERE id_produto = %s
+                      AND id_empresa = %s
+                """, (id_produto, id_empresa))
 
                 produto = cur.fetchone()
 
@@ -124,10 +128,12 @@ def ficha_tecnica(id_produto):
                     flash("Produto não encontrado.", "danger")
                     return redirect(url_for("estoque.estoque_painel"))
 
-                # Ficha técnica (COM ALIAS CORRETO)
+                # =========================
+                # RECEITA (PADRONIZADA)
+                # =========================
                 cur.execute("""
                     SELECT
-                        r.id_receita AS id_vinculo,
+                        r.id_receita AS id,
                         'materia_prima' AS tipo,
                         mp.id_materia_prima AS id_item,
                         mp.nome AS item,
@@ -135,7 +141,8 @@ def ficha_tecnica(id_produto):
                         mp.unidade_medida AS unidade,
                         (r.quantidade_utilizada * COALESCE(mp.preco_unitario, 0)) AS custo_subtotal
                     FROM receitas r
-                    JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
+                    JOIN materia_prima mp
+                        ON mp.id_materia_prima = r.id_materia_prima
                     WHERE r.id_produto = %s
                       AND r.id_empresa = %s
                       AND r.id_subproduto IS NULL
@@ -143,7 +150,7 @@ def ficha_tecnica(id_produto):
                     UNION ALL
 
                     SELECT
-                        r.id_receita AS id_vinculo,
+                        r.id_receita AS id,
                         'subproduto' AS tipo,
                         sub.id_subproduto AS id_item,
                         sub.nome AS item,
@@ -151,26 +158,29 @@ def ficha_tecnica(id_produto):
                         sub.unidade_medida AS unidade,
                         (r.quantidade_utilizada * COALESCE(sub.preco_custo_unidade, 0)) AS custo_subtotal
                     FROM receitas r
-                    JOIN subprodutos sub ON r.id_subproduto = sub.id_subproduto
+                    JOIN subprodutos sub
+                        ON sub.id_subproduto = r.id_subproduto
                     WHERE r.id_produto = %s
                       AND r.id_empresa = %s
                       AND r.id_subproduto IS NOT NULL
-                """, (id_produto, current_user.id_empresa,
-                      id_produto, current_user.id_empresa))
+                """, (id_produto, id_empresa, id_produto, id_empresa))
 
                 colunas = [d[0] for d in cur.description]
                 itens = [dict(zip(colunas, row)) for row in cur.fetchall()]
 
-        # agora simples e seguro
-        total_custo = sum(float(i.get("custo_subtotal") or 0) for i in itens)
+        total_custo = sum(i["custo_subtotal"] for i in itens)
 
         preco_venda = float(produto[2] or 0)
         lucro = preco_venda - total_custo
-        margem = (lucro / preco_venda * 100) if preco_venda > 0 else 0
+        margem = (lucro / preco_venda * 100) if preco_venda else 0
 
         return render_template(
             "ficha_tecnica.html",
-            produto=[produto[0], produto[1], preco_venda],
+            produto={
+                "id": produto[0],
+                "nome": produto[1],
+                "preco_venda": preco_venda
+            },
             itens=itens,
             total=round(total_custo, 2),
             lucro=round(lucro, 2),
@@ -181,7 +191,7 @@ def ficha_tecnica(id_produto):
         log_erro(f"Erro na ficha técnica ID {id_produto}: {e}")
         flash(f"Erro ao processar ficha técnica: {e}", "danger")
         return redirect(url_for("estoque.estoque_painel"))
-
+    
 @produtos_bp.route("/ficha-tecnica/editar-item/<int:id_produto>", methods=["POST"])
 @login_required
 @limiter.limit("15 per minute")
@@ -199,7 +209,8 @@ def editar_item_ficha(id_produto):
         id_vinculo = int(id_vinculo_raw)
         nova_qtd = _parse_float(qtd_raw)
 
-        if nova_qtd < 0:
+        # proteção extra (evita None silencioso)
+        if nova_qtd is None or nova_qtd < 0:
             raise ValueError
 
     except ValueError:
@@ -216,7 +227,12 @@ def editar_item_ficha(id_produto):
                     WHERE id_receita = %s
                       AND id_produto = %s
                       AND id_empresa = %s
-                """, (nova_qtd, id_vinculo, id_produto, current_user.id_empresa))
+                """, (
+                    nova_qtd,
+                    id_vinculo,
+                    id_produto,
+                    current_user.id_empresa
+                ))
 
                 if cur.rowcount == 0:
                     raise Exception("Item não encontrado ou não pertence ao produto")
@@ -239,20 +255,24 @@ def editar_item_ficha(id_produto):
 @produtos_bp.route("/api/atualizar-precos", methods=["POST"])
 @login_required
 def atualizar_precos_api():
+
     try:
         data = request.get_json() or {}
         itens = data.get("itens", [])
 
         if not isinstance(itens, list):
-            return jsonify({"status": "erro", "mensagem": "Payload inválido"}), 400
+            return jsonify({
+                "status": "erro",
+                "mensagem": "Payload inválido"
+            }), 400
 
         with db_conn() as conn:
             with conn.cursor() as cur:
 
                 for item in itens:
                     try:
-                        id_produto = int(item["id"])
-                        novo_preco = float(item["novo_preco"])
+                        id_produto = int(item.get("id"))
+                        novo_preco = float(item.get("novo_preco"))
 
                         if novo_preco < 0:
                             continue
@@ -262,9 +282,18 @@ def atualizar_precos_api():
                             SET preco_venda = %s
                             WHERE id_produto = %s
                               AND id_empresa = %s
-                        """, (novo_preco, id_produto, current_user.id_empresa))
+                        """, (
+                            novo_preco,
+                            id_produto,
+                            current_user.id_empresa
+                        ))
 
-                    except Exception:
+                        # log leve (opcional mas ajuda debug futuro)
+                        if cur.rowcount == 0:
+                            log_erro(f"Produto não atualizado ID {id_produto}")
+
+                    except Exception as err:
+                        log_erro(f"Erro item preço {item}: {err}")
                         continue
 
         return jsonify({"status": "sucesso"}), 200
@@ -272,4 +301,3 @@ def atualizar_precos_api():
     except Exception as e:
         log_erro(f"Erro ao aplicar preços em massa: {e}")
         return jsonify({"status": "erro", "mensagem": str(e)}), 500
-

@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from modules.receitas import calcular_custo_receita
+from modules.receitas import calcular_custo_receita, validar_estoque_suficiente
 from modules.tenant_db import db_conn
 from modules.tenant import get_empresa_id
 from flask_login import current_user
@@ -86,76 +86,38 @@ def registrar_venda(
 ) -> bool:
 
     try:
-
         id_empresa = get_empresa_id()
         if not id_empresa:
             return False
 
         custo_unitario = calcular_custo_receita(id_produto)
 
-        lucro_total = (
-            float(valor_total)
-            - (float(custo_unitario) * float(quantidade))
-        )
+        lucro_total = float(valor_total) - (float(custo_unitario) * float(quantidade))
+
+        # =========================
+        # VALIDAÇÃO PRÉVIA
+        # =========================
+        if not validar_estoque_suficiente(id_produto, quantidade):
+            raise ValueError("Estoque insuficiente para produção")
 
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                # =====================================
+                # =========================
                 # BUSCA RECEITA
-                # =====================================
+                # =========================
                 cur.execute("""
                     SELECT id_materia_prima, id_subproduto, quantidade_utilizada
                     FROM receitas
                     WHERE id_produto = %s
-                    AND id_empresa = %s
+                      AND id_empresa = %s
                 """, (id_produto, id_empresa))
 
                 ingredientes = cur.fetchall()
 
-                # =====================================
-                # VALIDA ESTOQUE PRODUTO FINAL
-                # =====================================
-                saldo_produto = obter_saldo_produto(id_produto)
-
-                if saldo_produto < quantidade:
-                    raise ValueError(
-                        f"Produto sem estoque suficiente. "
-                        f"Disponível: {saldo_produto}"
-                    )
-
-                # =====================================
-                # VALIDA INSUMOS
-                # =====================================
-                for id_mp, id_sub, qtd_util in ingredientes:
-
-                    qtd_necessaria = float(qtd_util) * float(quantidade)
-
-                    if id_mp:
-
-                        saldo_mp = obter_saldo_materia_prima(id_mp)
-
-                        if saldo_mp < qtd_necessaria:
-                            raise ValueError(
-                                f"Matéria-prima sem estoque. "
-                                f"Necessário: {qtd_necessaria} "
-                                f"Disponível: {saldo_mp}"
-                            )
-
-                    if id_sub:
-
-                        saldo_sub = obter_saldo_subproduto(id_sub)
-
-                        if saldo_sub < qtd_necessaria:
-                            raise ValueError(
-                                f"Subproduto sem estoque. "
-                                f"Necessário: {qtd_necessaria} "
-                                f"Disponível: {saldo_sub}"
-                            )
-
-                # =====================================
-                # REGISTRA VENDA
-                # =====================================
+                # =========================
+                # CRIA VENDA
+                # =========================
                 cur.execute("""
                     INSERT INTO vendas
                     (
@@ -176,26 +138,25 @@ def registrar_venda(
 
                 id_venda = cur.fetchone()[0]
 
-                # =====================================
+                # =========================
                 # BUSCA PREÇO
-                # =====================================
+                # =========================
                 cur.execute("""
                     SELECT preco_venda
                     FROM produtos
                     WHERE id_produto = %s
-                    AND id_empresa = %s
+                      AND id_empresa = %s
                 """, (id_produto, id_empresa))
 
                 row = cur.fetchone()
-
                 if not row:
-                    raise ValueError(f"Produto ID {id_produto} não encontrado.")
+                    raise ValueError("Produto não encontrado")
 
                 preco_unitario = float(row[0])
 
-                # =====================================
+                # =========================
                 # ITEM VENDA
-                # =====================================
+                # =========================
                 cur.execute("""
                     INSERT INTO itens_venda
                     (
@@ -214,9 +175,9 @@ def registrar_venda(
                     id_empresa
                 ))
 
-                # =====================================
-                # SAÍDA PRODUTO FINAL
-                # =====================================
+                # =========================
+                # MOVIMENTO PRODUTO FINAL
+                # =========================
                 cur.execute("""
                     INSERT INTO movimentacao_estoque
                     (
@@ -234,15 +195,14 @@ def registrar_venda(
                     id_empresa
                 ))
 
-                # =====================================
+                # =========================
                 # BAIXA INSUMOS
-                # =====================================
+                # =========================
                 for id_mp, id_sub, qtd_util in ingredientes:
 
                     qtd_baixa = float(qtd_util) * float(quantidade)
 
                     if id_mp:
-
                         cur.execute("""
                             INSERT INTO movimentacao_estoque
                             (
@@ -261,7 +221,6 @@ def registrar_venda(
                         ))
 
                     if id_sub:
-
                         cur.execute("""
                             INSERT INTO movimentacao_estoque
                             (
@@ -280,7 +239,6 @@ def registrar_venda(
                         ))
 
         log_info(f"Venda {id_venda} registrada - Empresa {id_empresa}")
-
         return True
 
     except Exception as e:

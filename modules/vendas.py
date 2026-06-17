@@ -25,20 +25,25 @@ def obter_resumo_periodo(dias: int = 7) -> dict:
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                # 📊 resumo financeiro
+                # =========================
+                # RESUMO FINANCEIRO
+                # =========================
                 cur.execute("""
                     SELECT
                         COALESCE(SUM(valor_total), 0),
                         COUNT(id_venda),
                         COALESCE(SUM(lucro), 0)
                     FROM vendas
-                    WHERE data_venda >= %s
-                      AND id_empresa = %s
-                """, (data_inicio, id_empresa))
+                    WHERE id_empresa = %s
+                      AND data_venda IS NOT NULL
+                      AND data_venda >= %s
+                """, (id_empresa, data_inicio))
 
                 faturamento, total_vendas, lucro = cur.fetchone()
 
-                # 📈 gráfico diário
+                # =========================
+                # GRÁFICO DIÁRIO
+                # =========================
                 cur.execute("""
                     SELECT
                         TO_CHAR(d.data, 'DD/MM'),
@@ -51,8 +56,9 @@ def obter_resumo_periodo(dias: int = 7) -> dict:
                         )::date AS data
                     ) d
                     LEFT JOIN vendas v
-                        ON v.data_venda::date = d.data
-                       AND v.id_empresa = %s
+                        ON v.id_empresa = %s
+                       AND v.data_venda IS NOT NULL
+                       AND v.data_venda::date = d.data
                     GROUP BY d.data
                     ORDER BY d.data
                 """, (dias, id_empresa))
@@ -88,8 +94,6 @@ def registrar_venda(
 ) -> bool:
 
     try:
-        from datetime import datetime
-
         id_empresa = get_empresa_id()
         if not id_empresa:
             return False
@@ -103,6 +107,9 @@ def registrar_venda(
         with db_conn() as conn:
             with conn.cursor() as cur:
 
+                # =========================
+                # RECEITA (SEMPRE PRIMEIRO)
+                # =========================
                 cur.execute("""
                     SELECT id_materia_prima, id_subproduto, quantidade_utilizada
                     FROM receitas
@@ -113,7 +120,7 @@ def registrar_venda(
                 ingredientes = cur.fetchall()
 
                 # =========================
-                # VENDA (CORRIGIDA)
+                # VENDA
                 # =========================
                 cur.execute("""
                     INSERT INTO vendas
@@ -136,6 +143,9 @@ def registrar_venda(
 
                 id_venda = cur.fetchone()[0]
 
+                # =========================
+                # PRODUTO
+                # =========================
                 cur.execute("""
                     SELECT preco_venda
                     FROM produtos
@@ -149,6 +159,9 @@ def registrar_venda(
 
                 preco_unitario = float(row[0])
 
+                # =========================
+                # ITEM VENDA
+                # =========================
                 cur.execute("""
                     INSERT INTO itens_venda
                     (
@@ -167,6 +180,9 @@ def registrar_venda(
                     id_empresa
                 ))
 
+                # =========================
+                # SAÍDA PRODUTO FINAL
+                # =========================
                 cur.execute("""
                     INSERT INTO movimentacao_estoque
                     (
@@ -184,11 +200,14 @@ def registrar_venda(
                     id_empresa
                 ))
 
+                # =========================
+                # BAIXA INSUMOS (MP + SUBPRODUTO)
+                # =========================
                 for id_mp, id_sub, qtd_util in ingredientes:
 
                     qtd_baixa = float(qtd_util) * float(quantidade)
 
-                    if id_mp:
+                    if id_mp is not None:
                         cur.execute("""
                             INSERT INTO movimentacao_estoque
                             (
@@ -206,7 +225,7 @@ def registrar_venda(
                             id_empresa
                         ))
 
-                    if id_sub:
+                    if id_sub is not None:
                         cur.execute("""
                             INSERT INTO movimentacao_estoque
                             (
@@ -291,13 +310,15 @@ def listar_vendas_recentes(limite: int = 10) -> list[dict]:
 def excluir_venda(id_venda: int) -> bool:
     try:
         id_empresa = get_empresa_id()
-
         if not id_empresa:
-            raise Exception("Empresa não definida")
+            return False
 
         with db_conn() as conn:
             with conn.cursor() as cur:
 
+                # =========================
+                # valida venda
+                # =========================
                 cur.execute("""
                     SELECT 1
                     FROM vendas
@@ -308,6 +329,9 @@ def excluir_venda(id_venda: int) -> bool:
                 if not cur.fetchone():
                     return False
 
+                # =========================
+                # itens da venda
+                # =========================
                 cur.execute("""
                     SELECT id_produto, quantidade
                     FROM itens_venda
@@ -317,6 +341,9 @@ def excluir_venda(id_venda: int) -> bool:
 
                 itens = cur.fetchall()
 
+                # =========================
+                # ESTORNO INSUMOS
+                # =========================
                 for id_produto, qtd_vendida in itens:
 
                     cur.execute("""
@@ -328,34 +355,64 @@ def excluir_venda(id_venda: int) -> bool:
 
                     ingredientes = cur.fetchall()
 
-                    for id_mp, id_sub, qtd in ingredientes:
+                    for id_mp, id_sub, qtd_util in ingredientes:
 
-                        qtd_estorno = float(qtd) * float(qtd_vendida)
+                        qtd_estorno = float(qtd_util) * float(qtd_vendida)
 
                         if id_mp:
                             cur.execute("""
                                 INSERT INTO movimentacao_estoque
                                 (id_empresa, id_materia_prima, tipo_movimento, quantidade, observacao)
                                 VALUES (%s, %s, 'entrada', %s, %s)
-                            """, (id_empresa, id_mp, qtd_estorno, f"ESTORNO VENDA {id_venda}"))
+                            """, (
+                                id_empresa,
+                                id_mp,
+                                qtd_estorno,
+                                f"ESTORNO VENDA {id_venda}"
+                            ))
 
                         if id_sub:
                             cur.execute("""
                                 INSERT INTO movimentacao_estoque
                                 (id_empresa, id_subproduto, tipo_movimento, quantidade, observacao)
                                 VALUES (%s, %s, 'entrada', %s, %s)
-                            """, (id_empresa, id_sub, qtd_estorno, f"ESTORNO VENDA {id_venda}"))
+                            """, (
+                                id_empresa,
+                                id_sub,
+                                qtd_estorno,
+                                f"ESTORNO VENDA {id_venda}"
+                            ))
 
+                    # =========================
+                    # ESTORNO PRODUTO FINAL (CORREÇÃO)
+                    # =========================
+                    cur.execute("""
+                        INSERT INTO movimentacao_estoque
+                        (id_empresa, id_produto, tipo_movimento, quantidade, observacao)
+                        VALUES (%s, %s, 'entrada', %s, %s)
+                    """, (
+                        id_empresa,
+                        id_produto,
+                        float(qtd_vendida),
+                        f"ESTORNO VENDA {id_venda}"
+                    ))
+
+                # =========================
+                # remove dados
+                # =========================
                 cur.execute("""
                     DELETE FROM itens_venda
-                    WHERE id_venda = %s AND id_empresa = %s
+                    WHERE id_venda = %s
+                      AND id_empresa = %s
                 """, (id_venda, id_empresa))
 
                 cur.execute("""
                     DELETE FROM vendas
-                    WHERE id_venda = %s AND id_empresa = %s
+                    WHERE id_venda = %s
+                      AND id_empresa = %s
                 """, (id_venda, id_empresa))
 
+        log_info(f"Venda {id_venda} excluída com estorno - Empresa {id_empresa}")
         return True
 
     except Exception as e:

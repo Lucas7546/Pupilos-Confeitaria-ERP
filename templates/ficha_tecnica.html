@@ -54,7 +54,7 @@
                     </h5>
 
                     <span class="badge bg-secondary font-monospace">
-                        {{ itens|length }} itens
+                        {{ itens|length if itens else 0 }} itens
                     </span>
 
                 </div>
@@ -75,7 +75,7 @@
 
                         <tbody>
 
-                            {% for i in itens %}
+                            {% for i in itens or [] %}
                             <tr>
 
                                 <td class="ps-4">
@@ -146,7 +146,7 @@
                 <div class="text-center mb-3">
                     <small class="text-white-50">Preço de Venda</small>
                     <div class="fs-2 fw-bold text-success">
-                        R$ {{ "%.2f"|format(produto.preco_venda|float) }}
+                        R$ {{ "%.2f"|format(produto.preco_venda or 0) }}
                     </div>
                 </div>
 
@@ -203,7 +203,7 @@
     <div class="modal-dialog">
 
         <form method="POST"
-              action="{{ url_for('produtos.editar_item_ficha', id_produto={{ produto.id }}) }}" class="form-action">
+              action="{{ url_for('produtos.editar_item_ficha', id_produto=produto.id) }}" class="form-action">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <div class="modal-content bg-dark text-white">

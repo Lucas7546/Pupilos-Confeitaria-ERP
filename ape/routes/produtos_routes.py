@@ -299,7 +299,8 @@ def ficha_tecnica(id_produto):
     try:
         id_empresa = get_empresa_id()
         if not id_empresa:
-            raise Exception("Empresa não definida")
+            flash("Empresa não definida.", "danger")
+            return redirect(url_for("estoque.estoque_painel"))
 
         with db_conn() as conn:
             with conn.cursor() as cur:
@@ -314,16 +315,16 @@ def ficha_tecnica(id_produto):
                       AND id_empresa = %s
                 """, (id_produto, id_empresa))
 
-                colunas = [d[0] for d in cur.description]
                 row = cur.fetchone()
-                produto = dict(zip(colunas, row)) if row else None  
-
-                if not produto:
+                if not row:
                     flash("Produto não encontrado.", "danger")
                     return redirect(url_for("estoque.estoque_painel"))
 
+                colunas = [d[0] for d in cur.description]
+                produto_db = dict(zip(colunas, row))
+
                 # =========================
-                # RECEITA (PADRONIZADA)
+                # RECEITA (INSUMOS + SUBPRODUTOS)
                 # =========================
                 cur.execute("""
                     SELECT
@@ -360,21 +361,31 @@ def ficha_tecnica(id_produto):
                 """, (id_produto, id_empresa, id_produto, id_empresa))
 
                 colunas = [d[0] for d in cur.description]
-                itens = [dict(zip(colunas, row)) for row in cur.fetchall()]
+                rows = cur.fetchall() or []
 
+                itens = [
+                    dict(zip(colunas, r))
+                    for r in rows
+                ]
+
+        # =========================
+        # CÁLCULOS SEGUROS
+        # =========================
         total_custo = sum(float(i.get("custo_subtotal") or 0) for i in itens)
 
-        preco_venda = float(produto["preco_venda"] or 0)
+        preco_venda = float(produto_db.get("preco_venda") or 0)
         lucro = preco_venda - total_custo
         margem = (lucro / preco_venda * 100) if preco_venda > 0 else 0
 
+        produto = {
+            "id": produto_db["id_produto"],
+            "nome": produto_db["nome"],
+            "preco_venda": preco_venda
+        }
+
         return render_template(
             "ficha_tecnica.html",
-            produto = {
-                "id": produto["id_produto"],
-                "nome": produto["nome"],
-                "preco_venda": float(produto["preco_venda"] or 0)
-            },
+            produto=produto,
             itens=itens,
             total=round(total_custo, 2),
             lucro=round(lucro, 2),
@@ -383,7 +394,7 @@ def ficha_tecnica(id_produto):
 
     except Exception as e:
         log_erro(f"Erro na ficha técnica ID {id_produto}: {e}")
-        flash(f"Erro ao processar ficha técnica: {e}", "danger")
+        flash("Erro ao processar ficha técnica.", "danger")
         return redirect(url_for("estoque.estoque_painel"))
     
 @produtos_bp.route("/ficha-tecnica/editar-item/<int:id_produto>", methods=["POST"])

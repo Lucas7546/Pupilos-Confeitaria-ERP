@@ -30,7 +30,8 @@
                     <table class="table table-dark table-hover align-middle border-secondary border-opacity-10">
                         <thead class="text-white-50 small text-uppercase">
                             <tr>
-                                <th>Empresa (ID)</th>
+                                <th>Empresa</th>
+                                <th>ID</th>
                                 <th>Plano Desejado</th>
                                 <th>Data Solicitação</th>
                                 <th class="text-end">Ações</th>
@@ -39,7 +40,8 @@
                         <tbody>
                             {% for s in pendentes %}
                             <tr>
-                                <td><span class="text-warning fw-bold">#{{ s.id_empresa }}</span></td>
+                                <td>{{ s.nome_empresa or 'Empresa não encontrada' }}</td>
+                                <td>#{{ s.id_empresa }}</td>
                                 <td><span class="badge bg-primary bg-opacity-20 text-primary border border-primary">{{ s.plano_desejado | upper }}</span></td>
                                 <td>{{ s.data_criacao.strftime('%d/%m/%Y %H:%M') if s.data_criacao else 'N/A' }}</td>
                                 <td class="text-end">
@@ -67,7 +69,8 @@
                         <thead class="text-white-50 small text-uppercase">
                             <tr>
                                 <th>Data</th>
-                                <th>Empresa (ID)</th>
+                                <th>Empresa</th>
+                                <th>ID</th>
                                 <th>Usuário</th>
                                 <th>Tipo</th>
                                 <th>Mensagem</th>
@@ -78,7 +81,8 @@
                             {% for f in feedbacks %}
                             <tr>
                                 <td class="text-white-50">{{ f.data_criacao.strftime('%d/%m %H:%M') if f.data_criacao else 'N/A' }}</td>
-                                <td><span class="badge bg-secondary">ID: {{ f.id_empresa }}</span></td>
+                                <td>{{ f.nome_empresa or 'Empresa não encontrada' }}</td>
+                                <td><span class="badge bg-secondary">{{ f.id_empresa }}</span></td>
                                 <td class="text-white">{{ f.usuario_origem }}</td>
                                 <td>
                                     <span class="badge {{ 'bg-info text-dark' if f.tipo == 'melhoria' else 'bg-danger text-white' }}">

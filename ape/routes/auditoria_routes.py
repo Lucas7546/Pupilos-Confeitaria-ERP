@@ -262,19 +262,52 @@ def gerar_convite():
 
 
 @auditoria_bp.route("/admin/solicitacoes")
+@login_required
 @superadmin_required
 def listar_solicitacoes():
+
     with db_admin_conn() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            # Busca solicitações pendentes
-            cur.execute("SELECT * FROM solicitacoes_upgrade WHERE status = 'pendente'")
+
+            # ======================
+            # SOLICITAÇÕES
+            # ======================
+
+            cur.execute("""
+                SELECT
+                    s.*,
+                    e.nome AS nome_empresa
+                FROM solicitacoes_upgrade s
+                LEFT JOIN empresas e
+                    ON e.id_empresa = s.id_empresa
+                WHERE s.status = 'pendente'
+                ORDER BY s.data_criacao DESC
+            """)
+
             pendentes = cur.fetchall()
-            
-            # Busca feedbacks (ordenados pelos mais recentes)
-            cur.execute("SELECT * FROM feedback ORDER BY data_criacao DESC")
+
+            # ======================
+            # FEEDBACKS
+            # ======================
+
+            cur.execute("""
+                SELECT
+                    f.*,
+                    e.nome AS nome_empresa
+                FROM feedback f
+                LEFT JOIN empresas e
+                    ON e.id_empresa = f.id_empresa
+                ORDER BY f.data_criacao DESC
+            """)
+
             feedbacks = cur.fetchall()
-            
-    return render_template("admin_solicitacoes.html", pendentes=pendentes, feedbacks=feedbacks)
+            print("FEEDBACKS:", len(feedbacks))
+
+    return render_template(
+        "admin_solicitacoes.html",
+        pendentes=pendentes,
+        feedbacks=feedbacks
+    )
 
 
 @auditoria_bp.route("/admin/aprovar-upgrade/<uuid:id_solicitacao>", methods=["POST"])

@@ -28,7 +28,7 @@ def get_plano_empresa():
                     SELECT plano
                     FROM empresa_planos
                     WHERE id_empresa = %s
-                    AND ativo = TRUE
+                    AND ativo = 1
                     ORDER BY id DESC
                     LIMIT 1
                     """,

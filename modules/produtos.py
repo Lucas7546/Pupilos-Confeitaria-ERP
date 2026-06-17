@@ -61,7 +61,7 @@ def buscar_produto_por_nome(nome: str) -> list[tuple]:
                         categoria
                     FROM produtos
                     WHERE nome ILIKE %s
-                    AND ativo = TRUE
+                    AND ativo = 1
                     AND id_empresa = %s
                     ORDER BY nome ASC
                 """, (

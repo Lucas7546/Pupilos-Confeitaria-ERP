@@ -227,7 +227,6 @@ def excluir_empresa(id_empresa):
             cur.execute("DELETE FROM usuarios WHERE id_empresa = %s", (id_empresa,))
             cur.execute("DELETE FROM empresa_planos WHERE id_empresa = %s", (id_empresa,))
             cur.execute("DELETE FROM empresas WHERE id_empresa = %s", (id_empresa,))
-            conn.commit()
     flash("Empresa e dados associados removidos com sucesso.", "success")
     return redirect(url_for('empresas.lista_convites'))
 

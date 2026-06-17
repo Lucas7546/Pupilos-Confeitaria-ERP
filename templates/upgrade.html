@@ -17,12 +17,12 @@
     .card-pro:hover { transform: scale(1.05) translateY(-5px); }
     
     .price-big { 
-        font-size: 3.5rem; 
+        font-size: 2.5rem; 
         letter-spacing: -3px; 
         text-shadow: 0 0 20px rgba(255,255,255,0.2); /* Efeito de luz sutil no preço */
     }
     
-    .feature-item { font-size: 1.05rem; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: #ddd; }
+    .feature-item { font-size: 0.95rem; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: #ddd; }
     
     /* Ajuste para o badge ficar mais imponente */
     .badge { letter-spacing: 1px; text-transform: uppercase; }
@@ -37,7 +37,7 @@
     <div class="row g-4 justify-content-center align-items-stretch">
         
         <div class="col-md-4">
-            <div class="card h-100 bg-dark-card p-5 shadow-lg text-start">
+            <div class="card h-100 bg-dark-card p-4 shadow-lg text-start">
                 <h4 class="text-white opacity-75">Starter</h4>
                 <h2 class="text-white fw-bold my-4 price-big">R$ 200<span class="fs-5 text-white-50">,00</span></h2>
                 <ul class="list-unstyled mb-5">
@@ -85,7 +85,7 @@
                 <form action="{{ url_for('empresas.solicitar_upgrade') }}" method="POST" class="mt-auto">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="plano" value="enterprise">
-                    <button type="submit" class="btn btn-info btn-lg w-100 fw-bold text-white">Assinar Enterprise</button>
+                    <button type="submit" class="btn btn-info btn-lg w-100 fw-bold text-white">Migrar para Enterprise</button>
                 </form>
             </div>
         </div>

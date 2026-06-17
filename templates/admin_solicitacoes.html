@@ -6,9 +6,30 @@
         <h2 class="text-white fw-bold">
             <i class="bi bi-shield-lock-fill text-warning me-2"></i>Painel de Administração
         </h2>
-        <p class="text-white-50">Gerenciamento centralizado de solicitações e feedbacks.</p>
+        <p class="text-white-50">Gerenciamento centralizado de solicitações, feedbacks e empresas.</p>
     </div>
-    
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card bg-dark-card border-0 shadow-sm p-3">
+                <small class="text-white-50">Empresas Cadastradas</small>
+                <h3 class="fw-bold text-info mb-0">{{ empresas|length }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-dark-card border-0 shadow-sm p-3">
+                <small class="text-white-50">Feedbacks Recebidos</small>
+                <h3 class="fw-bold text-success mb-0">{{ feedbacks|length }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-dark-card border-0 shadow-sm p-3">
+                <small class="text-white-50">Upgrades Pendentes</small>
+                <h3 class="fw-bold text-warning mb-0">{{ pendentes|length }}</h3>
+            </div>
+        </div>
+    </div>
+
     <ul class="nav nav-tabs border-0 mb-4" id="adminTab" role="tablist">
         <li class="nav-item">
             <button class="nav-link active bg-transparent text-white border-0 px-4 py-2" data-bs-toggle="tab" data-bs-target="#upgrades" type="button">
@@ -18,6 +39,11 @@
         <li class="nav-item">
             <button class="nav-link bg-transparent text-white-50 border-0 px-4 py-2" data-bs-toggle="tab" data-bs-target="#feedbacks" type="button">
                 <i class="bi bi-chat-left-dots me-2"></i>Feedbacks dos Clientes
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link bg-transparent text-white-50 border-0 px-4 py-2" data-bs-toggle="tab" data-bs-target="#empresas" type="button">
+                <i class="bi bi-buildings me-2"></i>Empresas
             </button>
         </li>
     </ul>
@@ -54,7 +80,7 @@
                                 </td>
                             </tr>
                             {% else %}
-                            <tr><td colspan="4" class="text-center text-white-50 py-4">Nenhuma solicitação pendente no momento.</td></tr>
+                            <tr><td colspan="5" class="text-center text-white-50 py-4">Nenhuma solicitação pendente no momento.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -93,87 +119,65 @@
                                 </td>
                                 <td class="text-truncate" style="max-width: 300px;" title="{{ f.mensagem }}">{{ f.mensagem }}</td>
                                 <td>
-                                    <span class="badge bg-dark border border-secondary text-white-50">
-                                        {{ f.status | capitalize }}
-                                    </span>
+                                    <span class="badge bg-dark border border-secondary text-white-50">{{ f.status | capitalize }}</span>
                                 </td>
                                 <td style="min-width:300px">
-
-                                    <form method="POST"
-                                        action="{{ url_for('feedback.responder_feedback', id_feedback=f.id_feedback) }}">
-
-                                        <input type="hidden"
-                                            name="csrf_token"
-                                            value="{{ csrf_token() }}">
-
+                                    <form method="POST" action="{{ url_for('feedback.responder_feedback', id_feedback=f.id_feedback) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <div class="input-group">
-
-                                            <input type="text"
-                                                name="resposta_admin"
-                                                class="form-control form-control-sm"
-                                                placeholder="Responder cliente..."
-                                                value="{{ f.resposta_admin or '' }}">
-
-                                            <button class="btn btn-sm btn-primary"
-                                                    type="submit">
-
-                                                Salvar
-
-                                            </button>
-
+                                            <input type="text" name="resposta_admin" class="form-control form-control-sm" placeholder="Responder cliente..." value="{{ f.resposta_admin or '' }}">
+                                            <button class="btn btn-sm btn-primary" type="submit">Salvar</button>
                                         </div>
-
                                     </form>
-
                                 </td>
                                 <td>
-                                    <form method="POST"
-                                        action="{{ url_for('feedback.atualizar_status_feedback', id_feedback=f.id_feedback) }}">
-
-                                        <input type="hidden"
-                                            name="csrf_token"
-                                            value="{{ csrf_token() }}">
-
-                                        <select name="status"
-                                                class="form-select form-select-sm"
-                                                onchange="this.form.submit()">
-
-                                            <option value="pendente"
-                                                {% if f.status == 'pendente' %}selected{% endif %}>
-                                                Pendente
-                                            </option>
-
-                                            <option value="analisando"
-                                                {% if f.status == 'analisando' %}selected{% endif %}>
-                                                Analisando
-                                            </option>
-
-                                            <option value="aprovado"
-                                                {% if f.status == 'aprovado' %}selected{% endif %}>
-                                                Aprovado
-                                            </option>
-
-                                            <option value="concluido"
-                                                {% if f.status == 'concluido' %}selected{% endif %}>
-                                                Concluído
-                                            </option>
-
-                                            <option value="recusado"
-                                                {% if f.status == 'recusado' %}selected{% endif %}>
-                                                Recusado
-                                            </option>
-
+                                    <form method="POST" action="{{ url_for('feedback.atualizar_status_feedback', id_feedback=f.id_feedback) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                            <option value="pendente" {% if f.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                                            <option value="analisando" {% if f.status == 'analisando' %}selected{% endif %}>Analisando</option>
+                                            <option value="aprovado" {% if f.status == 'aprovado' %}selected{% endif %}>Aprovado</option>
+                                            <option value="concluido" {% if f.status == 'concluido' %}selected{% endif %}>Concluído</option>
+                                            <option value="recusado" {% if f.status == 'recusado' %}selected{% endif %}>Recusado</option>
                                         </select>
-
                                     </form>
                                 </td>
                             </tr>
                             {% else %}
+                            <tr><td colspan="9" class="text-center text-white-50 py-4">Nenhum feedback disponível.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="empresas">
+            <div class="card bg-dark-card border-0 shadow-lg p-4">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle">
+                        <thead  class="text-white-50 small text-uppercase">
                             <tr>
-                                <td colspan="8" class="text-center text-white-50 py-4">
-                                    Nenhum feedback disponível.
+                                <th>ID</th>
+                                <th>Empresa</th>
+                                <th>Responsável</th>
+                                <th>Plano</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for e in empresas %}
+                            <tr>
+                                <td><span class="badge bg-secondary">{{ e.id_empresa }}</span></td>
+                                <td><span class="fw-semibold text-white text-truncate d-inline-block" style="max-width:250px;">{{ e.nome }}</span></td>
+                                <td><span class="text-info">{{ e.responsavel or '-' }}</span></td>
+                                <td>
+                                    {% if e.plano == 'starter' %}<span class="badge bg-secondary">Starter</span>
+                                    {% elif e.plano == 'pro' %}<span class="badge bg-warning text-dark">Pro</span>
+                                    {% elif e.plano == 'enterprise' %}<span class="badge bg-info text-dark">Enterprise</span>{% endif %}
                                 </td>
                             </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="text-center text-white-50">Nenhuma empresa encontrada.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>

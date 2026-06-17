@@ -301,12 +301,39 @@ def listar_solicitacoes():
             """)
 
             feedbacks = cur.fetchall()
+
+            # ======================
+            # EMPRESAS
+            # ======================
+
+            cur.execute("""
+                SELECT
+                    e.id_empresa,
+                    e.nome,
+                    e.plano,
+
+                    (
+                        SELECT u.username
+                        FROM usuarios u
+                        WHERE u.id_empresa = e.id_empresa
+                        AND u.nivel = 'admin'
+                        LIMIT 1
+                    ) AS responsavel
+
+                FROM empresas e
+                ORDER BY e.id_empresa
+            """)
+
+            empresas = cur.fetchall()
+
             print("FEEDBACKS:", len(feedbacks))
+            print("EMPRESAS:", len(empresas))
 
     return render_template(
         "admin_solicitacoes.html",
         pendentes=pendentes,
-        feedbacks=feedbacks
+        feedbacks=feedbacks,
+        empresas=empresas
     )
 
 

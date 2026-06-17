@@ -1,5 +1,5 @@
-from flask_login import current_user, AnonymousUserMixin
 from flask import g
+from flask_login import current_user, AnonymousUserMixin
 
 
 

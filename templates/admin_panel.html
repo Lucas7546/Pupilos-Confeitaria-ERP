@@ -318,12 +318,23 @@
                                        {% endif %}
                                     </a>
 
-                                    <form method="POST" 
-                                        action="{{ url_for('usuarios.deletar_user', id=user[0]) }}" class="d-inline">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Alternar status">
-                                            <i class="bi {{ 'bi-lock-fill' if user[3] == 1 else 'bi-unlock-fill' }}"></i>
+                                    <form method="POST"
+                                        action="{{ url_for('usuarios.deletar_user', id=user[0]) }}"
+                                        class="d-inline">
+
+                                        <input type="hidden"
+                                            name="csrf_token"
+                                            value="{{ csrf_token() }}">
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-danger"
+                                                title="Excluir usuário"
+                                                onclick="return confirm('Deseja excluir este usuário?')">
+
+                                            <i class="bi bi-trash"></i>
+
                                         </button>
+
                                     </form>
                                 </td>
 

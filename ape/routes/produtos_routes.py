@@ -107,36 +107,63 @@ def ficha_tecnica(id_produto):
     try:
         with db_conn() as conn:
             with conn.cursor() as cur:
+
+                # Produto
                 cur.execute(
-                    "SELECT id_produto, nome, preco_venda FROM produtos WHERE id_produto = %s AND id_empresa = %s",
+                    """
+                    SELECT id_produto, nome, preco_venda
+                    FROM produtos
+                    WHERE id_produto = %s AND id_empresa = %s
+                    """,
                     (id_produto, current_user.id_empresa),
                 )
+
                 produto = cur.fetchone()
+
                 if not produto:
                     flash("Produto não encontrado.", "danger")
-                    # Ajustado para o prefixo correto do estoque
                     return redirect(url_for("estoque.estoque_painel"))
 
+                # Ficha técnica (COM ALIAS CORRETO)
                 cur.execute("""
-                    SELECT r.id_receita, 'materia_prima', mp.id_materia_prima, mp.nome,
-                           r.quantidade_utilizada, mp.unidade_medida,
-                           r.quantidade_utilizada * COALESCE(mp.preco_unitario, 0)
+                    SELECT
+                        r.id_receita AS id_vinculo,
+                        'materia_prima' AS tipo,
+                        mp.id_materia_prima AS id_item,
+                        mp.nome AS item,
+                        r.quantidade_utilizada AS qtd,
+                        mp.unidade_medida AS unidade,
+                        (r.quantidade_utilizada * COALESCE(mp.preco_unitario, 0)) AS custo_subtotal
                     FROM receitas r
                     JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
-                    WHERE r.id_produto = %s AND r.id_empresa = %s AND r.id_subproduto IS NULL
+                    WHERE r.id_produto = %s
+                      AND r.id_empresa = %s
+                      AND r.id_subproduto IS NULL
+
                     UNION ALL
-                    SELECT r.id_receita, 'subproduto', sub.id_subproduto, sub.nome,
-                           r.quantidade_utilizada, sub.unidade_medida,
-                           r.quantidade_utilizada * COALESCE(sub.preco_custo_unidade, 0)
+
+                    SELECT
+                        r.id_receita AS id_vinculo,
+                        'subproduto' AS tipo,
+                        sub.id_subproduto AS id_item,
+                        sub.nome AS item,
+                        r.quantidade_utilizada AS qtd,
+                        sub.unidade_medida AS unidade,
+                        (r.quantidade_utilizada * COALESCE(sub.preco_custo_unidade, 0)) AS custo_subtotal
                     FROM receitas r
                     JOIN subprodutos sub ON r.id_subproduto = sub.id_subproduto
-                    WHERE r.id_produto = %s AND r.id_empresa = %s AND r.id_subproduto IS NOT NULL
-                """, (id_produto, current_user.id_empresa, id_produto, current_user.id_empresa))
+                    WHERE r.id_produto = %s
+                      AND r.id_empresa = %s
+                      AND r.id_subproduto IS NOT NULL
+                """, (id_produto, current_user.id_empresa,
+                      id_produto, current_user.id_empresa))
 
                 colunas = [d[0] for d in cur.description]
                 itens = [dict(zip(colunas, row)) for row in cur.fetchall()]
 
-        total_custo = sum(float(i.get("custo_subtotal") or i.get(colunas[6], 0)) for i in itens)
+        # agora simples e seguro
+        total_custo = sum(float(i.get("custo_subtotal") or 0) for i in itens)
+
         preco_venda = float(produto[2] or 0)
         lucro = preco_venda - total_custo
         margem = (lucro / preco_venda * 100) if preco_venda > 0 else 0
@@ -149,6 +176,7 @@ def ficha_tecnica(id_produto):
             lucro=round(lucro, 2),
             margem=round(margem, 2),
         )
+
     except Exception as e:
         log_erro(f"Erro na ficha técnica ID {id_produto}: {e}")
         flash(f"Erro ao processar ficha técnica: {e}", "danger")
@@ -156,9 +184,10 @@ def ficha_tecnica(id_produto):
 
 @produtos_bp.route("/ficha-tecnica/editar-item/<int:id_produto>", methods=["POST"])
 @login_required
-@limiter.limit("15 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
+@limiter.limit("15 per minute")
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
 def editar_item_ficha(id_produto):
+
     id_vinculo_raw = request.form.get("id_vinculo")
     qtd_raw = request.form.get("quantidade", "0").strip()
 
@@ -169,8 +198,10 @@ def editar_item_ficha(id_produto):
     try:
         id_vinculo = int(id_vinculo_raw)
         nova_qtd = _parse_float(qtd_raw)
+
         if nova_qtd < 0:
             raise ValueError
+
     except ValueError:
         flash("Quantidade deve ser um número positivo.", "danger")
         return redirect(url_for("produtos.ficha_tecnica", id_produto=id_produto))
@@ -178,37 +209,66 @@ def editar_item_ficha(id_produto):
     try:
         with db_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE receitas SET quantidade_utilizada = %s WHERE id_receita = %s AND id_produto = %s AND id_empresa = %s",
-                    (nova_qtd, id_vinculo, id_produto, current_user.id_empresa),
-                )
-        registrar_log("ALTERAR", "FICHA_TECNICA", f"Vínculo {id_vinculo} → {nova_qtd}", current_user.username)
+
+                cur.execute("""
+                    UPDATE receitas
+                    SET quantidade_utilizada = %s
+                    WHERE id_receita = %s
+                      AND id_produto = %s
+                      AND id_empresa = %s
+                """, (nova_qtd, id_vinculo, id_produto, current_user.id_empresa))
+
+                if cur.rowcount == 0:
+                    raise Exception("Item não encontrado ou não pertence ao produto")
+
+        registrar_log(
+            "ALTERAR",
+            "FICHA_TECNICA",
+            f"Vínculo {id_vinculo} → {nova_qtd}",
+            current_user.username
+        )
+
         flash("Quantidade ajustada!", "success")
+
     except Exception as e:
         log_erro(f"Erro ao editar ficha técnica: {e}")
         flash(f"Erro ao salvar: {e}", "danger")
 
     return redirect(url_for("produtos.ficha_tecnica", id_produto=id_produto))
 
-
 @produtos_bp.route("/api/atualizar-precos", methods=["POST"])
 @login_required
 def atualizar_precos_api():
     try:
-        data = request.json
+        data = request.get_json() or {}
         itens = data.get("itens", [])
-        
+
+        if not isinstance(itens, list):
+            return jsonify({"status": "erro", "mensagem": "Payload inválido"}), 400
+
         with db_conn() as conn:
             with conn.cursor() as cur:
+
                 for item in itens:
-                    # Atualiza o preço de venda para cada produto enviado
-                    cur.execute("""
-                        UPDATE produtos 
-                        SET preco_venda = %s 
-                        WHERE id_produto = %s AND id_empresa = %s
-                    """, (item["novo_preco"], item["id"], current_user.id_empresa))
-        
+                    try:
+                        id_produto = int(item["id"])
+                        novo_preco = float(item["novo_preco"])
+
+                        if novo_preco < 0:
+                            continue
+
+                        cur.execute("""
+                            UPDATE produtos
+                            SET preco_venda = %s
+                            WHERE id_produto = %s
+                              AND id_empresa = %s
+                        """, (novo_preco, id_produto, current_user.id_empresa))
+
+                    except Exception:
+                        continue
+
         return jsonify({"status": "sucesso"}), 200
+
     except Exception as e:
         log_erro(f"Erro ao aplicar preços em massa: {e}")
         return jsonify({"status": "erro", "mensagem": str(e)}), 500

@@ -60,24 +60,48 @@
                                 <th>Tipo</th>
                                 <th>Mensagem</th>
                                 <th>Status</th>
+                                <th>Resposta da Equipe</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for f in feedbacks %}
                             <tr>
                                 <td>{{ f['data_criacao'].strftime('%d/%m %H:%M') }}</td>
-                                <td>{{ f['usuario'] }}</td>
+
+                                <td>{{ f['usuario_origem'] }}</td>
+
                                 <td>
                                     <span class="badge {{ 'bg-info text-dark' if f['tipo'] == 'melhoria' else 'bg-danger' }}">
                                         {{ f['tipo']|upper }}
                                     </span>
                                 </td>
+
                                 <td>{{ f['mensagem'] }}</td>
-                                <td><span class="badge bg-secondary">{{ f['status'] }}</span></td>
+
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        {{ f['status'] }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    {% if f['resposta_admin'] %}
+                                        <span class="text-success">
+                                            {{ f['resposta_admin'] }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">
+                                            Aguardando retorno
+                                        </span>
+                                    {% endif %}
+                                </td>
+
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="5" class="text-center text-white-50">Nenhum feedback enviado.</td>
+                                <td colspan="6" class="text-center text-white-50">
+                                    Nenhum feedback enviado.
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>

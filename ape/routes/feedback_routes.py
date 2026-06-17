@@ -85,10 +85,18 @@ def atualizar_status_feedback(id_feedback):
                     SET status = %s
                     WHERE id_feedback = %s
                     """,
-                    (novo_status, id_feedback)
+                    (
+                        novo_status,
+                        id_feedback
+                    )
                 )
 
-        flash("Status atualizado com sucesso.", "success")
+                conn.commit()
+
+        flash(
+            "Status atualizado com sucesso.",
+            "success"
+        )
 
     except Exception as e:
 
@@ -96,7 +104,56 @@ def atualizar_status_feedback(id_feedback):
             f"Erro ao atualizar feedback {id_feedback}: {e}"
         )
 
-        flash("Erro ao atualizar status.", "danger")
+        flash(
+            "Erro ao atualizar status.",
+            "danger"
+        )
+
+    return redirect(
+        url_for("auditoria.listar_solicitacoes")
+    )
+
+
+
+@feedback_bp.route("/feedback/<int:id_feedback>/responder", methods=["POST"])
+@login_required
+@superadmin_required
+def responder_feedback(id_feedback):
+
+    resposta = request.form.get("resposta_admin")
+
+    try:
+
+        with db_admin_conn() as conn:
+            with conn.cursor() as cur:
+
+                cur.execute(
+                    """
+                    UPDATE feedback
+                    SET resposta_admin = %s
+                    WHERE id_feedback = %s
+                    """,
+                    (
+                        resposta,
+                        id_feedback
+                    )
+                )
+
+        flash(
+            "Resposta enviada com sucesso.",
+            "success"
+        )
+
+    except Exception as e:
+
+        log_erro(
+            f"Erro ao responder feedback {id_feedback}: {e}"
+        )
+
+        flash(
+            "Erro ao salvar resposta.",
+            "danger"
+        )
 
     return redirect(
         url_for("auditoria.listar_solicitacoes")

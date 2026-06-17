@@ -160,7 +160,7 @@ def configuracoes():
                 
                 # 2. Busca os feedbacks usando nomes de colunas explícitos
                 cur.execute("""
-                    SELECT id_feedback, id_empresa, usuario_origem, tipo, mensagem, status, data_criacao 
+                    SELECT id_feedback, id_empresa, usuario_origem, tipo, mensagem, status, resposta_admin, data_criacao 
                     FROM feedback 
                     WHERE id_empresa = %s 
                     ORDER BY data_criacao DESC

@@ -75,6 +75,7 @@
                                 <th>Tipo</th>
                                 <th>Mensagem</th>
                                 <th>Status</th>
+                                <th>Resposta</th>
                                 <th>Ação</th>
                             </tr>
                         </thead>
@@ -96,7 +97,35 @@
                                         {{ f.status | capitalize }}
                                     </span>
                                 </td>
+                                <td style="min-width:300px">
 
+                                    <form method="POST"
+                                        action="{{ url_for('feedback.responder_feedback', id_feedback=f.id_feedback) }}">
+
+                                        <input type="hidden"
+                                            name="csrf_token"
+                                            value="{{ csrf_token() }}">
+
+                                        <div class="input-group">
+
+                                            <input type="text"
+                                                name="resposta_admin"
+                                                class="form-control form-control-sm"
+                                                placeholder="Responder cliente..."
+                                                value="{{ f.resposta_admin or '' }}">
+
+                                            <button class="btn btn-sm btn-primary"
+                                                    type="submit">
+
+                                                Salvar
+
+                                            </button>
+
+                                        </div>
+
+                                    </form>
+
+                                </td>
                                 <td>
                                     <form method="POST"
                                         action="{{ url_for('feedback.atualizar_status_feedback', id_feedback=f.id_feedback) }}">

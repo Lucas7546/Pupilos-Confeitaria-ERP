@@ -44,8 +44,9 @@ def pagina_vendas():
 @limiter.limit("30 per minute")
 @limiter.limit("100 per hour", key_func=lambda: f"empresa:{getattr(g, 'id_empresa', 'global')}")
 def vender():
-    nome_produto = request.form.get("nome_produto", "").strip() # Pega o nome
+    nome_produto = request.form.get("nome_produto", "").strip()
     print("PRODUTO RECEBIDO:", repr(nome_produto))
+
     qtd_raw = request.form.get("quantidade", "")
 
     # Validação simples
@@ -54,28 +55,48 @@ def vender():
         return redirect(url_for("vendas.pagina_vendas"))
 
     qtd = int(qtd_raw)
-    
-    # Busca o produto pelo NOME (usando a função que você já tem no 'produtos')
+
+    # 🔥 DEBUG 1 - entrada da venda
+    print(f"[DEBUG VENDA] produto_nome={nome_produto} quantidade={qtd}")
+
+    # Busca o produto pelo NOME
     prods = produtos.buscar_produto_por_nome(nome_produto) or []
-    
-    # Se 'buscar_produto_por_nome' retorna uma lista, pegamos o primeiro item
+
     produto = prods[0] if prods else None
 
     if not produto:
         flash("Produto não encontrado.", "danger")
         return redirect(url_for("vendas.pagina_vendas"))
 
-    id_p = produto[0] # Pega o ID que está no banco a partir do produto achado
+    id_p = produto[0]
 
-    if not receitas.validar_estoque_suficiente(id_p, qtd):
+    # 🔥 DEBUG 2 - antes da validação de estoque
+    print(f"[DEBUG VENDA] produto_id={id_p} iniciando validacao estoque")
+
+    ok = receitas.validar_estoque_suficiente(id_p, qtd)
+
+    # 🔥 DEBUG 3 - resultado da validação
+    print(f"[DEBUG VALIDACAO] produto_id={id_p} resultado={ok}")
+
+    if not ok:
         flash("Estoque insuficiente.", "danger")
         return redirect(url_for("vendas.pagina_vendas"))
 
-    valor_total = float(produto[2]) * qtd # Supondo que o preço é o índice 2
+    valor_total = float(produto[2]) * qtd
     usuario_atual = getattr(current_user, "username", "Sistema")
 
-    if vendas.registrar_venda(id_produto=id_p, quantidade=qtd, valor_total=valor_total, usuario=usuario_atual):
-        registrar_log("VENDA", "VENDAS", f"{nome_produto} | Qtd {qtd} | R$ {valor_total:.2f}", current_user.username)
+    if vendas.registrar_venda(
+        id_produto=id_p,
+        quantidade=qtd,
+        valor_total=valor_total,
+        usuario=usuario_atual
+    ):
+        registrar_log(
+            "VENDA",
+            "VENDAS",
+            f"{nome_produto} | Qtd {qtd} | R$ {valor_total:.2f}",
+            current_user.username
+        )
         flash("Venda registrada!", "success")
     else:
         flash("Erro ao registrar venda.", "danger")

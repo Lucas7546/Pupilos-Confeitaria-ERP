@@ -140,11 +140,19 @@ def validar_estoque_suficiente(id_produto: int, quantidade_venda: int) -> bool:
 
             qtd_necessaria = float(qtd_util) * float(quantidade_venda)
 
-            if id_mp and obter_saldo_materia_prima(id_mp) < qtd_necessaria:
-                return False
+            if id_mp:
+                saldo = obter_saldo_materia_prima(id_mp)
+                print(f"[DEBUG MP] id={id_mp} saldo={saldo} necessario={qtd_necessaria}")
 
-            if id_sub and obter_saldo_subproduto(id_sub) < qtd_necessaria:
-                return False
+                if saldo < qtd_necessaria:
+                    return False
+
+            if id_sub:
+                saldo = obter_saldo_subproduto(id_sub)
+                print(f"[DEBUG SUB] id={id_sub} saldo={saldo} necessario={qtd_necessaria}")
+
+                if saldo < qtd_necessaria:
+                    return False
 
         return True
 

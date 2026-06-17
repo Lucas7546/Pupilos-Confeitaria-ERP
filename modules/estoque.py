@@ -315,6 +315,7 @@ def registrar_compra_estoque(id_materia_prima: int, quantidade_comprada, valor_t
                     id_materia_prima,
                     qtd
                 ))
+                print(f"[DEBUG COMPRA] MP={id_materia_prima} qtd={qtd} empresa={id_empresa}")
 
         return True
 
@@ -1200,6 +1201,7 @@ def obter_saldo_materia_prima(id_mp: int) -> float:
                 """, (id_mp, id_empresa))
 
                 saldo = cur.fetchone()[0]
+                print(f"[DEBUG SALDO MP] id={id_mp} saldo={saldo} empresa={id_empresa}")
 
         return float(saldo or 0)
 

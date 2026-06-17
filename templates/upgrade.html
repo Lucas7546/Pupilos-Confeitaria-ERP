@@ -13,11 +13,12 @@
                 <h4 class="text-white">Starter</h4>
                 <h2 class="text-white fw-bold my-3">R$ 200,00</h2>
                 <ul class="list-unstyled text-white-50 mb-4">
-                    <li><i class="bi bi-check2 text-success me-2"></i> Estoque & Vendas</li>
+                    <li><i class="bi bi-check2 text-success me-2"></i> Controle automático de estoque</li>
+                    <li><i class="bi bi-check2 text-success me-2"></i> Baixa automática de insumos após cada venda</li>
                     <li><i class="bi bi-check2 text-success me-2"></i> Compras</li>
-                    <li><i class="bi bi-check2 text-success me-2"></i> Previsão de Demanda</li>
-                    <li><i class="bi bi-check2 text-success me-2"></i> Painel Financeiro</li>
-                    <li><i class="bi bi-people me-2"></i> 10 Usuários</li>
+                    <li><i class="bi bi-check2 text-success me-2"></i> Previsão de demanda com IA</li>
+                    <li><i class="bi bi-check2 text-success me-2"></i> Painel financeiro completo</li>
+                    <li><i class="bi bi-people me-2"></i> 👥 Até 10 usuários</li>
                 </ul>
                 <button class="btn btn-outline-light mt-auto" disabled>Atual</button>
             </div>
@@ -29,10 +30,10 @@
                 <h4 class="text-warning">Pro</h4>
                 <h2 class="text-white fw-bold my-3">R$ 230,00</h2>
                 <ul class="list-unstyled text-white-50 mb-4">
-                    <li><i class="bi bi-check2-all text-warning me-2"></i> <strong>Tudo do Starter</strong></li>
-                    <li><i class="bi bi-tag text-info me-2"></i> Precificação Inteligente</li>
-                    <li><i class="bi bi-person-gear text-info me-2"></i> Gestão de Equipe</li>
-                    <li><i class="bi bi-people-fill text-warning me-2"></i> 20 Usuários</li>
+                    <li><i class="bi bi-check2-all text-warning me-2"></i> <strong> ✔ Tudo do Starter</strong></li>
+                    <li><i class="bi bi-tag text-info me-2"></i> ✔ Precificação Inteligente</li>
+                    <li><i class="bi bi-person-gear text-info me-2"></i> ✔ Gestão de Equipe</li>
+                    <li><i class="bi bi-people-fill text-warning me-2"></i> 👥 Até 20 usuários</li>
                 </ul>
                 <form action="{{ url_for('empresas.solicitar_upgrade') }}" method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -45,12 +46,14 @@
         <div class="col-md-4">
             <div class="card h-100 bg-dark-card border-0 p-4 shadow-lg">
                 <h4 class="text-info">Enterprise</h4>
-                <h2 class="text-white fw-bold my-3">R$ 290,00</h2>
+                <h2 class="text-white fw-bold my-3">R$ 300,00</h2>
                 <ul class="list-unstyled text-white-50 mb-4">
-                    <li><i class="bi bi-check2-all text-info me-2"></i> <strong>Tudo do Pro</strong></li>
-                    <li><i class="bi bi-camera text-info me-2"></i> Compras via Nota (IA)</li>
-                    <li><i class="bi bi-cloud-arrow-down text-info me-2"></i> Importação iFood/Keetas</li>
-                    <li><i class="bi bi-people-fill text-info me-2"></i> 30 Usuários</li>
+                    <li><i class="bi bi-check2-all text-info me-2"></i> <strong> ✔ Tudo do Pro</strong></li>
+                    <li><i class="bi bi-camera text-info me-2"></i> ✔ Compras por Nota Fiscal (IA)</li>
+                    <li><i class="bi bi-file-earmark-arrow-up text-info me-2"></i> Importação de vendas via arquivo (iFood e Keeta)</li>
+                    <li><i class="bi bi-cpu text-info me-2"></i> Leitura inteligente de relatórios com IA</li>
+                    <li><i class="bi bi-people-fill text-info me-2"></i> 👥 Até 35 usuários </li>
+                    <li><i class="bi bi-people-fill text-info me-2"></i> Ideal para operações de alta demanda</li>
                 </ul>
                 <form action="{{ url_for('empresas.solicitar_upgrade') }}" method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

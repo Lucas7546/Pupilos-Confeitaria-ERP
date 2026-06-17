@@ -98,25 +98,17 @@ def registrar_venda(
         if not id_empresa:
             return False
 
-        custo_unitario = calcular_custo_receita(id_produto)
-        lucro_total = float(valor_total) - (float(custo_unitario) * float(quantidade))
-
-        if not validar_estoque_suficiente(id_produto, quantidade):
-            raise ValueError("Estoque insuficiente para produção")
-
         with db_conn() as conn:
-            conn.autocommit = False
-
             with conn.cursor() as cur:
 
                 # =========================
-                # RECEITA (primeiro)
+                # RECEITA
                 # =========================
                 cur.execute("""
                     SELECT id_materia_prima, id_subproduto, quantidade_utilizada
                     FROM receitas
                     WHERE id_produto = %s
-                      AND id_empresa = %s
+                    AND id_empresa = %s
                 """, (id_produto, id_empresa))
 
                 ingredientes = cur.fetchall()
@@ -128,7 +120,7 @@ def registrar_venda(
                     SELECT preco_venda
                     FROM produtos
                     WHERE id_produto = %s
-                      AND id_empresa = %s
+                    AND id_empresa = %s
                 """, (id_produto, id_empresa))
 
                 row = cur.fetchone()
@@ -141,8 +133,7 @@ def registrar_venda(
                 # VENDA
                 # =========================
                 cur.execute("""
-                    INSERT INTO vendas
-                    (
+                    INSERT INTO vendas (
                         valor_total,
                         lucro,
                         canal_venda,
@@ -154,7 +145,7 @@ def registrar_venda(
                     RETURNING id_venda
                 """, (
                     valor_total,
-                    lucro_total,
+                    float(valor_total) - (preco_unitario * quantidade),
                     usuario,
                     id_empresa
                 ))
@@ -165,8 +156,7 @@ def registrar_venda(
                 # ITEM VENDA
                 # =========================
                 cur.execute("""
-                    INSERT INTO itens_venda
-                    (
+                    INSERT INTO itens_venda (
                         id_venda,
                         id_produto,
                         quantidade,
@@ -183,11 +173,10 @@ def registrar_venda(
                 ))
 
                 # =========================
-                # MOVIMENTO PRODUTO FINAL
+                # MOVIMENTAÇÃO PRODUTO FINAL
                 # =========================
                 cur.execute("""
-                    INSERT INTO movimentacao_estoque
-                    (
+                    INSERT INTO movimentacao_estoque (
                         id_produto,
                         tipo_movimento,
                         quantidade,
@@ -202,9 +191,6 @@ def registrar_venda(
                     id_empresa
                 ))
 
-                # força consumo de sequence (evita conflito concorrente)
-                cur.execute("SELECT nextval('movimentacao_estoque_id_movimento_seq')")
-
                 # =========================
                 # BAIXA INSUMOS
                 # =========================
@@ -212,10 +198,9 @@ def registrar_venda(
 
                     qtd_baixa = float(qtd_util) * float(quantidade)
 
-                    if id_mp is not None:
+                    if id_mp:
                         cur.execute("""
-                            INSERT INTO movimentacao_estoque
-                            (
+                            INSERT INTO movimentacao_estoque (
                                 id_materia_prima,
                                 tipo_movimento,
                                 quantidade,
@@ -230,10 +215,9 @@ def registrar_venda(
                             id_empresa
                         ))
 
-                    if id_sub is not None:
+                    if id_sub:
                         cur.execute("""
-                            INSERT INTO movimentacao_estoque
-                            (
+                            INSERT INTO movimentacao_estoque (
                                 id_subproduto,
                                 tipo_movimento,
                                 quantidade,
@@ -248,15 +232,11 @@ def registrar_venda(
                             id_empresa
                         ))
 
-            conn.commit()
-
-        log_info(f"Venda {id_venda} registrada - Empresa {id_empresa}")
         return True
 
     except Exception as e:
         log_erro(f"Erro ao registrar venda (Prod {id_produto}): {e}")
         return False
-
 
 # =========================================================
 # LISTAR VENDAS RECENTES

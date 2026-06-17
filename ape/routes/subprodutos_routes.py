@@ -15,44 +15,194 @@ subprodutos_bp = Blueprint('subprodutos', __name__)
 @subprodutos_bp.route('/historico-subproduto/<int:id_subproduto>')
 @login_required
 def historico_subproduto(id_subproduto):
-    historico = estoque.buscar_historico_subproduto(id_subproduto)
-    # Aqui você precisaria de um template 'historico_subproduto.html'
-    # Por enquanto, para testar se funciona, podemos retornar o próprio histórico:
-    return render_template('historico_subproduto.html', historico=historico, id_sub=id_subproduto)
 
+    try:
+        id_empresa = get_empresa_id()
+
+        with db_conn() as conn:
+            with conn.cursor() as cur:
+
+                # =========================
+                # VALIDA TENANT
+                # =========================
+                cur.execute("""
+                    SELECT nome
+                    FROM subprodutos
+                    WHERE id_subproduto = %s
+                      AND id_empresa = %s
+                """, (id_subproduto, id_empresa))
+
+                row = cur.fetchone()
+
+                if not row:
+                    flash("Subproduto não encontrado.", "warning")
+                    return redirect(url_for("estoque.estoque_painel"))
+
+                nome_subproduto = row[0]
+
+        # =========================
+        # HISTÓRICO (SÓ APÓS VALIDAR TENANT)
+        # =========================
+        historico = estoque.buscar_historico_subproduto(
+            id_subproduto=id_subproduto,
+            id_empresa=id_empresa
+        )
+
+        return render_template(
+            'historico_subproduto.html',
+            historico=historico,
+            id_sub=id_subproduto,
+            nome_subproduto=nome_subproduto
+        )
+
+    except Exception as e:
+        log_erro(f"Erro histórico subproduto: {e}")
+        flash("Erro ao carregar histórico.", "danger")
+        return redirect(url_for("estoque.estoque_painel"))
 
 @subprodutos_bp.route("/cadastrar-subproduto", methods=["POST"])
 @login_required
-@limiter.limit("15 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
+@limiter.limit("15 per minute")
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
 def cadastrar_subproduto():
-    nome    = request.form.get("nome", "").strip()
-    unidade = request.form.get("unidade", "").strip()
-    est_min = _parse_float(request.form.get("estoque_minimo", "0"))
 
-    if not nome or not unidade:
-        flash("Nome e Unidade são obrigatórios.", "warning")
-    else:
-        ok = estoque.cadastrar_subproduto_banco(current_user.id_empresa, nome, unidade, est_min)
+    try:
+        id_empresa = get_empresa_id()
 
-        if ok: 
-            registrar_log("CADASTRO", "SUBPRODUTO", f"Novo subproduto: {nome}", current_user.username)
-            flash(f"Subproduto '{nome}' cadastrado!", "success")
-        else:
-            flash("Erro ao criar subproduto.", "danger")
+        nome = request.form.get("nome", "").strip()
+        unidade = request.form.get("unidade", "").strip()
+        est_min = _parse_float(request.form.get("estoque_minimo", "0"))
+
+        # =========================
+        # VALIDAÇÕES BÁSICAS
+        # =========================
+        if not nome or not unidade:
+            flash("Nome e Unidade são obrigatórios.", "warning")
+            return redirect(url_for("insumos.render_cadastro"))
+
+        if len(nome) > 120:
+            flash("Nome muito longo.", "warning")
+            return redirect(url_for("insumos.render_cadastro"))
+
+        if est_min is None or est_min < 0:
+            est_min = 0
+
+        nome_norm = nome.lower()
+
+        with db_conn() as conn:
+            with conn.cursor() as cur:
+
+                # =========================
+                # EVITA DUPLICIDADE POR EMPRESA
+                # =========================
+                cur.execute("""
+                    SELECT 1
+                    FROM subprodutos
+                    WHERE LOWER(nome) = %s
+                      AND id_empresa = %s
+                """, (nome_norm, id_empresa))
+
+                if cur.fetchone():
+                    flash("Já existe um subproduto com esse nome.", "warning")
+                    return redirect(url_for("insumos.render_cadastro"))
+
+                # =========================
+                # INSERT SEGURO
+                # =========================
+                cur.execute("""
+                    INSERT INTO subprodutos
+                    (id_empresa, nome, unidade_medida, estoque_minimo)
+                    VALUES (%s, %s, %s, %s)
+                """, (
+                    id_empresa,
+                    nome,
+                    unidade,
+                    est_min
+                ))
+
+        registrar_log(
+            "CADASTRO",
+            "SUBPRODUTO",
+            f"{nome}",
+            current_user.username
+        )
+
+        flash(f"Subproduto '{nome}' cadastrado!", "success")
+
+    except Exception as e:
+        log_erro(f"Erro ao cadastrar subproduto: {e}")
+        flash("Erro ao criar subproduto.", "danger")
+
     return redirect(url_for("insumos.render_cadastro"))
 
 @subprodutos_bp.route("/excluir-subproduto/<int:id_subproduto>")
 @login_required
 @acesso_requerido("estoque")
-@limiter.limit("15 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
+@limiter.limit("15 per minute")
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
 def deletar_subproduto(id_subproduto):
-    if estoque.excluir_subproduto_banco(current_user.id_empresa, id_subproduto):
-        registrar_log("EXCLUIR", "SUBPRODUTO", f"ID {id_subproduto}", current_user.username)
-        flash("Subproduto removido!", "success")
-    return redirect(url_for("estoque.estoque_painel"))
 
+    try:
+        id_empresa = get_empresa_id()
+
+        with db_conn() as conn:
+            with conn.cursor() as cur:
+
+                # =========================
+                # VALIDA EXISTÊNCIA + TENANT
+                # =========================
+                cur.execute("""
+                    SELECT 1
+                    FROM subprodutos
+                    WHERE id_subproduto = %s
+                      AND id_empresa = %s
+                """, (id_subproduto, id_empresa))
+
+                if not cur.fetchone():
+                    flash("Subproduto não encontrado.", "warning")
+                    return redirect(url_for("estoque.estoque_painel"))
+
+                # =========================
+                # VERIFICA USO EM RECEITAS
+                # =========================
+                cur.execute("""
+                    SELECT 1
+                    FROM receitas
+                    WHERE id_subproduto = %s
+                      AND id_empresa = %s
+                    LIMIT 1
+                """, (id_subproduto, id_empresa))
+
+                if cur.fetchone():
+                    flash("Subproduto está em uso e não pode ser excluído.", "danger")
+                    return redirect(url_for("estoque.estoque_painel"))
+
+                # =========================
+                # DELETE SEGURO
+                # =========================
+                cur.execute("""
+                    DELETE FROM subprodutos
+                    WHERE id_subproduto = %s
+                      AND id_empresa = %s
+                """, (id_subproduto, id_empresa))
+
+                if cur.rowcount == 0:
+                    raise Exception("Falha ao excluir subproduto")
+
+        registrar_log(
+            "EXCLUIR",
+            "SUBPRODUTO",
+            f"ID {id_subproduto}",
+            current_user.username
+        )
+
+        flash("Subproduto removido!", "success")
+
+    except Exception as e:
+        log_erro(f"Erro ao excluir subproduto: {e}")
+        flash("Erro ao excluir subproduto.", "danger")
+
+    return redirect(url_for("estoque.estoque_painel"))
 @subprodutos_bp.route("/subprodutos/registrar-lote", methods=["POST"])
 @login_required
 @limiter.limit("15 per minute") # Limite do usuário
@@ -105,32 +255,66 @@ def registrar_lote():
 @subprodutos_bp.route('/ajustar-subproduto/<int:id_subproduto>', methods=['POST'])
 @login_required
 def ajustar_estoque_subproduto(id_subproduto):
+
     try:
-        nova_qtd = request.form.get("quantidade")
+        nova_qtd = request.form.get("quantidade", "").strip()
         observacao = request.form.get("observacao", "Ajuste manual")
-        
-        if not nova_qtd:
+
+        qtd = _parse_float(nova_qtd)
+
+        if qtd is None:
             flash("Quantidade inválida.", "danger")
             return redirect(url_for("estoque.estoque_painel"))
-            
-        qtd = float(nova_qtd)
-        # Certifique-se que g.id_empresa está disponível ou use get_empresa_id()
-        id_empresa = get_empresa_id() 
-        
+
+        if abs(qtd) > 1_000_000:
+            flash("Quantidade fora do limite permitido.", "danger")
+            return redirect(url_for("estoque.estoque_painel"))
+
+        id_empresa = get_empresa_id()
+
         with db_conn() as conn:
             with conn.cursor() as cur:
+
+                # =========================
+                # VALIDA SUBPRODUTO
+                # =========================
+                cur.execute("""
+                    SELECT 1
+                    FROM subprodutos
+                    WHERE id_subproduto = %s
+                      AND id_empresa = %s
+                """, (id_subproduto, id_empresa))
+
+                if not cur.fetchone():
+                    flash("Subproduto não encontrado.", "danger")
+                    return redirect(url_for("estoque.estoque_painel"))
+
+                # =========================
+                # INSERT MOVIMENTO SEGURO
+                # =========================
                 cur.execute("""
                     INSERT INTO movimentacao_estoque 
                     (id_empresa, id_subproduto, tipo_movimento, quantidade, observacao)
                     VALUES (%s, %s, 'ajuste', %s, %s)
-                """, (id_empresa, id_subproduto, qtd, observacao))
-        
-        registrar_log("AJUSTE", "SUBPRODUTOS", f"ID {id_subproduto}: {qtd}", current_user.username)
-        flash("Ajuste registrado!", "success")
-    except Exception as e:
-        log_erro(f"Erro ao ajustar: {e}")
-        flash("Erro ao salvar ajuste.", "danger")
-        
-    return redirect(url_for("estoque.estoque_painel"))
+                """, (
+                    id_empresa,
+                    id_subproduto,
+                    qtd,
+                    observacao
+                ))
 
+        registrar_log(
+            "AJUSTE",
+            "SUBPRODUTOS",
+            f"ID {id_subproduto}: {qtd}",
+            current_user.username
+        )
+
+        flash("Ajuste registrado com segurança!", "success")
+
+    except Exception as e:
+        log_erro(f"Erro ao ajustar subproduto: {e}")
+        flash("Erro ao salvar ajuste.", "danger")
+
+    return redirect(url_for("estoque.estoque_painel"))
 

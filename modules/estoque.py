@@ -1286,20 +1286,27 @@ def cadastrar_subproduto_banco(id_empresa, nome, unidade, est_min):
 def buscar_historico_subproduto(id_subproduto):
     try:
         id_empresa = get_empresa_id()
+
         with db_conn() as conn:
             with conn.cursor() as cur:
-                # Verifique se 'data_movimentacao' é o nome correto da sua coluna
+
+                # =========================
+                # HISTÓRICO SEGURO
+                # =========================
                 cur.execute("""
                     SELECT 
                         tipo_movimento, 
                         quantidade, 
                         observacao, 
-                        data_movimentacao 
+                        data_movimentacao
                     FROM movimentacao_estoque 
-                    WHERE id_subproduto = %s AND id_empresa = %s
-                    ORDER BY data_movimento DESC
+                    WHERE id_subproduto = %s 
+                      AND id_empresa = %s
+                    ORDER BY data_movimentacao DESC
                 """, (id_subproduto, id_empresa))
+
                 return cur.fetchall()
+
     except Exception as e:
-        log_erro(f"Erro ao buscar histórico: {e}")
-        return []
+        log_erro(f"Erro ao buscar histórico subproduto {id_subproduto}: {e}")
+        raise  # IMPORTANTE: não mascarar erro em ERP

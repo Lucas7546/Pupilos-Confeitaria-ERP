@@ -45,7 +45,7 @@
                                 </span>
 
                                 <select
-                                    name="id_produto"
+                                    name="nome_produto"
                                     id="id_produto"
                                     class="form-select bg-dark text-white border-secondary border-opacity-50 py-3"
                                     required
@@ -58,7 +58,7 @@
                                     {% for p in produtos %}
 
                                     <option
-                                        value="{{ p[0] }}"
+                                        value="{{ p[1] }}"
                                         data-preco="{{ p[2] }}"
                                     >
                                         {{ p[1] }} — (R$ {{ "%.2f"|format(p[2]) }})

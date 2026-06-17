@@ -45,6 +45,7 @@ def pagina_vendas():
 @limiter.limit("100 per hour", key_func=lambda: f"empresa:{getattr(g, 'id_empresa', 'global')}")
 def vender():
     nome_produto = request.form.get("nome_produto", "").strip() # Pega o nome
+    print("PRODUTO RECEBIDO:", repr(nome_produto))
     qtd_raw = request.form.get("quantidade", "")
 
     # Validação simples

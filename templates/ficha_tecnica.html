@@ -21,11 +21,11 @@
             </nav>
 
             <h2 class="fw-bold text-white mb-0">
-                <span class="text-warning">🥣</span> {{ produto[1] }}
+                <span class="text-warning">🥣</span>  {{ produto.nome }} 
             </h2>
 
             <small class="text-white-50 font-monospace">
-                ID do Produto: #{{ produto[0] }}
+                ID do Produto: #{{ produto.id }}
             </small>
         </div>
 
@@ -96,7 +96,7 @@
                                 </td>
 
                                 <td class="text-end text-info fw-bold">
-                                    R$ {{ "%.2f"|format(i.custo_subtotal|float) }}
+                                    R$ {{ "%.2f"|format(i.custo_subtotal or 0) }}
                                 </td>
 
                                 <td class="text-end pe-4">
@@ -146,7 +146,7 @@
                 <div class="text-center mb-3">
                     <small class="text-white-50">Preço de Venda</small>
                     <div class="fs-2 fw-bold text-success">
-                        R$ {{ "%.2f"|format(produto[2]|float) }}
+                        R$ {{ "%.2f"|format(produto.preco_venda|float) }}
                     </div>
                 </div>
 

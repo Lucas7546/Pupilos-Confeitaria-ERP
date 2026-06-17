@@ -14,90 +14,282 @@ produtos_bp = Blueprint('produtos', __name__)
 
 @produtos_bp.route("/cadastrar-produto", methods=["POST"])
 @login_required
-@limiter.limit("15 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
+@limiter.limit("15 per minute")
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
 def cadastrar_produto_final():
-    nome      = request.form.get("nome", "").strip()
-    preco     = _parse_float(request.form.get("preco", ""))
+
+    nome = request.form.get("nome", "").strip()
+    preco = _parse_float(request.form.get("preco", "0"))
     categoria = request.form.get("categoria", "").strip()
 
-    if not nome or preco <= 0:
-        flash("Nome e Preço são obrigatórios.", "warning")
+    # =========================
+    # VALIDAÇÃO SEGURA
+    # =========================
+    if not nome:
+        flash("Nome é obrigatório.", "warning")
         return redirect(url_for("insumos.render_cadastro"))
 
-    if produtos.cadastrar_produto(nome, preco, categoria):
-        registrar_log("CADASTRO", "PRODUTO", f"{nome} | R$ {preco}", current_user.username)
+    if preco is None or preco <= 0:
+        flash("Preço inválido.", "warning")
+        return redirect(url_for("insumos.render_cadastro"))
+
+    try:
+        with db_conn() as conn:
+            with conn.cursor() as cur:
+
+                # =========================
+                # CHECAR DUPLICIDADE
+                # =========================
+                cur.execute("""
+                    SELECT 1
+                    FROM produtos
+                    WHERE nome = %s
+                      AND id_empresa = %s
+                    LIMIT 1
+                """, (nome, g.id_empresa))
+
+                if cur.fetchone():
+                    flash("Já existe um produto com esse nome.", "warning")
+                    return redirect(url_for("insumos.render_cadastro"))
+
+                # =========================
+                # INSERT SEGURO
+                # =========================
+                cur.execute("""
+                    INSERT INTO produtos (nome, preco_venda, categoria, id_empresa, ativo)
+                    VALUES (%s, %s, %s, %s, 1)
+                """, (
+                    nome,
+                    preco,
+                    categoria,
+                    g.id_empresa
+                ))
+
+        registrar_log(
+            "CADASTRO",
+            "PRODUTO",
+            f"{nome} | R$ {preco}",
+            current_user.username
+        )
+
         flash(f"Produto '{nome}' cadastrado!", "success")
-    else:
+
+    except Exception as e:
+        log_erro(f"Erro ao cadastrar produto: {e}")
         flash("Erro ao salvar produto.", "danger")
+
     return redirect(url_for("insumos.render_cadastro"))
 
 @produtos_bp.route("/editar-produto/<int:id_produto>", methods=["POST"])
 @login_required
-@limiter.limit("15 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
+@limiter.limit("15 per minute")
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
 def atualizar_produto(id_produto):
+
     nome = request.form.get("nome", "").strip()
     preco = _parse_float(request.form.get("preco", "0").strip())
 
+    # =========================
+    # VALIDAÇÃO BÁSICA
+    # =========================
     if not nome:
         flash("O nome não pode ficar em branco.", "warning")
-    elif preco < 0:
+        return redirect(url_for("estoque.estoque_painel"))
+
+    if preco is None or preco < 0:
         flash("Preço inválido.", "danger")
-    elif produtos.update_produto(id_produto, nome, preco):
-        registrar_log("ALTERAR", "PRODUTOS", f"ID {id_produto} → {nome} | R$ {preco}", current_user.username)
+        return redirect(url_for("estoque.estoque_painel"))
+
+    try:
+        with db_conn() as conn:
+            with conn.cursor() as cur:
+
+                # =========================
+                # VALIDAÇÃO DE SEGURANÇA
+                # =========================
+                cur.execute("""
+                    SELECT 1
+                    FROM produtos
+                    WHERE id_produto = %s
+                      AND id_empresa = %s
+                """, (
+                    id_produto,
+                    g.id_empresa
+                ))
+
+                if not cur.fetchone():
+                    flash("Produto não encontrado ou não autorizado.", "danger")
+                    return redirect(url_for("estoque.estoque_painel"))
+
+                # =========================
+                # UPDATE SEGURO
+                # =========================
+                cur.execute("""
+                    UPDATE produtos
+                    SET nome = %s,
+                        preco_venda = %s
+                    WHERE id_produto = %s
+                      AND id_empresa = %s
+                """, (
+                    nome,
+                    preco,
+                    id_produto,
+                    g.id_empresa
+                ))
+
+                if cur.rowcount == 0:
+                    flash("Nenhuma alteração realizada.", "warning")
+                    return redirect(url_for("estoque.estoque_painel"))
+
+        registrar_log(
+            "ALTERAR",
+            "PRODUTOS",
+            f"ID {id_produto} → {nome} | R$ {preco}",
+            current_user.username
+        )
+
         flash("Produto atualizado!", "success")
-    else:
+
+    except Exception as e:
+        log_erro(f"Erro ao atualizar produto: {e}")
         flash("Erro ao atualizar produto.", "danger")
+
     return redirect(url_for("estoque.estoque_painel"))
 
 @produtos_bp.route("/excluir-produto/<int:id_produto>", methods=["POST"])
 @login_required
 @acesso_requerido("estoque")
-@limiter.limit("15 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
+@limiter.limit("15 per minute")
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
 def deletar_produto(id_produto):
-    if produtos.excluir_produto(id_produto):
-        registrar_log("DELETAR", "PRODUTOS", f"ID {id_produto} removido por '{current_user.username}'")
-        flash("Produto excluído!", "success")
-    else:
-        flash("Não foi possível excluir o produto.", "warning")
+
+    try:
+        with db_conn() as conn:
+            with conn.cursor() as cur:
+
+                # =========================
+                # 1. VALIDAR PRODUTO
+                # =========================
+                cur.execute("""
+                    SELECT id_produto
+                    FROM produtos
+                    WHERE id_produto = %s
+                      AND id_empresa = %s
+                """, (
+                    id_produto,
+                    g.id_empresa
+                ))
+
+                if not cur.fetchone():
+                    flash("Produto não encontrado ou não autorizado.", "danger")
+                    return redirect(url_for("estoque.estoque_painel"))
+
+                # =========================
+                # 2. CHECAR DEPENDÊNCIAS (SEGURANÇA)
+                # =========================
+                cur.execute("""
+                    SELECT 1
+                    FROM receitas
+                    WHERE id_produto = %s
+                      AND id_empresa = %s
+                    LIMIT 1
+                """, (id_produto, g.id_empresa))
+
+                if cur.fetchone():
+                    flash("Produto possui ficha técnica e não pode ser excluído.", "warning")
+                    return redirect(url_for("estoque.estoque_painel"))
+
+                # =========================
+                # 3. EXCLUSÃO SEGURA
+                # =========================
+                cur.execute("""
+                    DELETE FROM produtos
+                    WHERE id_produto = %s
+                      AND id_empresa = %s
+                """, (
+                    id_produto,
+                    g.id_empresa
+                ))
+
+                if cur.rowcount == 0:
+                    flash("Nenhuma alteração realizada.", "warning")
+                    return redirect(url_for("estoque.estoque_painel"))
+
+        registrar_log(
+            "DELETAR",
+            "PRODUTOS",
+            f"ID {id_produto} removido por '{current_user.username}'",
+            current_user.username
+        )
+
+        flash("Produto excluído com segurança!", "success")
+
+    except Exception as e:
+        log_erro(f"Erro ao excluir produto: {e}")
+        flash("Erro ao excluir produto.", "danger")
+
     return redirect(url_for("estoque.estoque_painel"))
 
 @produtos_bp.route("/precificacao")
 @login_required
 @plano_requerido("pro")
 def precificacao():
+
     try:
         with db_conn() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
+
                 cur.execute("""
-                    SELECT p.id_produto, p.nome, p.preco_venda,
-                        COALESCE(SUM(r.quantidade_utilizada * mp.preco_unitario), 0) AS custo_producao
+                    SELECT 
+                        p.id_produto,
+                        p.nome,
+                        p.preco_venda,
+
+                        COALESCE(SUM(
+                            r.quantidade_utilizada * COALESCE(mp.preco_unitario, 0)
+                        ), 0) AS custo_producao
+
                     FROM produtos p
-                    LEFT JOIN receitas r ON p.id_produto = r.id_produto
-                    LEFT JOIN materia_prima mp ON r.id_materia_prima = mp.id_materia_prima
+
+                    LEFT JOIN receitas r
+                        ON p.id_produto = r.id_produto
+                       AND p.id_empresa = r.id_empresa
+
+                    LEFT JOIN materia_prima mp
+                        ON r.id_materia_prima = mp.id_materia_prima
+                       AND mp.id_empresa = p.id_empresa
+
                     WHERE p.ativo = 1
-                    AND p.id_empresa = %s
+                      AND p.id_empresa = %s
+
                     GROUP BY p.id_produto, p.nome, p.preco_venda
                     ORDER BY p.nome ASC
                 """, (current_user.id_empresa,))
+
                 produtos_db = cur.fetchall()
 
         tabela = []
+
         for p in produtos_db:
-            custo = float(p["custo_producao"])
-            venda = float(p["preco_venda"])
+
+            custo = float(p["custo_producao"] or 0)
+            venda = float(p["preco_venda"] or 0)
+
             tabela.append({
-                "id": p["id_produto"], "nome": p["nome"], "atual": venda,
-                "custo": custo, "equilibrio": custo * 1.10,
-                "sugerido": custo / 0.7 if custo > 0 else 0,
+                "id": p["id_produto"],
+                "nome": p["nome"],
+                "atual": venda,
+                "custo": custo,
+                "equilibrio": custo * 1.10,
+                "sugerido": (custo / 0.7) if custo > 0 else 0,
                 "alerta": venda < (custo * 1.10) if custo > 0 else False,
             })
+
         return render_template("precificacao.html", tabela=tabela)
+
     except Exception as e:
         log_erro(f"Erro na precificação: {e}")
-        flash(f"Erro ao carregar precificação: {e}", "danger")
+        flash("Erro ao carregar precificação.", "danger")
         return redirect(url_for("estoque.estoque_painel"))
     
 
@@ -122,7 +314,9 @@ def ficha_tecnica(id_produto):
                       AND id_empresa = %s
                 """, (id_produto, id_empresa))
 
-                produto = cur.fetchone()
+                colunas = [d[0] for d in cur.description]
+                row = cur.fetchone()
+                produto = dict(zip(colunas, row)) if row else None  
 
                 if not produto:
                     flash("Produto não encontrado.", "danger")
@@ -133,7 +327,7 @@ def ficha_tecnica(id_produto):
                 # =========================
                 cur.execute("""
                     SELECT
-                        r.id_receita AS id,
+                        r.id_receita AS id_vinculo,
                         'materia_prima' AS tipo,
                         mp.id_materia_prima AS id_item,
                         mp.nome AS item,
@@ -150,7 +344,7 @@ def ficha_tecnica(id_produto):
                     UNION ALL
 
                     SELECT
-                        r.id_receita AS id,
+                        r.id_receita AS id_vinculo,
                         'subproduto' AS tipo,
                         sub.id_subproduto AS id_item,
                         sub.nome AS item,
@@ -168,18 +362,18 @@ def ficha_tecnica(id_produto):
                 colunas = [d[0] for d in cur.description]
                 itens = [dict(zip(colunas, row)) for row in cur.fetchall()]
 
-        total_custo = sum(i["custo_subtotal"] for i in itens)
+        total_custo = sum(float(i.get("custo_subtotal") or 0) for i in itens)
 
-        preco_venda = float(produto[2] or 0)
+        preco_venda = float(produto["preco_venda"] or 0)
         lucro = preco_venda - total_custo
-        margem = (lucro / preco_venda * 100) if preco_venda else 0
+        margem = (lucro / preco_venda * 100) if preco_venda > 0 else 0
 
         return render_template(
             "ficha_tecnica.html",
-            produto={
-                "id": produto[0],
-                "nome": produto[1],
-                "preco_venda": preco_venda
+            produto = {
+                "id": produto["id_produto"],
+                "nome": produto["nome"],
+                "preco_venda": float(produto["preco_venda"] or 0)
             },
             itens=itens,
             total=round(total_custo, 2),
@@ -199,8 +393,11 @@ def ficha_tecnica(id_produto):
 def editar_item_ficha(id_produto):
 
     id_vinculo_raw = request.form.get("id_vinculo")
-    qtd_raw = request.form.get("quantidade", "0").strip()
+    qtd_raw = request.form.get("quantidade", "").strip()
 
+    # =========================
+    # VALIDAÇÃO BÁSICA
+    # =========================
     if not id_vinculo_raw:
         flash("Vínculo inválido.", "warning")
         return redirect(url_for("produtos.ficha_tecnica", id_produto=id_produto))
@@ -209,18 +406,41 @@ def editar_item_ficha(id_produto):
         id_vinculo = int(id_vinculo_raw)
         nova_qtd = _parse_float(qtd_raw)
 
-        # proteção extra (evita None silencioso)
         if nova_qtd is None or nova_qtd < 0:
             raise ValueError
 
     except ValueError:
-        flash("Quantidade deve ser um número positivo.", "danger")
+        flash("Quantidade deve ser um número válido e positivo.", "danger")
         return redirect(url_for("produtos.ficha_tecnica", id_produto=id_produto))
 
     try:
         with db_conn() as conn:
             with conn.cursor() as cur:
 
+                # =========================
+                # 1. VALIDAR SE O ITEM EXISTE
+                # =========================
+                cur.execute("""
+                    SELECT id_receita
+                    FROM receitas
+                    WHERE id_receita = %s
+                      AND id_produto = %s
+                      AND id_empresa = %s
+                """, (
+                    id_vinculo,
+                    id_produto,
+                    g.id_empresa  # padroniza com rate limit
+                ))
+
+                receita = cur.fetchone()
+
+                if not receita:
+                    flash("Item não encontrado ou não autorizado.", "danger")
+                    return redirect(url_for("produtos.ficha_tecnica", id_produto=id_produto))
+
+                # =========================
+                # 2. ATUALIZAR
+                # =========================
                 cur.execute("""
                     UPDATE receitas
                     SET quantidade_utilizada = %s
@@ -231,24 +451,21 @@ def editar_item_ficha(id_produto):
                     nova_qtd,
                     id_vinculo,
                     id_produto,
-                    current_user.id_empresa
+                    g.id_empresa
                 ))
-
-                if cur.rowcount == 0:
-                    raise Exception("Item não encontrado ou não pertence ao produto")
 
         registrar_log(
             "ALTERAR",
             "FICHA_TECNICA",
-            f"Vínculo {id_vinculo} → {nova_qtd}",
+            f"Produto {id_produto} | vínculo {id_vinculo} → {nova_qtd}",
             current_user.username
         )
 
-        flash("Quantidade ajustada!", "success")
+        flash("Quantidade ajustada com sucesso!", "success")
 
     except Exception as e:
         log_erro(f"Erro ao editar ficha técnica: {e}")
-        flash(f"Erro ao salvar: {e}", "danger")
+        flash("Erro ao salvar alteração.", "danger")
 
     return redirect(url_for("produtos.ficha_tecnica", id_produto=id_produto))
 
@@ -257,7 +474,7 @@ def editar_item_ficha(id_produto):
 def atualizar_precos_api():
 
     try:
-        data = request.get_json() or {}
+        data = request.get_json(silent=True) or {}
         itens = data.get("itens", [])
 
         if not isinstance(itens, list):
@@ -277,6 +494,26 @@ def atualizar_precos_api():
                         if novo_preco < 0:
                             continue
 
+                        # =========================
+                        # VALIDAÇÃO DE EXISTÊNCIA
+                        # =========================
+                        cur.execute("""
+                            SELECT 1
+                            FROM produtos
+                            WHERE id_produto = %s
+                              AND id_empresa = %s
+                        """, (
+                            id_produto,
+                            current_user.id_empresa
+                        ))
+
+                        if not cur.fetchone():
+                            log_erro(f"Tentativa de update produto inexistente ID {id_produto}")
+                            continue
+
+                        # =========================
+                        # UPDATE
+                        # =========================
                         cur.execute("""
                             UPDATE produtos
                             SET preco_venda = %s
@@ -288,9 +525,13 @@ def atualizar_precos_api():
                             current_user.id_empresa
                         ))
 
-                        # log leve (opcional mas ajuda debug futuro)
+                        # log mais claro
                         if cur.rowcount == 0:
-                            log_erro(f"Produto não atualizado ID {id_produto}")
+                            log_erro(f"Preço não alterado ID {id_produto}")
+
+                    except (TypeError, ValueError):
+                        log_erro(f"Dado inválido no item: {item}")
+                        continue
 
                     except Exception as err:
                         log_erro(f"Erro item preço {item}: {err}")

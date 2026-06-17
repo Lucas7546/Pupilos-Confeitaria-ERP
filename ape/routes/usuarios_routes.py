@@ -26,7 +26,7 @@ def listar_usuarios_view():
 @login_required
 @acesso_requerido("admin")
 def deletar_user(id):
-    if usuarios.excluir_usuario(id, current_user.id_empresa):
+    if usuarios.excluir_usuario(id):
         registrar_log(
             "EXCLUIR_USUARIO",
             "USUARIOS",

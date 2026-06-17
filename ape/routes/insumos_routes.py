@@ -101,7 +101,7 @@ def rota_registrar_compra():
         flash("Dados inválidos. Verifique a quantidade e o preço.", "danger")
         return redirect(url_for('estoque.pagina_compras'))
 
-    if estoque.registrar_compra_estoque(int(id_mp), qtd, valor, current_user.id_empresa):
+    if estoque.registrar_compra_estoque(int(id_mp), qtd, valor):
         flash("Compra registrada com sucesso!", "success")
     else:
         flash("Erro ao registrar compra.", "danger")

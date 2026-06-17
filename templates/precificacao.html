@@ -282,19 +282,24 @@ async function aplicarPrecos() {
 
     try {
 
-        const res = await fetch("/api/atualizar-precos", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ itens })
-        });
+        const res = await fetch("{{ url_for('produtos.atualizar_precos_api') }}", {
+        method: "POST",
+        headers: { 
+            "Content-Type": "application/json",
+            // Ele vai buscar o conteúdo daquela linha que colocamos no head
+            "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').content 
+        },
+        body: JSON.stringify({ itens })
+    });
 
-        if (!res.ok) throw new Error("Erro");
+        if (!res.ok) throw new Error("Erro na requisição");
 
         alert("Atualizado com sucesso!");
         location.reload();
 
     } catch (e) {
-        alert("Erro ao atualizar");
+        console.error(e);
+        alert("Erro ao atualizar: " + e.message);
     }
 
     btn.disabled = false;

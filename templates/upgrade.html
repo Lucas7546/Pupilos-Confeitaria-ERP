@@ -1,67 +1,95 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    .bg-dark-card { 
+        background: rgba(255,255,255,0.03); 
+        backdrop-filter: blur(10px); 
+        border: 1px solid rgba(255,255,255,0.1); 
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Curva de animação mais dinâmica */
+    }
+    .card:hover { 
+        transform: translateY(-15px); 
+        border-color: rgba(255,255,255,0.3); 
+        box-shadow: 0 20px 30px rgba(0,0,0,0.5) !important;
+    }
+    .card-pro { border: 2px solid #ffc107 !important; transform: scale(1.03); z-index: 1; }
+    .card-pro:hover { transform: scale(1.05) translateY(-5px); }
+    
+    .price-big { 
+        font-size: 3.5rem; 
+        letter-spacing: -3px; 
+        text-shadow: 0 0 20px rgba(255,255,255,0.2); /* Efeito de luz sutil no preço */
+    }
+    
+    .feature-item { font-size: 1.05rem; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: #ddd; }
+    
+    /* Ajuste para o badge ficar mais imponente */
+    .badge { letter-spacing: 1px; text-transform: uppercase; }
+</style>
+
 <div class="container py-5">
     <div class="text-center mb-5 animate-in">
-        <h1 class="display-5 fw-bold text-white">Escale sua operação com o plano certo <span class="text-warning">Potencialize sua gestão</span></h1>
-        <p class="text-white-50">Ferramentas inteligentes desenvolvidas para aumentar o controle, produtividade, gestão e resultados.</p>
+        <h1 class="display-3 fw-bolder text-white mb-3">Mais controle. Mais produtividade. <span class="text-warning">Mais resultados</span></h1>
+        <p class="text-white-50 fs-4">Automatize processos, reduza desperdícios e tome decisões com mais segurança.</p>
     </div>
 
-    <div class="row g-4 justify-content-center">
+    <div class="row g-4 justify-content-center align-items-stretch">
+        
         <div class="col-md-4">
-            <div class="card h-100 bg-dark-card border-0 p-4 shadow-lg position-relative">
-                <h4 class="text-white">Starter</h4>
-                <h2 class="text-white fw-bold my-3">R$ 200,00</h2>
-                <ul class="list-unstyled text-white-50 mb-4">
-                    <li><i class="bi bi-check2 text-success me-2"></i> Controle automático de estoque</li>
-                    <li><i class="bi bi-check2 text-success me-2"></i> Baixa automática de insumos após cada venda</li>
-                    <li><i class="bi bi-check2 text-success me-2"></i> Compras</li>
-                    <li><i class="bi bi-check2 text-success me-2"></i> Previsão de demanda com IA</li>
-                    <li><i class="bi bi-check2 text-success me-2"></i> Painel financeiro completo</li>
-                    <li><i class="bi bi-people me-2"></i> 👥 Até 10 usuários</li>
+            <div class="card h-100 bg-dark-card p-5 shadow-lg text-start">
+                <h4 class="text-white opacity-75">Starter</h4>
+                <h2 class="text-white fw-bold my-4 price-big">R$ 200<span class="fs-5 text-white-50">,00</span></h2>
+                <ul class="list-unstyled mb-5">
+                    <li class="feature-item"><i class="bi bi-check2 text-success me-3"></i> Controle de estoque</li>
+                    <li class="feature-item"><i class="bi bi-check2 text-success me-3"></i> Estoque atualizado automaticamente a cada venda</li>
+                    <li class="feature-item"><i class="bi bi-check2 text-success me-3"></i> Compras</li>
+                    <li class="feature-item"><i class="bi bi-check2 text-success me-3"></i> Previsão de demanda com IA</li>
+                    <li class="feature-item"><i class="bi bi-check2 text-success me-3"></i> Painel financeiro completo</li>
+                    <li class="feature-item"><i class="bi bi-people me-3"></i> Até 10 usuários</li>
                 </ul>
-                <button class="btn btn-outline-light mt-auto" disabled>Atual</button>
+                <button class="btn btn-outline-light btn-lg w-100 mt-auto" disabled>Plano Atual</button>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card h-100 bg-dark-card border-2 border-warning p-4 shadow-lg">
-                <div class="badge bg-warning text-dark mb-3 w-50">RECOMENDADO</div>
+            <div class="card h-100 bg-dark-card card-pro p-5 shadow-lg text-start">
+                <div class="badge bg-warning text-dark mb-3 px-3 py-2 fw-bold w-100">MELHOR CUSTO-BENEFÍCIO</div>
                 <h4 class="text-warning">Pro</h4>
-                <h2 class="text-white fw-bold my-3">R$ 230,00</h2>
-                <ul class="list-unstyled text-white-50 mb-4">
-                    <li><i class="bi bi-check2-all text-warning me-2"></i> <strong> ✔ Tudo do Starter</strong></li>
-                    <li><i class="bi bi-tag text-info me-2"></i> ✔ Precificação Inteligente</li>
-                    <li><i class="bi bi-person-gear text-info me-2"></i> ✔ Gestão de Equipe</li>
-                    <li><i class="bi bi-people-fill text-warning me-2"></i> 👥 Até 20 usuários</li>
+                <h2 class="text-white fw-bold my-4 price-big">R$ 230<span class="fs-5 text-white-50">,00</span></h2>
+                <ul class="list-unstyled mb-5">
+                    <li class="feature-item text-white"><i class="bi bi-check2-all text-warning me-3"></i> <strong>Tudo do Starter</strong></li>
+                    <li class="feature-item"><i class="bi bi-tag text-info me-3"></i> Precificação Inteligente</li>
+                    <li class="feature-item"><i class="bi bi-person-gear text-info me-3"></i> Controle de usuários e permissões</li>
+                    <li class="feature-item"><i class="bi bi-people-fill text-warning me-3"></i><strong>Até 20 usuários simultâneos</strong></li>
                 </ul>
-                <form action="{{ url_for('empresas.solicitar_upgrade') }}" method="POST">
+                <form action="{{ url_for('empresas.solicitar_upgrade') }}" method="POST" class="mt-auto">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="plano" value="pro">
-                    <button type="submit" class="btn btn-warning w-100 mt-auto fw-bold">Assinar Plano Pro</button>
+                    <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold">Migrar para o Pro</button>
                 </form>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card h-100 bg-dark-card border-0 p-4 shadow-lg">
+            <div class="card h-100 bg-dark-card p-5 shadow-lg text-start">
                 <h4 class="text-info">Enterprise</h4>
-                <h2 class="text-white fw-bold my-3">R$ 300,00</h2>
-                <ul class="list-unstyled text-white-50 mb-4">
-                    <li><i class="bi bi-check2-all text-info me-2"></i> <strong> ✔ Tudo do Pro</strong></li>
-                    <li><i class="bi bi-camera text-info me-2"></i> ✔ Compras por Nota Fiscal (IA)</li>
-                    <li><i class="bi bi-file-earmark-arrow-up text-info me-2"></i> Importação de vendas via arquivo (iFood e Keeta)</li>
-                    <li><i class="bi bi-cpu text-info me-2"></i> Leitura inteligente de relatórios com IA</li>
-                    <li><i class="bi bi-people-fill text-info me-2"></i> 👥 Até 35 usuários </li>
-                    <li><i class="bi bi-people-fill text-info me-2"></i> Ideal para operações de alta demanda</li>
+                <h2 class="text-white fw-bold my-4 price-big">R$ 300<span class="fs-5 text-white-50">,00</span></h2>
+                <ul class="list-unstyled mb-5">
+                    <li class="feature-item text-white"><i class="bi bi-check2-all text-info me-3"></i> <strong>Tudo do Pro</strong></li>
+                    <li class="feature-item"><i class="bi bi-camera text-info me-3"></i> Compras por Nota Fiscal (IA)</li>
+                    <li class="feature-item"><i class="bi bi-file-earmark-arrow-up text-info me-3"></i> Leitura inteligente de vendas via relatórios do iFood e Keeta</li>
+                    <li class="feature-item"><i class="bi bi-people-fill text-info me-3"></i> Até 35 usuários</li>
+                    <li class="feature-item"><i class="bi bi-star text-info me-3"></i> Ideal para empresas em expansão</li>
                 </ul>
-                <form action="{{ url_for('empresas.solicitar_upgrade') }}" method="POST">
+                <form action="{{ url_for('empresas.solicitar_upgrade') }}" method="POST" class="mt-auto">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="plano" value="enterprise">
-                    <button type="submit" class="btn btn-info w-100 mt-auto fw-bold text-white">Assinar Enterprise</button>
+                    <button type="submit" class="btn btn-info btn-lg w-100 fw-bold text-white">Assinar Enterprise</button>
                 </form>
             </div>
         </div>
+
     </div>
 </div>
 {% endblock %}

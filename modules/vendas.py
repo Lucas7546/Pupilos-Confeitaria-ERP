@@ -13,18 +13,19 @@ from modules.estoque import obter_saldo_subproduto, obter_saldo_materia_prima, o
 # =========================================================
 def obter_resumo_periodo(dias: int = 7) -> dict:
     try:
-
+        from datetime import datetime, timedelta
         from modules.tenant import get_empresa_id
 
-        data_inicio = datetime.now() - timedelta(days=dias)
         id_empresa = get_empresa_id()
-
         if not id_empresa:
             raise Exception("Empresa não definida")
+
+        data_inicio = datetime.now() - timedelta(days=dias)
 
         with db_conn() as conn:
             with conn.cursor() as cur:
 
+                # 📊 resumo financeiro
                 cur.execute("""
                     SELECT
                         COALESCE(SUM(valor_total), 0),
@@ -32,28 +33,29 @@ def obter_resumo_periodo(dias: int = 7) -> dict:
                         COALESCE(SUM(lucro), 0)
                     FROM vendas
                     WHERE data_venda >= %s
-                    AND id_empresa = %s
+                      AND id_empresa = %s
                 """, (data_inicio, id_empresa))
 
                 faturamento, total_vendas, lucro = cur.fetchone()
 
+                # 📈 gráfico diário
                 cur.execute("""
                     SELECT
                         TO_CHAR(d.data, 'DD/MM'),
                         COALESCE(SUM(v.valor_total), 0)
                     FROM (
                         SELECT generate_series(
-                            CURRENT_DATE - %s,
+                            CURRENT_DATE - (%s - 1),
                             CURRENT_DATE,
-                            '1 day'::interval
+                            INTERVAL '1 day'
                         )::date AS data
                     ) d
                     LEFT JOIN vendas v
-                        ON DATE(v.data_venda) = d.data
-                        AND v.id_empresa = %s
+                        ON v.data_venda::date = d.data
+                       AND v.id_empresa = %s
                     GROUP BY d.data
                     ORDER BY d.data
-                """, (dias - 1, id_empresa))
+                """, (dias, id_empresa))
 
                 grafico = cur.fetchall()
 
@@ -67,7 +69,7 @@ def obter_resumo_periodo(dias: int = 7) -> dict:
 
     except Exception as e:
         log_erro(f"Erro ao obter resumo de vendas: {e}")
-        print(f"DEBUG: Dias gráfico: {len(grafico)} | Total faturamento: {faturamento}")
+
         return {
             "faturamento": 0.0,
             "total_vendas": 0,
@@ -86,26 +88,21 @@ def registrar_venda(
 ) -> bool:
 
     try:
+        from datetime import datetime
+
         id_empresa = get_empresa_id()
         if not id_empresa:
             return False
 
         custo_unitario = calcular_custo_receita(id_produto)
-
         lucro_total = float(valor_total) - (float(custo_unitario) * float(quantidade))
 
-        # =========================
-        # VALIDAÇÃO PRÉVIA
-        # =========================
         if not validar_estoque_suficiente(id_produto, quantidade):
             raise ValueError("Estoque insuficiente para produção")
 
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                # =========================
-                # BUSCA RECEITA
-                # =========================
                 cur.execute("""
                     SELECT id_materia_prima, id_subproduto, quantidade_utilizada
                     FROM receitas
@@ -116,7 +113,7 @@ def registrar_venda(
                 ingredientes = cur.fetchall()
 
                 # =========================
-                # CRIA VENDA
+                # VENDA (CORRIGIDA)
                 # =========================
                 cur.execute("""
                     INSERT INTO vendas
@@ -125,9 +122,10 @@ def registrar_venda(
                         lucro,
                         canal_venda,
                         usuario,
-                        id_empresa
+                        id_empresa,
+                        data_venda
                     )
-                    VALUES (%s, %s, 'Sistema', %s, %s)
+                    VALUES (%s, %s, 'Sistema', %s, %s, NOW())
                     RETURNING id_venda
                 """, (
                     valor_total,
@@ -138,9 +136,6 @@ def registrar_venda(
 
                 id_venda = cur.fetchone()[0]
 
-                # =========================
-                # BUSCA PREÇO
-                # =========================
                 cur.execute("""
                     SELECT preco_venda
                     FROM produtos
@@ -154,9 +149,6 @@ def registrar_venda(
 
                 preco_unitario = float(row[0])
 
-                # =========================
-                # ITEM VENDA
-                # =========================
                 cur.execute("""
                     INSERT INTO itens_venda
                     (
@@ -175,9 +167,6 @@ def registrar_venda(
                     id_empresa
                 ))
 
-                # =========================
-                # MOVIMENTO PRODUTO FINAL
-                # =========================
                 cur.execute("""
                     INSERT INTO movimentacao_estoque
                     (
@@ -195,9 +184,6 @@ def registrar_venda(
                     id_empresa
                 ))
 
-                # =========================
-                # BAIXA INSUMOS
-                # =========================
                 for id_mp, id_sub, qtd_util in ingredientes:
 
                     qtd_baixa = float(qtd_util) * float(quantidade)

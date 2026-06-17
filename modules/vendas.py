@@ -93,22 +93,30 @@ def registrar_venda(
     usuario: str = "Sistema",
 ) -> bool:
 
+    conn = None
+
     try:
         id_empresa = get_empresa_id()
         if not id_empresa:
-            return False
+            raise ValueError("Empresa não encontrada")
 
         with db_conn() as conn:
             with conn.cursor() as cur:
 
                 # =========================
-                # RECEITA
+                # VALIDAÇÃO ESTOQUE
+                # =========================
+                if not validar_estoque_suficiente(id_produto, quantidade):
+                    raise ValueError("Estoque insuficiente")
+
+                # =========================
+                # BUSCA RECEITA
                 # =========================
                 cur.execute("""
                     SELECT id_materia_prima, id_subproduto, quantidade_utilizada
                     FROM receitas
                     WHERE id_produto = %s
-                    AND id_empresa = %s
+                      AND id_empresa = %s
                 """, (id_produto, id_empresa))
 
                 ingredientes = cur.fetchall()
@@ -120,7 +128,7 @@ def registrar_venda(
                     SELECT preco_venda
                     FROM produtos
                     WHERE id_produto = %s
-                    AND id_empresa = %s
+                      AND id_empresa = %s
                 """, (id_produto, id_empresa))
 
                 row = cur.fetchone()
@@ -128,6 +136,7 @@ def registrar_venda(
                     raise ValueError("Produto não encontrado")
 
                 preco_unitario = float(row[0])
+                lucro_total = float(valor_total) - (preco_unitario * float(quantidade))
 
                 # =========================
                 # VENDA
@@ -145,7 +154,7 @@ def registrar_venda(
                     RETURNING id_venda
                 """, (
                     valor_total,
-                    float(valor_total) - (preco_unitario * quantidade),
+                    lucro_total,
                     usuario,
                     id_empresa
                 ))
@@ -235,7 +244,16 @@ def registrar_venda(
         return True
 
     except Exception as e:
-        log_erro(f"Erro ao registrar venda (Prod {id_produto}): {e}")
+        # 🔥 LOG REAL DO ERRO (sem esconder nada)
+        log_erro(f"ERRO VENDA COMPLETO (Prod {id_produto}): {repr(e)}")
+
+        # 🔥 garante rollback se ainda estiver aberto
+        if conn:
+            try:
+                conn.rollback()
+            except:
+                pass
+
         return False
 
 # =========================================================

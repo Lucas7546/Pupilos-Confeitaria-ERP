@@ -116,9 +116,14 @@ def validar_estoque_suficiente(id_produto: int, quantidade_venda: int) -> bool:
         if not id_empresa:
             return False
 
+        from collections import defaultdict
+
+        consumo_total = defaultdict(float)
+
         with db_conn() as conn:
             with conn.cursor() as cur:
 
+                # pega toda receita
                 cur.execute("""
                     SELECT id_materia_prima, id_subproduto, quantidade_utilizada
                     FROM receitas
@@ -128,37 +133,32 @@ def validar_estoque_suficiente(id_produto: int, quantidade_venda: int) -> bool:
 
                 ingredientes = cur.fetchall()
 
-        if not ingredientes:
-            return True
-
-        from modules.estoque import (
-            obter_saldo_materia_prima,
-            obter_saldo_subproduto
-        )
+        from modules.estoque import obter_saldo_materia_prima
 
         for id_mp, id_sub, qtd_util in ingredientes:
 
             qtd_necessaria = float(qtd_util) * float(quantidade_venda)
 
-            if id_mp:
-                saldo = obter_saldo_materia_prima(id_mp)
-                print(f"[DEBUG MP] id={id_mp} saldo={saldo} necessario={qtd_necessaria}")
+            # ✔ SE FOR MATÉRIA PRIMA DIRETA
+            if id_mp is not None:
+                consumo_total[id_mp] += qtd_necessaria
 
-                if saldo < qtd_necessaria:
-                    return False
+            # ❌ SE FOR SUBPRODUTO, IGNORA AQUI
+            # (expansão dele deve estar em outra função futura)
 
-            if id_sub:
-                saldo = obter_saldo_subproduto(id_sub)
-                print(f"[DEBUG SUB] id={id_sub} saldo={saldo} necessario={qtd_necessaria}")
+        # valida estoque final consolidado
+        for id_mp, qtd_total in consumo_total.items():
+            saldo = obter_saldo_materia_prima(id_mp)
 
-                if saldo < qtd_necessaria:
-                    return False
+            print(f"[DEBUG FINAL MP] id={id_mp} saldo={saldo} necessario={qtd_total}")
+
+            if saldo < qtd_total:
+                return False
 
         return True
 
     except Exception as e:
         log_erro(f"Erro validar estoque: {e}")
-        return False
 
 
 # =========================================================

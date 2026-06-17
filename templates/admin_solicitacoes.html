@@ -75,6 +75,7 @@
                                 <th>Tipo</th>
                                 <th>Mensagem</th>
                                 <th>Status</th>
+                                <th>Ação</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -90,10 +91,60 @@
                                     </span>
                                 </td>
                                 <td class="text-truncate" style="max-width: 300px;" title="{{ f.mensagem }}">{{ f.mensagem }}</td>
-                                <td><span class="badge bg-dark border border-secondary text-white-50">{{ f.status | capitalize }}</span></td>
+                                <td>
+                                    <span class="badge bg-dark border border-secondary text-white-50">
+                                        {{ f.status | capitalize }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <form method="POST"
+                                        action="{{ url_for('feedback.atualizar_status_feedback', id_feedback=f.id_feedback) }}">
+
+                                        <input type="hidden"
+                                            name="csrf_token"
+                                            value="{{ csrf_token() }}">
+
+                                        <select name="status"
+                                                class="form-select form-select-sm"
+                                                onchange="this.form.submit()">
+
+                                            <option value="pendente"
+                                                {% if f.status == 'pendente' %}selected{% endif %}>
+                                                Pendente
+                                            </option>
+
+                                            <option value="analisando"
+                                                {% if f.status == 'analisando' %}selected{% endif %}>
+                                                Analisando
+                                            </option>
+
+                                            <option value="aprovado"
+                                                {% if f.status == 'aprovado' %}selected{% endif %}>
+                                                Aprovado
+                                            </option>
+
+                                            <option value="concluido"
+                                                {% if f.status == 'concluido' %}selected{% endif %}>
+                                                Concluído
+                                            </option>
+
+                                            <option value="recusado"
+                                                {% if f.status == 'recusado' %}selected{% endif %}>
+                                                Recusado
+                                            </option>
+
+                                        </select>
+
+                                    </form>
+                                </td>
                             </tr>
                             {% else %}
-                            <tr><td colspan="6" class="text-center text-white-50 py-4">Nenhum feedback disponível.</td></tr>
+                            <tr>
+                                <td colspan="8" class="text-center text-white-50 py-4">
+                                    Nenhum feedback disponível.
+                                </td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>

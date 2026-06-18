@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 import io
 import csv
 import pandas as pd
-
+import traceback
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -82,8 +82,9 @@ def exportar_previsao_csv():
 
 
     except Exception as e:
-
-        log_erro(f"[CSV EXPORT ERROR] {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"[CSV EXPORT ERROR] {erro_detalhado}")
+        traceback.print_exc()
 
         flash("Erro ao gerar CSV.", "danger")
 
@@ -141,8 +142,9 @@ def exportar_previsao_excel():
 
 
     except Exception as e:
-
-        log_erro(f"[EXCEL EXPORT ERROR] {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"[EXCEL EXPORT ERROR] {erro_detalhado}")
+        traceback.print_exc()
 
         flash("Erro ao gerar Excel.", "danger")
 
@@ -221,8 +223,9 @@ def exportar_previsao_pdf():
 
 
     except Exception as e:
-
-        log_erro(f"[PDF EXPORT ERROR] {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"[PDF EXPORT ERROR] {erro_detalhado}")
+        traceback.print_exc()
 
         flash("Erro ao gerar PDF.", "danger")
 

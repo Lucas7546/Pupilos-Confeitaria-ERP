@@ -5,6 +5,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from flask_login import login_user, logout_user, login_required, current_user
 from modules.auth import validar_login
 from utils.logger import log_erro
+from utils.helpers import registrar_acesso
 from modules.permissoes import acesso_requerido
 from ape.extensions import limiter
 from ape.services.log_service import registrar_log
@@ -39,6 +40,14 @@ def login():
 
             session.clear()
             login_user(user)
+
+            # NOVO Registrar
+            registrar_acesso(
+                usuario=user.username,
+                id_empresa=getattr(user, "id_empresa", None),
+                empresa_nome=None,
+                tipo="LOGIN"
+            )
 
             session["user_id"] = user.id
             session["username"] = user.username
@@ -84,6 +93,14 @@ def logout():
             "AUTH",
             f"Usuário '{current_user.username}' saiu",
             getattr(current_user, "username", "unknown")
+        )
+
+         # NOVO Registrar
+        registrar_acesso(
+            usuario=current_user.username,
+            id_empresa=getattr(current_user, "id_empresa", None),
+            empresa_nome=None,
+            tipo="LOGOUT"
         )
 
     except Exception as e:

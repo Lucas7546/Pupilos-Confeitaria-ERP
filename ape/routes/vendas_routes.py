@@ -39,69 +39,7 @@ def pagina_vendas():
         return redirect(url_for("main.dashboard"))
     
 
-@vendas_bp.route("/vender", methods=["POST"])
-@login_required
-@limiter.limit("30 per minute")
-@limiter.limit("100 per hour", key_func=lambda: f"empresa:{getattr(g, 'id_empresa', 'global')}")
-def vender():
-    nome_produto = request.form.get("nome_produto", "").strip()
-    print("PRODUTO RECEBIDO:", repr(nome_produto))
 
-    qtd_raw = request.form.get("quantidade", "")
-
-    # Validação simples
-    if not nome_produto or not qtd_raw.isdigit():
-        flash("Dados inválidos.", "danger")
-        return redirect(url_for("vendas.pagina_vendas"))
-
-    qtd = int(qtd_raw)
-
-    # 🔥 DEBUG 1 - entrada da venda
-    print(f"[DEBUG VENDA] produto_nome={nome_produto} quantidade={qtd}")
-
-    # Busca o produto pelo NOME
-    prods = produtos.buscar_produto_por_nome(nome_produto) or []
-
-    produto = prods[0] if prods else None
-
-    if not produto:
-        flash("Produto não encontrado.", "danger")
-        return redirect(url_for("vendas.pagina_vendas"))
-
-    id_p = produto[0]
-
-    # 🔥 DEBUG 2 - antes da validação de estoque
-    print(f"[DEBUG VENDA] produto_id={id_p} iniciando validacao estoque")
-
-    ok = receitas.validar_estoque_suficiente(id_p, qtd)
-
-    # 🔥 DEBUG 3 - resultado da validação
-    print(f"[DEBUG VALIDACAO] produto_id={id_p} resultado={ok}")
-
-    if not ok:
-        flash("Estoque insuficiente.", "danger")
-        return redirect(url_for("vendas.pagina_vendas"))
-
-    valor_total = float(produto[2]) * qtd
-    usuario_atual = getattr(current_user, "username", "Sistema")
-
-    if vendas.registrar_venda(
-        id_produto=id_p,
-        quantidade=qtd,
-        valor_total=valor_total,
-        usuario=usuario_atual
-    ):
-        registrar_log(
-            "VENDA",
-            "VENDAS",
-            f"{nome_produto} | Qtd {qtd} | R$ {valor_total:.2f}",
-            current_user.username
-        )
-        flash("Venda registrada!", "success")
-    else:
-        flash("Erro ao registrar venda.", "danger")
-
-    return redirect(url_for("vendas.pagina_vendas"))
 
 @vendas_bp.route("/importacoes")
 @login_required

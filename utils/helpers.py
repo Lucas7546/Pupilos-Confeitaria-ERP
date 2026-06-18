@@ -1,6 +1,40 @@
 from flask_login import current_user
 from PIL import Image
 from modules.tenant_db import db_conn
+from modules.admin_db import admin_conn
+from utils.logger import log_erro
+from flask import request
+
+
+def registrar_acesso(usuario, id_empresa=None, empresa_nome=None, tipo="LOGIN"):
+    try:
+        ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+        user_agent = request.headers.get("User-Agent", "Desconhecido")
+
+        with admin_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO acessos_sistema (
+                        usuario,
+                        id_empresa,
+                        empresa_nome,
+                        ip,
+                        user_agent,
+                        tipo_evento
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (
+                    usuario,
+                    id_empresa,
+                    empresa_nome,
+                    ip,
+                    user_agent,
+                    tipo
+                ))
+
+    except Exception as e:
+        log_erro(f"Erro registrar acesso: {e}")
+
 
 def is_admin():
     return getattr(current_user, "nivel", None) == "admin"

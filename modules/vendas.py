@@ -257,7 +257,7 @@ def registrar_venda(
                 conn.rollback()
             except:
                 pass
-
+  
         return False
 
 # =========================================================

@@ -74,6 +74,38 @@ def _listar_logs(
         log_erro(f"Erro ao consultar logs: {e}")
         return []
 
+
+@auditoria_bp.route("/acessos")
+@login_required
+@superadmin_required
+def listar_acessos():
+    try:
+        with admin_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT
+                        usuario,
+                        empresa_nome,
+                        ip,
+                        tipo_evento,
+                        data_evento
+                    FROM acessos_sistema
+                    ORDER BY data_evento DESC
+                    LIMIT 500
+                """)
+
+                acessos = cur.fetchall()
+
+        return render_template(
+            "acessos.html",
+            acessos=acessos
+        )
+
+    except Exception as e:
+        log_erro(f"Erro listar acessos: {e}")
+        flash("Erro ao carregar acessos.", "danger")
+        return redirect(url_for("main.dashboard"))
+
 @auditoria_bp.route("/auditoria")
 @login_required
 @acesso_requerido("auditoria")

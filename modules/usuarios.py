@@ -1,5 +1,5 @@
 from flask_login import current_user
-
+import traceback
 from werkzeug.security import generate_password_hash
 from psycopg2.extras import DictCursor
 from functools import lru_cache
@@ -54,7 +54,9 @@ def buscar_usuario(username: str):
                 return cur.fetchone()
 
     except Exception as e:
-        log_erro(f"Erro ao buscar usuário {username}: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao buscar usuário {username}: {erro_detalhado}")
+        traceback.print_exc()
         return None
 
  
@@ -82,7 +84,9 @@ def buscar_usuario_id(id_usuario: int):
                 return cur.fetchone()
 
     except Exception as e:
-        log_erro(f"Erro ao buscar usuário ID {id_usuario}: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao buscar usuário ID {id_usuario}: {erro_detalhado}")
+        traceback.print_exc()
         return None
 
 def criar_usuario(username: str, senha: str, nivel: str = "colaborador") -> bool:
@@ -221,7 +225,9 @@ def criar_usuario(username: str, senha: str, nivel: str = "colaborador") -> bool
         )
         return True
     except Exception as e:
-        log_erro(f"Erro ao criar usuário '{username}': {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao criar usuário '{username}': {erro_detalhado}")
+        traceback.print_exc()
         return False
 
 def listar_usuarios():
@@ -267,8 +273,9 @@ def listar_usuarios():
 
                 return cur.fetchall()
     except Exception as e:
-
-        log_erro(f"Erro ao listar usuários: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao listar usuários: {erro_detalhado}")
+        traceback.print_exc()
 
         return []
 
@@ -365,8 +372,9 @@ def atualizar_usuario(
                     )
         return True
     except Exception as e:
-
-        print(f"Erro ao atualizar usuário no banco: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao atualizar usuário no banco: {erro_detalhado}")
+        traceback.print_exc()
 
         return False
 
@@ -433,8 +441,9 @@ def excluir_usuario(id_usuario: int) -> bool:
 
 
     except Exception as e:
-
-        log_erro(f"Erro ao excluir usuário {id_usuario}: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao excluir usuário {id_usuario}: {erro_detalhado}")
+        traceback.print_exc()
 
         return False
 
@@ -514,8 +523,9 @@ def atualizar_nivel(id_usuario: int, novo_nivel: str) -> bool:
 
 
     except Exception as e:
-
-        log_erro(f"Erro ao atualizar nível usuário {id_usuario}: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao atualizar nível usuário {id_usuario}: {erro_detalhado}")
+        traceback.print_exc()
 
         return False
 
@@ -547,7 +557,9 @@ def alterar_status(id_usuario: int, novo_status: int) -> bool:
                 """, (novo_status, id_usuario, id_empresa))
         return True
     except Exception as e:
-        log_erro(f"Erro ao alterar status do usuário {id_usuario}: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao alterar status do usuário {id_usuario}: {erro_detalhado}")
+        traceback.print_exc()
         return False
     
 

@@ -1,6 +1,7 @@
 import json
 import os
 from google import genai
+import traceback
 from utils.logger import log_erro
 
 # Inicialização do cliente com segurança
@@ -40,9 +41,13 @@ def encontrar_produto_similar(nome_produto, lista_existentes):
         return json.loads(texto)
 
     except json.JSONDecodeError as e:
-        log_erro(f"Erro ao decodificar resposta JSON da IA para produto '{nome_produto}': {e}")
+        err_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao decodificar resposta JSON da IA para produto '{nome_produto}': {err_detalhado}")
+        traceback.print_exc()
         return {"similar": False}
         
     except Exception as e:
-        log_erro(f"Erro ao consultar similaridade de produto com IA: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao consultar similaridade de produto com IA: {erro_detalhado}")
+        traceback.print_exc()
         return {"similar": False}

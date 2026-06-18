@@ -2,6 +2,7 @@ from flask import g, flash, redirect, url_for
 from modules.tenant_db import db_conn
 from functools import wraps
 from utils.logger import log_erro
+import traceback
 
 
 PLANOS_ORDEM = {
@@ -43,10 +44,9 @@ def get_plano_empresa():
         return row[0]
 
     except Exception as e:
-
-        log_erro(
-            f"Erro ao obter plano da empresa: {e}"
-        )
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao obter plano da empresa: {erro_detalhado}")
+        traceback.print_exc()
 
         return "starter"
 
@@ -65,7 +65,9 @@ def plano_requerido(plano_minimo):
                 
                 return func(*args, **kwargs)
             except Exception as e:
-                log_erro(f"Erro no decorador de plano: {e}")
+                erro_detalhado = traceback.format_exc()
+                log_erro(f"Erro no decorador de plano: {erro_detalhado}")
+                traceback.print_exc()
                 flash("Erro ao verificar permissões.", "danger")
                 return redirect(url_for("main.dashboard"))
         return wrapper

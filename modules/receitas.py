@@ -1,6 +1,7 @@
 from modules.tenant_db import db_conn
 from utils.logger import log_info, log_erro
 from modules.tenant import get_empresa_id
+import traceback
 
 
 # =========================================================
@@ -68,7 +69,9 @@ def cadastrar_receita(
         return True
 
     except Exception as e:
-        log_erro(f"Erro ao cadastrar receita: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao cadastrar receita: {erro_detalhado}")
+        traceback.print_exc()
         return False
 
 
@@ -103,7 +106,9 @@ def listar_itens_receita(id_produto: int) -> list[tuple]:
                 return cur.fetchall()
 
     except Exception as e:
-        log_erro(f"Erro ao listar receita: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao listar receita: {erro_detalhado}")
+        traceback.print_exc()
         return []
 
 
@@ -158,7 +163,10 @@ def validar_estoque_suficiente(id_produto: int, quantidade_venda: int) -> bool:
         return True
 
     except Exception as e:
-        log_erro(f"Erro validar estoque: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro validar estoque: {erro_detalhado}")
+        traceback.print_exc()
+        return False
 
 
 # =========================================================
@@ -191,7 +199,9 @@ def calcular_custo_receita(id_produto: int) -> float:
         )
 
     except Exception as e:
-        log_erro(f"Erro custo receita: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro custo receita: {erro_detalhado}")
+        traceback.print_exc()
         return 0.0
 
 

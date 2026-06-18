@@ -2,6 +2,7 @@ from modules.tenant_db import db_conn
 from utils.logger import log_info, log_erro
 from flask_login import current_user
 from modules.tenant import get_empresa_id
+import traceback
 
 def cadastrar_produto(
     nome: str,
@@ -38,7 +39,9 @@ def cadastrar_produto(
         return True
 
     except Exception as e:
-        log_erro(f"Erro ao cadastrar produto '{nome}': {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao cadastrar produto '{nome}': {erro_detalhado}")
+        traceback.print_exc()
         return False
 
 
@@ -72,7 +75,9 @@ def buscar_produto_por_nome(nome: str) -> list[tuple]:
                 return cur.fetchall()
 
     except Exception as e:
-        log_erro(f"Erro ao buscar produto '{nome}': {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao buscar produto '{nome}': {erro_detalhado}")
+        traceback.print_exc()
         return []
 
 
@@ -168,7 +173,9 @@ def vincular_insumo(
         return True
 
     except Exception as e:
-        log_erro(f"Erro ao vincular insumo (Prod: {id_produto}, MP: {id_materia}): {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao vincular insumo (Prod: {id_produto}, MP: {id_materia}): {erro_detalhado}")
+        traceback.print_exc()
         return False
 
 def vincular_subproduto_ao_produto(
@@ -234,9 +241,9 @@ def vincular_subproduto_ao_produto(
         return True
 
     except Exception as e:
-        log_erro(
-            f"Erro ao vincular subproduto {id_subproduto} ao produto {id_produto}: {e}"
-        )
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao vincular subproduto {id_subproduto} ao produto {id_produto}: {erro_detalhado}")
+        traceback.print_exc()
         return False
 
 def calcular_cenarios_preco(
@@ -273,11 +280,10 @@ def calcular_cenarios_preco(
         }
 
     except Exception as e:
+        erro_detalhado = traceback.format_exc()
 
-        log_erro(
-            f"Erro ao calcular cenários de preço ID {id_produto}: {e}"
-        )
-
+        log_erro(f"Erro ao calcular cenários de preço ID {id_produto}: {erro_detalhado}")
+        traceback.print_exc()
         return {}
 
 
@@ -399,7 +405,9 @@ def calcular_capacidade_geral():
         return resultado
 
     except Exception as e:
-        log_erro(f"Erro ao calcular capacidade geral: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao calcular capacidade geral: {erro_detalhado}")
+        traceback.print_exc()
         return []
 
 
@@ -432,9 +440,9 @@ def excluir_produto(id_produto: int) -> bool:
         return True
 
     except Exception as e:
-
-        log_erro(f"Erro ao excluir produto {id_produto}: {e}")
-
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao excluir produto {id_produto}: {erro_detalhado}")
+        traceback.print_exc()
         return False
 
 
@@ -472,7 +480,7 @@ def update_produto(
         return True
 
     except Exception as e:
-
-        log_erro(f"Erro ao atualizar produto ID {id_produto}: {e}")
-
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao atualizar produto ID {id_produto}: {erro_detalhado}")
+        traceback.print_exc()
         return False

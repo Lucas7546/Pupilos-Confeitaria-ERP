@@ -5,6 +5,7 @@ from modules.tenant import get_empresa_id
 from flask_login import current_user
 from utils.logger import log_info, log_erro
 from flask import g
+import traceback
 from modules.estoque import obter_saldo_subproduto, obter_saldo_materia_prima, obter_saldo_produto
 
 
@@ -74,7 +75,9 @@ def obter_resumo_periodo(dias: int = 7) -> dict:
         }
 
     except Exception as e:
-        log_erro(f"Erro ao obter resumo de vendas: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao obter resumo de vendas: {erro_detalhado}")
+        traceback.print_exc()
 
         return {
             "faturamento": 0.0,
@@ -310,7 +313,9 @@ def listar_vendas_recentes(limite: int = 10) -> list[dict]:
         ]
 
     except Exception as e:
-        log_erro(f"Erro vendas recentes: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro vendas recentes: {erro_detalhado}")
+        traceback.print_exc()
         return []
 
 # =========================================================
@@ -425,7 +430,9 @@ def excluir_venda(id_venda: int) -> bool:
         return True
 
     except Exception as e:
-        log_erro(f"Erro ao excluir venda {id_venda}: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao excluir venda {id_venda}: {erro_detalhado}")
+        traceback.print_exc()
         return False
 
 
@@ -458,5 +465,7 @@ def obter_custo_total_vendas(dias: int = 30) -> float:
         return round(float(faturamento or 0) - float(lucro or 0), 2)
 
     except Exception as e:
-        log_erro(f"Erro custo vendas: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro custo vendas: {erro_detalhado}")
+        traceback.print_exc()
         return 0.0

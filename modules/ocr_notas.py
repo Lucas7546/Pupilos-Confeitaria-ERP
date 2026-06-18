@@ -5,6 +5,7 @@ from ape.services.ai_client import client
 from difflib import SequenceMatcher
 from utils.logger import log_info, log_erro
 from flask_login import current_user
+import traceback
  
  
 # Prompt detalhado — quanto mais específico, mais consistente o JSON retornado
@@ -72,7 +73,9 @@ def analisar_nota(caminho_imagem: str) -> str | None:
         log_erro(f"Arquivo não encontrado: {caminho_imagem}")
         return None
     except Exception as e:
-        log_erro(f"Erro crítico no OCR com Gemini: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro crítico no OCR com Gemini: {erro_detalhado}")
+        traceback.print_exc()
         return None
  
  
@@ -132,7 +135,9 @@ def limpar_e_parsear_json(texto: str) -> list[dict] | None:
         return itens
  
     except json.JSONDecodeError as e:
-        log_erro(f"JSON inválido retornado pelo Gemini: {e} | Texto: {texto[:200]}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"JSON inválido retornado pelo Gemini: {erro_detalhado} | Texto: {texto[:200]}")
+        traceback.print_exc()
         return None
  
  
@@ -213,9 +218,9 @@ def enriquecer_itens_nota(itens):
         return resultado
 
     except Exception as e:
-
+        erro_detalhado = traceback.format_exc()
         log_erro(
-            f"Erro ao enriquecer itens OCR: {e}"
-        )
+            f"Erro ao enriquecer itens OCR: {erro_detalhado}")
+        traceback.print_exc()
 
         return itens

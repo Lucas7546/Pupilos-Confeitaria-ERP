@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from modules import produtos, estoque
 from utils.helpers import _parse_float
 from ape.services.log_service import registrar_log
+import traceback
 
 
 vinculos_bp = Blueprint('vinculos', __name__)
@@ -18,9 +19,16 @@ def vincular_receita():
         flash("Selecione produto, insumo e informe quantidade > 0.", "warning")
         return redirect(url_for("insumos.render_cadastro"))
 
-    if produtos.vincular_insumo(id_p, id_m, qtd):
-        registrar_log("CADASTRO", "FICHA_TECNICA", f"MP {id_m} → Prod {id_p} | Qtd {qtd}", current_user.username)
-        flash("Ingrediente vinculado!", "success")
+    try:   
+        if produtos.vincular_insumo(id_p, id_m, qtd):
+            registrar_log("CADASTRO", "FICHA_TECNICA", f"MP {id_m} → Prod {id_p} | Qtd {qtd}", current_user.username)
+            flash("Ingrediente vinculado!", "success")
+        else:
+            flash("Não foi possível vincular. Verifique os dados.", "danger")
+
+    except Exception:  
+        traceback.print_exc() 
+        flash("Erro crítico ao acessar o banco de dados.", "danger")      
     return redirect(url_for("insumos.render_cadastro"))
 
 
@@ -57,5 +65,6 @@ def vincular_receita_subproduto():
         flash("Ingrediente vinculado ao subproduto!", "success")
     else:
         flash("Erro ao vincular.", "danger")
- 
+    
+    
     return redirect(url_for("insumos.render_cadastro"))

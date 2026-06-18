@@ -35,7 +35,9 @@ def entrada_estoque(materia_prima_id: int, quantidade: float) -> bool:
         return True
 
     except Exception as e:
-        log_erro(f"Erro entrada_estoque: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro entrada_estoque: {erro_detalhado}")
+        traceback.print_exc()
         return False
 # =========================================================
 # SAÍDA DE ESTOQUE
@@ -68,7 +70,9 @@ def saida_estoque(materia_prima_id: int, quantidade: float, observacao: str = "M
         return True
 
     except Exception as e:
-        log_erro(f"Erro saida_estoque: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro saida_estoque: {erro_detalhado}")
+        traceback.print_exc()
         return False
  
  
@@ -96,7 +100,9 @@ def calcular_estoque(materia_prima_id: int) -> float:
                 return float(cur.fetchone()[0] or 0)
 
     except Exception as e:
-        log_erro(f"Erro calcular_estoque: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro calcular_estoque: {erro_detalhado}")
+        traceback.print_exc()
         return 0.0
   
 # =========================================================
@@ -167,7 +173,9 @@ def listar_materia_prima() -> list[tuple]:
         return resultado
 
     except Exception as e:
-        log_erro(f"Erro listar_materia_prima: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro listar_materia_prima: {erro_detalhado}")
+        traceback.print_exc()
         return []
  
 # =========================================================
@@ -811,7 +819,8 @@ def vincular_insumo_subproduto(id_subproduto: int, id_materia_prima: int, quanti
         return True
 
     except Exception as e:
-        log_erro(f"Erro vincular_insumo_subproduto: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro vincular_insumo_subproduto: {erro_detalhado}")
         traceback.print_exc()
         return False
  
@@ -846,7 +855,8 @@ def excluir_subproduto_banco(id_subproduto: int) -> bool:
         return True
 
     except Exception as e:
-        log_erro(f"Erro excluir_subproduto: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro excluir_subproduto: {erro_detalhado}")
         traceback.print_exc()
         return False
  
@@ -944,7 +954,8 @@ def entrada_subproduto(id_subproduto: int, quantidade: float) -> bool:
         return True
 
     except Exception as e:
-        log_erro(f"Erro entrada_subproduto: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro entrada_subproduto: {erro_detalhado}")
         traceback.print_exc()
         return False
  
@@ -1037,7 +1048,8 @@ def entrada_produto(id_produto: int, quantidade: float) -> bool:
         return True
 
     except Exception as e:
-        log_erro(f"Erro entrada_produto: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro entrada_produto: {erro_detalhado}")
         traceback.print_exc()
         return False
  
@@ -1120,8 +1132,10 @@ def obter_balanco_diario() -> list[dict]:
         ]
 
     except Exception as e:
+        erro_detalhado = traceback.format_exc()
 
-        log_erro(f"Erro balanco_diario: {e}")
+        log_erro(f"Erro balanco_diario: {erro_detalhado}")
+        traceback.print_exc()
         return []
     
 
@@ -1163,7 +1177,8 @@ def obter_saldo_produto(id_produto: int) -> float:
         return float(saldo or 0)
 
     except Exception as e:
-        log_erro(f"Erro ao consultar saldo produto {id_produto}: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao consultar saldo produto {id_produto}: {erro_detalhado}")
         traceback.print_exc()
         return 0.0
     
@@ -1206,7 +1221,8 @@ def obter_saldo_materia_prima(id_mp: int) -> float:
         return float(saldo or 0)
 
     except Exception as e:
-        log_erro(f"Erro ao consultar MP {id_mp}: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao consultar MP {id_mp}: {erro_detalhado}")
         traceback.print_exc()
         return 0.0
     
@@ -1260,10 +1276,9 @@ def obter_saldo_subproduto(id_subproduto: int) -> float:
         return float(saldo or 0)
 
     except Exception as e:
+        erro_detalhado = traceback.format_exc()
 
-        log_erro(
-            f"Erro ao consultar subproduto {id_subproduto}: {e}"
-        )
+        log_erro(f"Erro ao consultar subproduto {id_subproduto}: {erro_detalhado}")
         traceback.print_exc()
         return 0.0
 
@@ -1279,7 +1294,9 @@ def cadastrar_subproduto_banco(id_empresa, nome, unidade, est_min):
                 """, (id_empresa, nome, unidade, est_min))
         return True
     except Exception as e:
-        log_erro(f"Erro ao cadastrar subproduto no banco: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao cadastrar subproduto no banco: {erro_detalhado}")
+        traceback.print_exc()
         return False
     
 
@@ -1307,5 +1324,7 @@ def buscar_historico_subproduto(id_subproduto):
                 return cur.fetchall()
 
     except Exception as e:
-        log_erro(f"Erro ao buscar histórico subproduto {id_subproduto}: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao buscar histórico subproduto {id_subproduto}: {erro_detalhado}")
+        traceback.print_exc()
         raise

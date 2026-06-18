@@ -1,6 +1,7 @@
 from modules.tenant_db import db_conn
 from utils.logger import log_info, log_erro
 from modules.tenant import get_empresa_id
+import traceback
 # =========================================================
 # CONFIG EMPRESA
 # =========================================================
@@ -29,11 +30,9 @@ def get_config_empresa() -> str:
         return resultado[0] if resultado else "MEI"
 
     except Exception as e:
-
-        log_erro(
-            f"Erro ao buscar config empresa: {e}"
-        )
-
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao buscar config empresa: {erro_detalhado}")
+        traceback.print_exc()
         return "MEI"
 
 
@@ -63,15 +62,12 @@ def atualizar_regime_fiscal(
 
             
 
-        log_info(
-            f"Regime fiscal atualizado empresa {id_empresa}"
-        )
+        log_info(f"Regime fiscal atualizado empresa {id_empresa}")
 
     except Exception as e:
-
-        log_erro(
-            f"Erro ao atualizar regime fiscal: {e}"
-        )
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao atualizar regime fiscal: {erro_detalhado}")
+        traceback.print_exc()
 
 # =========================================================
 # CÁLCULO DE IMPOSTO
@@ -192,11 +188,9 @@ def financeiro_operacional(periodo_dias: int = 30) -> dict:
         }
 
     except Exception as e:
-
-        log_erro(
-            f"Erro no cálculo financeiro operacional: {e}"
-        )
-
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro no cálculo financeiro operacional: {erro_detalhado}")
+        traceback.print_exc()
         return {
             "faturamento": 0.0,
             "custo_insumos": 0.0,
@@ -296,11 +290,9 @@ def registrar_despesa(
         return True
 
     except Exception as e:
-
-        log_erro(
-            f"Erro ao salvar despesa: {e}"
-        )
-
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao salvar despesa: {erro_detalhado}")
+        traceback.print_exc()
         return False
 
 def listar_despesas():
@@ -333,10 +325,9 @@ def listar_despesas():
                 return cur.fetchall() or []
 
     except Exception as e:
-
-        log_erro(
-            f"Erro ao listar despesas: {e}"
-        )
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ao listar despesas: {erro_detalhado}")
+        traceback.print_exc()
 
         return []
     
@@ -415,11 +406,9 @@ def get_fluxo_caixa(
         }
 
     except Exception as e:
-
-        log_erro(
-            f"Erro fluxo caixa: {e}"
-        )
-
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro fluxo caixa: {erro_detalhado}")
+        traceback.print_exc()
         return {
             **base,
             "movimentacoes": []

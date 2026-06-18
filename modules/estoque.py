@@ -1298,11 +1298,11 @@ def buscar_historico_subproduto(id_subproduto):
                         tipo_movimento, 
                         quantidade, 
                         observacao, 
-                        data_movimentacao
-                    FROM movimentacao_estoque 
+                        data_movimento
+                    FROM movimentacao_estoque AS data_movimentacao
                     WHERE id_subproduto = %s 
                       AND id_empresa = %s
-                    ORDER BY data_movimentacao DESC
+                    ORDER BY data_movimento DESC
                 """, (id_subproduto, id_empresa))
 
                 return cur.fetchall()

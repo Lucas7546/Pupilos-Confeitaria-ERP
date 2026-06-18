@@ -1287,12 +1287,11 @@ def buscar_historico_subproduto(id_subproduto):
     try:
         id_empresa = get_empresa_id()
 
+        if not id_empresa:
+            raise Exception("Empresa não identificada")
+
         with db_conn() as conn:
             with conn.cursor() as cur:
-
-                # =========================
-                # HISTÓRICO DO SUBPRODUTO
-                # =========================
                 cur.execute("""
                     SELECT 
                         tipo_movimento,
@@ -1305,8 +1304,7 @@ def buscar_historico_subproduto(id_subproduto):
                     ORDER BY data_movimento DESC
                 """, (id_subproduto, id_empresa))
 
-                historico = cur.fetchall()
-                return historico
+                return cur.fetchall()
 
     except Exception as e:
         log_erro(f"Erro ao buscar histórico subproduto {id_subproduto}: {e}")

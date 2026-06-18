@@ -1,43 +1,106 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container py-4 animate-in">
+
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3>Histórico do Subproduto #{{ id_sub }}</h3>
-        <a href="{{ url_for('subprodutos.listar') }}" class="btn btn-secondary">Voltar</a>
+        <div>
+            <h2 class="fw-bold text-white">
+                <span class="text-info">📜</span> Histórico de Movimentações
+            </h2>
+            <small class="text-white-50">
+                Subproduto: <strong>{{ nome_subproduto }}</strong>
+            </small>
+        </div>
+
+        <a href="{{ url_for('subprodutos.listar') }}" class="btn btn-warning">
+            <i class="bi bi-arrow-left me-2"></i>Voltar
+        </a>
     </div>
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <table class="table table-hover">
-                <thead class="table-light">
+    <div class="card bg-dark-card border-0 shadow-lg rounded-4 overflow-hidden">
+
+        <div class="card-header bg-black bg-opacity-25 py-3 px-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-white">
+                    Histórico do Subproduto #{{ id_sub }}
+                </h5>
+
+                <span class="badge bg-secondary">
+                    {{ historico|length }} movimentações
+                </span>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+
+                <thead class="text-white-50 bg-black bg-opacity-25">
                     <tr>
-                        <th>Data</th>
+                        <th class="ps-4">Data</th>
                         <th>Tipo</th>
                         <th>Quantidade</th>
-                        <th>Observação</th>
+                        <th class="pe-4">Observação</th>
                     </tr>
                 </thead>
+
                 <tbody>
                     {% for item in historico %}
                     <tr>
-                        <td>{{ item[3].strftime('%d/%m/%Y %H:%M') if item[3] else '-' }}</td>
-                        <td>
-                            <span class="badge {{ 'bg-success' if item[0] == 'entrada' else 'bg-danger' }}">
-                                {{ item[0]|upper }}
-                            </span>
+                        <td class="ps-4">
+                            {{ item[3].strftime('%d/%m/%Y %H:%M') if item[3] else '-' }}
                         </td>
-                        <td>{{ "%.2f"|format(item[1]) }}</td>
-                        <td>{{ item[2] }}</td>
+
+                        <td>
+                            {% if item[0] == 'entrada' %}
+                                <span class="badge bg-success">ENTRADA</span>
+                            {% elif item[0] == 'saida' %}
+                                <span class="badge bg-danger">SAÍDA</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">AJUSTE</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="fw-bold">
+                            {{ "%.2f"|format(item[1]) }}
+                        </td>
+
+                        <td class="pe-4">
+                            {{ item[2] or '-' }}
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="4" class="text-center">Nenhuma movimentação encontrada.</td>
+                        <td colspan="4" class="text-center py-5 text-white-50">
+                            Nenhuma movimentação encontrada.
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
+
             </table>
         </div>
     </div>
 </div>
+
+<style>
+.bg-dark-card {
+    background: #0f172a !important;
+}
+
+.animate-in {
+    animation: fadeIn .4s ease;
+}
+
+@keyframes fadeIn {
+    from { 
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
 {% endblock %}

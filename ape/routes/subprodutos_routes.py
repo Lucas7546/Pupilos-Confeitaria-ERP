@@ -15,16 +15,12 @@ subprodutos_bp = Blueprint('subprodutos', __name__)
 @subprodutos_bp.route('/historico-subproduto/<int:id_subproduto>')
 @login_required
 def historico_subproduto(id_subproduto):
-
     try:
         id_empresa = get_empresa_id()
 
         with db_conn() as conn:
             with conn.cursor() as cur:
 
-                # =========================
-                # VALIDA TENANT
-                # =========================
                 cur.execute("""
                     SELECT nome
                     FROM subprodutos
@@ -40,14 +36,17 @@ def historico_subproduto(id_subproduto):
 
                 nome_subproduto = row[0]
 
-        # =========================
-        # HISTÓRICO (SÓ APÓS VALIDAR TENANT)
-        # =========================
-        historico = estoque.buscar_historico_subproduto(
-            id_subproduto)
+        historico = estoque.buscar_historico_subproduto(id_subproduto) or []
+
+        registrar_log(
+            "CONSULTA",
+            "HISTORICO_SUBPRODUTO",
+            f"ID {id_subproduto}",
+            current_user.username
+        )
 
         return render_template(
-            'historico_subproduto.html',
+            "historico_subproduto.html",
             historico=historico,
             id_sub=id_subproduto,
             nome_subproduto=nome_subproduto
@@ -203,52 +202,123 @@ def deletar_subproduto(id_subproduto):
     return redirect(url_for("estoque.estoque_painel"))
 @subprodutos_bp.route("/subprodutos/registrar-lote", methods=["POST"])
 @login_required
-@limiter.limit("15 per minute") # Limite do usuário
-@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}") # Limite da empresa
+@limiter.limit("15 per minute")
+@limiter.limit("60 per hour", key_func=lambda: f"empresa:{g.id_empresa}")
 def registrar_lote():
-    nome_comercial   = request.form.get("nome", "").strip()
-    preco_venda_raw  = request.form.get("preco", "").strip()
+    nome_comercial = request.form.get("nome", "").strip()
+    preco_venda_raw = request.form.get("preco", "").strip()
     id_subproduto_raw = request.form.get("id_subproduto")
-    qtd_lote_raw     = request.form.get("quantidade", "").strip()
+    qtd_lote_raw = request.form.get("quantidade", "").strip()
 
     try:
+        id_empresa = get_empresa_id()
+
         with db_conn() as conn:
             with conn.cursor() as cur:
-                # Lógica de Atualização de Preço
+
+                # =========================
+                # ALTERAÇÃO DE PREÇO
+                # =========================
                 if nome_comercial and preco_venda_raw:
                     preco_venda = _parse_float(preco_venda_raw)
-                    if preco_venda < 0:
+
+                    if preco_venda is None or preco_venda < 0:
                         flash("Preço inválido.", "danger")
                         return redirect(url_for("estoque.estoque_painel"))
-                    cur.execute(
-                        "UPDATE produtos SET preco_venda = %s WHERE nome = %s",
-                        (preco_venda, nome_comercial),
+
+                    cur.execute("""
+                        UPDATE produtos
+                        SET preco_venda = %s
+                        WHERE nome = %s
+                          AND id_empresa = %s
+                    """, (
+                        preco_venda,
+                        nome_comercial,
+                        id_empresa
+                    ))
+
+                    if cur.rowcount == 0:
+                        flash("Produto não encontrado.", "warning")
+                        return redirect(url_for("estoque.estoque_painel"))
+
+                    registrar_log(
+                        "ALTERAR",
+                        "PRODUTOS",
+                        f"Preço '{nome_comercial}' → R$ {preco_venda:.2f}",
+                        current_user.username
                     )
-                    registrar_log("ALTERAR", "PRODUTOS", f"Preço '{nome_comercial}' → R$ {preco_venda:.2f}", current_user.username)
+
                     flash(f"Preço de '{nome_comercial}' atualizado!", "success")
 
-                # Lógica de Entrada de Lote (Subprodutos)
+                # =========================
+                # ENTRADA DE LOTE
+                # =========================
                 elif id_subproduto_raw and qtd_lote_raw:
                     id_sub = int(id_subproduto_raw)
                     qtd = _parse_float(qtd_lote_raw)
-                    if qtd < 0:
+
+                    if qtd is None or qtd <= 0:
                         flash("Quantidade inválida.", "danger")
                         return redirect(url_for("estoque.estoque_painel"))
-                    cur.execute(
-                        "UPDATE subprodutos SET quantidade_atual = COALESCE(quantidade_atual,0) + %s WHERE id_subproduto = %s",
-                        (qtd, id_sub),
+
+                    # valida subproduto
+                    cur.execute("""
+                        SELECT nome
+                        FROM subprodutos
+                        WHERE id_subproduto = %s
+                          AND id_empresa = %s
+                    """, (id_sub, id_empresa))
+
+                    sub = cur.fetchone()
+
+                    if not sub:
+                        flash("Subproduto não encontrado.", "warning")
+                        return redirect(url_for("estoque.estoque_painel"))
+
+                    nome_subproduto = sub[0]
+
+                    # atualiza estoque
+                    cur.execute("""
+                        UPDATE subprodutos
+                        SET quantidade_atual = COALESCE(quantidade_atual, 0) + %s
+                        WHERE id_subproduto = %s
+                          AND id_empresa = %s
+                    """, (
+                        qtd,
+                        id_sub,
+                        id_empresa
+                    ))
+
+                    # registra histórico
+                    cur.execute("""
+                        INSERT INTO movimentacao_estoque
+                        (id_empresa, id_subproduto, tipo_movimento, quantidade, observacao)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (
+                        id_empresa,
+                        id_sub,
+                        "entrada_lote",
+                        qtd,
+                        "Entrada manual de lote"
+                    ))
+
+                    registrar_log(
+                        "ESTOQUE",
+                        "SUBPRODUTOS",
+                        f"Lote {qtd} → {nome_subproduto}",
+                        current_user.username
                     )
-                    registrar_log("ESTOQUE", "SUBPRODUTOS", f"Lote {qtd} → Subproduto ID {id_sub}", current_user.username)
-                    flash("Lote registrado!", "success")
+
+                    flash("Lote registrado com sucesso!", "success")
+
                 else:
                     flash("Dados insuficientes.", "warning")
+
     except Exception as e:
         log_erro(f"Erro ao registrar lote: {e}")
-        flash(f"Erro: {e}", "danger")
+        flash(f"Erro ao registrar lote: {e}", "danger")
 
     return redirect(url_for("estoque.estoque_painel"))
-
-
 
 @subprodutos_bp.route('/ajustar-subproduto/<int:id_subproduto>', methods=['POST'])
 @login_required
@@ -316,3 +386,26 @@ def ajustar_estoque_subproduto(id_subproduto):
 
     return redirect(url_for("estoque.estoque_painel"))
 
+
+@subprodutos_bp.route("/subprodutos")
+@login_required
+def listar():
+    try:
+        subprodutos = estoque.listar_subprodutos() or []
+
+        registrar_log(
+            "CONSULTA",
+            "SUBPRODUTOS",
+            f"{len(subprodutos)} itens carregados",
+            current_user.username
+        )
+
+        return render_template(
+            "listar_subprodutos.html",
+            subprodutos=subprodutos
+        )
+
+    except Exception as e:
+        log_erro(f"Erro ao listar subprodutos: {e}")
+        flash("Erro ao carregar subprodutos.", "danger")
+        return redirect(url_for("estoque.estoque_painel"))

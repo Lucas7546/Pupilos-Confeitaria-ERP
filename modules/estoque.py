@@ -1291,22 +1291,23 @@ def buscar_historico_subproduto(id_subproduto):
             with conn.cursor() as cur:
 
                 # =========================
-                # HISTÓRICO SEGURO
+                # HISTÓRICO DO SUBPRODUTO
                 # =========================
                 cur.execute("""
                     SELECT 
-                        tipo_movimento, 
-                        quantidade, 
-                        observacao, 
-                        data_movimento
-                    FROM movimentacao_estoque AS data_movimentacao
-                    WHERE id_subproduto = %s 
+                        tipo_movimento,
+                        quantidade,
+                        observacao,
+                        data_movimento AS data_movimentacao
+                    FROM movimentacao_estoque
+                    WHERE id_subproduto = %s
                       AND id_empresa = %s
                     ORDER BY data_movimento DESC
                 """, (id_subproduto, id_empresa))
 
-                return cur.fetchall()
+                historico = cur.fetchall()
+                return historico
 
     except Exception as e:
         log_erro(f"Erro ao buscar histórico subproduto {id_subproduto}: {e}")
-        raise  # IMPORTANTE: não mascarar erro em ERP
+        raise

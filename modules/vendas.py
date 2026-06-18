@@ -190,13 +190,15 @@ def registrar_venda(
                         tipo_movimento,
                         quantidade,
                         observacao,
+                        usuario,
                         id_empresa
                     )
-                    VALUES (%s, 'saida', %s, %s, %s)
+                    VALUES (%s, 'saida', %s, %s, %s, %s)
                 """, (
                     id_produto,
                     quantidade,
                     f"Venda ID {id_venda}",
+                    usuario,
                     id_empresa
                 ))
 
@@ -214,13 +216,15 @@ def registrar_venda(
                                 tipo_movimento,
                                 quantidade,
                                 observacao,
+                                usuario,
                                 id_empresa
                             )
-                            VALUES (%s, 'saida', %s, %s, %s)
+                            VALUES (%s, 'saida', %s, %s, %s, %s)
                         """, (
                             id_mp,
                             qtd_baixa,
                             f"Venda ID {id_venda}",
+                            usuario,
                             id_empresa
                         ))
 
@@ -231,23 +235,23 @@ def registrar_venda(
                                 tipo_movimento,
                                 quantidade,
                                 observacao,
+                                usuario,
                                 id_empresa
                             )
-                            VALUES (%s, 'saida', %s, %s, %s)
+                            VALUES (%s, 'saida', %s, %s, %s, %s)
                         """, (
                             id_sub,
                             qtd_baixa,
                             f"Venda ID {id_venda}",
+                            usuario,
                             id_empresa
                         ))
 
         return True
 
     except Exception as e:
-        # 🔥 LOG REAL DO ERRO (sem esconder nada)
         log_erro(f"ERRO VENDA COMPLETO (Prod {id_produto}): {repr(e)}")
 
-        # 🔥 garante rollback se ainda estiver aberto
         if conn:
             try:
                 conn.rollback()

@@ -30,7 +30,7 @@ def exportar_previsao_csv():
 
     try:
 
-        previsoes = previsao_demanda(current_user.id_empresa)
+        previsoes = previsao_demanda()
 
         if not previsoes:
 
@@ -103,7 +103,7 @@ def exportar_previsao_excel():
 
     try:
 
-        previsoes = previsao_demanda(current_user.id_empresa)
+        previsoes = previsao_demanda()
 
         if not previsoes:
 
@@ -162,7 +162,7 @@ def exportar_previsao_pdf():
 
     try:
 
-        previsoes = previsao_demanda(current_user.id_empresa)
+        previsoes = previsao_demanda()
 
         if not previsoes:
 

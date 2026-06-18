@@ -44,9 +44,7 @@ def historico_subproduto(id_subproduto):
         # HISTÓRICO (SÓ APÓS VALIDAR TENANT)
         # =========================
         historico = estoque.buscar_historico_subproduto(
-            id_subproduto=id_subproduto,
-            id_empresa=id_empresa
-        )
+            id_subproduto)
 
         return render_template(
             'historico_subproduto.html',

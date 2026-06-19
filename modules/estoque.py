@@ -259,8 +259,8 @@ def cadastrar_materia(
         return True
 
     except Exception as e:
-
-        log_erro(f"Erro cadastrar_materia: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro cadastrar_materia: {erro_detalhado}")
         traceback.print_exc()
 
         return False
@@ -328,7 +328,8 @@ def registrar_compra_estoque(id_materia_prima: int, quantidade_comprada, valor_t
         return True
 
     except Exception as e:
-        log_erro(f"Erro crítico ao processar compra: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro crítico ao processar compra: {erro_detalhado}")
         traceback.print_exc()
         return False
  
@@ -397,7 +398,8 @@ def ajustar_estoque(id_mp: int, novo_valor: float) -> bool:
         return True
 
     except Exception as e:
-        log_erro(f"Erro ajustar_estoque: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro ajustar_estoque: {erro_detalhado}")
         traceback.print_exc()
         return False
  
@@ -471,7 +473,8 @@ def atualizar_materia_prima(id_mp: int, nome: str, preco: float, unidade: str, q
         return True
 
     except Exception as e:
-        log_erro(f"Erro atualizar_materia_prima: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro atualizar_materia_prima: {erro_detalhado}")
         traceback.print_exc()
         return False
  
@@ -519,7 +522,8 @@ def excluir_materia_prima(id_mp: int) -> bool:
         return True
 
     except Exception as e:
-        log_erro(f"Erro excluir_materia_prima: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro excluir_materia_prima: {erro_detalhado}")
         traceback.print_exc()
         return False
 
@@ -609,7 +613,8 @@ def previsao_demanda() -> list[dict]:
         return sorted(result, key=lambda x: x["dias_restantes"])
 
     except Exception as e:
-        log_erro(f"Erro previsao_demanda: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro previsao_demanda: {erro_detalhado}")
         traceback.print_exc()
         return []
  
@@ -681,7 +686,8 @@ def obter_historico_movimentacoes() -> list[dict]:
         ]
 
     except Exception as e:
-        log_erro(f"Erro historico: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro historico: {erro_detalhado}")
         traceback.print_exc()
         return []
  
@@ -750,7 +756,8 @@ def listar_subprodutos() -> list[tuple]:
         return resultado
 
     except Exception as e:
-        log_erro(f"Erro listar_subprodutos: {e}")
+        erro_detalhado = traceback.format_exc()
+        log_erro(f"Erro listar_subprodutos: {erro_detalhado}")
         traceback.print_exc()
         return []
  

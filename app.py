@@ -50,40 +50,38 @@ def create_app():
         from psycopg2.extras import DictCursor
         from modules.termos import TERMOS_VERSAO
 
+        try:
+            # 1. Static files (NUNCA bloquear)
+            if request.path.startswith("/static/"):
+                g.id_empresa = None
+                return
 
-        # 1. Filtro de estáticos (Performance imediata)
-        if request.path.startswith("/static/"):
-            g.id_empresa = None
-            return
+            # 2. Usuário não logado
+            if not current_user.is_authenticated:
+                return
 
-        # Inicialização padrão
-        g.id_empresa = None
+            # 3. Garantir empresa existe no usuário
+            g.id_empresa = getattr(current_user, "id_empresa", None)
 
-        # 2. Usuário não autenticado
-        if not current_user.is_authenticated:
-            return
+            if not g.id_empresa:
+                return
 
-        # Definir contexto da empresa
-        g.id_empresa = getattr(current_user, "id_empresa", None)
+            # 4. Rotas liberadas (CRÍTICO: inclui POST também)
+            rotas_liberadas = {
+                "auth.login",
+                "auth.logout",
+                "auditoria.aceitar_termos"
+            }
 
-        # 3. Cache do plano (só executa se logado)
-        if "plano" not in session or session.get("id_empresa_cache") != g.id_empresa:
-            if g.id_empresa:
+            if request.endpoint in rotas_liberadas:
+                return
+
+            # 5. Cache plano (seguro)
+            if session.get("id_empresa_cache") != g.id_empresa:
                 session["plano"] = get_plano_empresa()
                 session["id_empresa_cache"] = g.id_empresa
 
-        # 4. Rotas que não precisam de validação de termos
-        rotas_excluidas = {
-            'auth.login', 
-            'auth.logout', 
-            'auditoria.aceitar_termos'
-        }
-        
-        if request.endpoint and request.endpoint in rotas_excluidas:
-            return
-
-        # 5. Verificação de Termos (Versão + Aceite) - O "Porteiro"
-        try:
+            # 6. Verificação de termos
             with db_conn() as conn:
                 with conn.cursor(cursor_factory=DictCursor) as cur:
                     cur.execute("""
@@ -93,27 +91,24 @@ def create_app():
                     """, (g.id_empresa,))
                     res = cur.fetchone()
 
-            # 🔒 caso empresa não exista ou falha de query
-            if res is None:
+            # 7. Se não existir empresa → erro real
+            if not res:
                 return render_template("erro.html"), 500
 
             aceito = res.get("termos_aceitos") is True
-            versao_bd = res.get("versao_termos")
+            versao_bd = res.get("versao_termos") or "0"
 
-            # DEBUG (pode remover depois)
-            print(f"DEBUG TERMOS: aceito={aceito} | bd={versao_bd} | code={TERMOS_VERSAO}")
+            # DEBUG (remove depois)
+            print(f"[TERMOS DEBUG] aceito={aceito} | bd={versao_bd} | code={TERMOS_VERSAO}")
 
-            # 🔥 REGRA FINAL (CLARA E SEM AMBIGUIDADE)
-            precisa_aceitar = (
-                not aceito
-                or versao_bd != TERMOS_VERSAO
-            )
+            # 8. REGRA FINAL
+            if (not aceito) or (versao_bd != TERMOS_VERSAO):
+                return redirect(url_for("auditoria.aceitar_termos"))
 
-            if precisa_aceitar:
-                return redirect(url_for('auditoria.aceitar_termos'))
-
-        except Exception as e:
-            print(f"[ERRO DE SEGURANÇA - TERMOS]: {e}")
+        except Exception:
+            import traceback
+            print("[ERRO BEFORE REQUEST TERMOS]")
+            print(traceback.format_exc())
             return render_template("erro.html"), 500
 
     @app.context_processor

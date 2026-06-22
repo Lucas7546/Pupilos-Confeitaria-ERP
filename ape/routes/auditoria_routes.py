@@ -9,8 +9,11 @@ import secrets
 from modules.admin_db import admin_conn
 from modules.tenant_db import db_conn, db_admin_conn
 from utils.logger import log_erro
+from modules.termos import TEXTO_TERMOS, TERMOS_VERSAO
+from datetime import datetime, timezone
 
 auditoria_bp = Blueprint('auditoria', __name__)
+
 
 # Helper interno - pode ficar aqui ou ser movido para app/services/log_service.py
 def _listar_logs(
@@ -74,6 +77,47 @@ def _listar_logs(
         log_erro(f"Erro ao consultar logs: {e}")
         return []
 
+
+@auditoria_bp.route('/aceitar-termos', methods=['GET', 'POST'])
+@login_required
+def aceitar_termos():
+    if request.method == 'POST':
+        try:
+            data_aceite = datetime.now(timezone.utc)
+            ip_usuario = request.remote_addr
+
+            with db_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        UPDATE empresas 
+                        SET termos_aceitos = TRUE, 
+                            data_aceite_termos = %s, 
+                            versao_termos = %s 
+                        WHERE id_empresa = %s
+                    """, (data_aceite, TERMOS_VERSAO, current_user.id_empresa))
+                    conn.commit()
+
+            # Registro detalhado na auditoria
+            registrar_log(
+                current_user.id_empresa, 
+                "TERMOS_ACEITE", 
+                f"Aceite realizado | Versão: {TERMOS_VERSAO} | IP: {ip_usuario}"
+            )
+
+            flash("Termos aceitos com sucesso.", "success")
+            return redirect(url_for('index'))
+            
+        except Exception as e:
+            # Recomendo usar log_erro em vez de print para produção
+            # log_erro(f"Erro ao aceitar termos: {e}")
+            print(f"Erro ao aceitar termos: {e}") 
+            flash("Erro ao processar aceite dos termos. Tente novamente.", "danger")
+
+    return render_template(
+        'aceitar_termos.html', 
+        termo=TEXTO_TERMOS, 
+        versao=TERMOS_VERSAO
+    )
 
 @auditoria_bp.route("/acessos")
 @login_required

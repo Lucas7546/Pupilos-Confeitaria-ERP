@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-4 my-md-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8">
+            
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4 p-md-5">
+                    
+                    <h2 class="fw-bold text-dark mb-2">
+                        Termos de Uso e Privacidade
+                    </h2>
+
+                    <p class="text-muted mb-4">
+                        Para continuar acessando o <strong>Lumenarch</strong>, leia e aceite os termos abaixo.
+                    </p>
+
+                    <!-- HEADER INFO -->
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label fw-bold small text-uppercase m-0">
+                            Conteúdo do Contrato
+                        </label>
+                        <small class="text-muted">
+                            Versão: <strong>{{ versao }}</strong>
+                        </small>
+                    </div>
+
+                    <!-- BOX TERMOS -->
+                    <div id="scrollBox"
+                         class="border rounded bg-light p-3 mb-4"
+                         style="height: 350px; overflow-y: auto;">
+
+                        <div class="term-text">
+                            {{ termo }}
+                        </div>
+                    </div>
+
+                    <!-- FORM -->
+                    <form method="POST" id="formAceite">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <div class="card bg-light border-0 p-3 mb-4">
+                            <div class="form-check">
+                                <input
+                                    type="checkbox"
+                                    class="form-check-input"
+                                    name="aceite"
+                                    id="aceite"
+                                    disabled
+                                >
+                                <label class="form-check-label ps-2" for="aceite">
+                                    <strong>
+                                        Li e aceito os Termos de Uso e Política de Privacidade (v{{ versao }}).
+                                    </strong>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button
+                                type="submit"
+                                id="btnAceitar"
+                                class="btn btn-primary btn-lg"
+                                disabled
+                            >
+                                Confirmar Aceite
+                            </button>
+                        </div>
+                    </form>
+
+                    <p class="text-center text-muted small mt-4 mb-0">
+                        Em caso de dúvidas, entre em contato com o suporte.
+                    </p>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+.term-text {
+    white-space: pre-wrap;
+    font-family: sans-serif;
+}
+</style>
+
+<script>
+(function () {
+    const box = document.getElementById("aceite");
+    const btn = document.getElementById("btnAceitar");
+    const scrollBox = document.getElementById("scrollBox");
+    const form = document.getElementById("formAceite");
+
+    if (!box || !btn || !scrollBox || !form) return;
+
+    let liberado = false;
+
+    function checarScroll() {
+        const chegouFim =
+            scrollBox.scrollTop + scrollBox.clientHeight >= scrollBox.scrollHeight - 10;
+
+        if (chegouFim) {
+            liberado = true;
+            box.disabled = false;
+        }
+    }
+
+    function init() {
+        btn.disabled = true;
+
+        checarScroll();
+
+        scrollBox.addEventListener("scroll", checarScroll);
+        window.addEventListener("resize", checarScroll);
+
+        box.addEventListener("change", function () {
+            btn.disabled = !this.checked;
+        });
+
+        form.addEventListener("submit", function () {
+            btn.disabled = true;
+            btn.innerText = "Processando...";
+        });
+    }
+
+    window.addEventListener("load", init);
+})();
+</script>
+
+{% endblock %}

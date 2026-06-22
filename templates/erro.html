@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center min-vh-100">
+
+    <div class="row justify-content-center w-100">
+        <div class="col-12 col-md-8 col-lg-5">
+
+            <div class="card shadow-sm border-0 text-center p-5">
+
+                <!-- ÍCONE -->
+                <div class="mb-3">
+                    <div style="font-size: 64px;">⚠️</div>
+                </div>
+
+                <!-- TÍTULO -->
+                <h2 class="fw-bold mb-3">
+                    Algo deu errado
+                </h2>
+
+                <!-- MENSAGEM -->
+                <p class="text-muted mb-4">
+                    Estamos enfrentando uma instabilidade temporária ou realizando manutenção no sistema.
+                    O Lumenarch tentará se recuperar automaticamente.
+                </p>
+
+                <!-- STATUS BOX -->
+                <div class="alert alert-light border small text-start mb-4">
+                    <div><strong>Status:</strong> Sistema instável</div>
+                    <div><strong>Hora:</strong> {{ now or "agora" }}</div>
+                    <div><strong>Código:</strong> {{ error_code or "500" }}</div>
+                </div>
+
+                <!-- AÇÕES -->
+                <div class="d-grid gap-2">
+
+                    <button onclick="location.reload()" class="btn btn-primary btn-lg">
+                        Tentar novamente
+                    </button>
+
+                    <a href="mailto:suporte@lumenarch.com.br" class="btn btn-outline-secondary">
+                        Falar com suporte
+                    </a>
+
+                </div>
+
+                <!-- INFO FINAL -->
+                <p class="text-muted small mt-4 mb-0">
+                    Se o problema persistir, entre em contato com o suporte técnico.
+                </p>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- AUTO RECOVERY -->
+<script>
+    // tenta recuperar automaticamente
+    setTimeout(() => {
+        location.reload();
+    }, 15000);
+</script>
+{% endblock %}

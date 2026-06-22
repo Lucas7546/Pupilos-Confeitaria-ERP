@@ -40,23 +40,69 @@ def create_app():
     init_extensions(app)
 
     
+    
     @app.before_request
     def set_empresa_context():
-        from flask import g, request, session
+        from flask import g, request, session, redirect, url_for, render_template
         from flask_login import current_user
         from modules.planos import get_plano_empresa
+        from modules.tenant_db import db_conn
+        from psycopg2.extras import DictCursor
+        from modules.termos import TERMOS_VERSAO
 
+
+        # 1. Filtro de estáticos (Performance imediata)
         if request.path.startswith("/static/"):
             g.id_empresa = None
             return
 
-        if current_user.is_authenticated:
-            g.id_empresa = getattr(current_user, "id_empresa", None)
-            if "plano" not in session or session.get("id_empresa_cache") != g.id_empresa:
+        # Inicialização padrão
+        g.id_empresa = None
+
+        # 2. Usuário não autenticado
+        if not current_user.is_authenticated:
+            return
+
+        # Definir contexto da empresa
+        g.id_empresa = getattr(current_user, "id_empresa", None)
+
+        # 3. Cache do plano (só executa se logado)
+        if "plano" not in session or session.get("id_empresa_cache") != g.id_empresa:
+            if g.id_empresa:
                 session["plano"] = get_plano_empresa()
                 session["id_empresa_cache"] = g.id_empresa
-        else:
-            g.id_empresa = None  # NÃO usa -1 em sistema sério
+
+        # 4. Rotas que não precisam de validação de termos
+        rotas_excluidas = {
+            'auth.login', 
+            'auth.logout', 
+            'auditoria.aceitar_termos'
+        }
+        
+        if request.endpoint and request.endpoint in rotas_excluidas:
+            return
+
+        # 5. Verificação de Termos (Versão + Aceite) - O "Porteiro"
+        try:
+            with db_conn() as conn:
+                with conn.cursor(cursor_factory=DictCursor) as cur:
+                    cur.execute("""
+                        SELECT termos_aceitos, versao_termos
+                        FROM empresas
+                        WHERE id_empresa = %s
+                    """, (g.id_empresa,))
+                    res = cur.fetchone()
+
+            # Bloqueia se: Não existe registro, não aceitou, ou versão está defasada
+            if not res or not res['termos_aceitos'] or res.get('versao_termos') != TERMOS_VERSAO:
+                return redirect(url_for('auditoria.aceitar_termos'))
+
+        except Exception as e:
+            # Em caso de erro no banco, logamos mas evitamos um redirecionamento infinito
+            print(f"[ERRO DE SEGURANÇA - TERMOS]: {e}")
+            # Opcional: Se o banco cair, você pode permitir o acesso ou bloquear. 
+            # O ideal é bloquear para proteger a conformidade:
+            return render_template("erro.html"), 500
 
     @app.context_processor
     def inject_plano():

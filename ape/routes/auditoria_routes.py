@@ -94,32 +94,33 @@ def aceitar_termos():
                             data_aceite_termos = %s, 
                             versao_termos = %s 
                         WHERE id_empresa = %s
-                    """, (
-                        data_aceite,
-                        TERMOS_VERSAO,
-                        current_user.id_empresa
-                    ))
+                    """, (data_aceite, TERMOS_VERSAO, current_user.id_empresa))
 
-            session.pop("plano", None)
+            # 🔥 ESSA PARTE É O QUE ESTAVA FALTANDO
+            session["termos_aceitos_cache"] = {
+                "id_empresa": current_user.id_empresa,
+                "valor": True
+            }
+
             session.modified = True
 
             registrar_log(
-                current_user.id_empresa,
-                "TERMOS_ACEITE",
+                current_user.id_empresa, 
+                "TERMOS_ACEITE", 
                 f"Aceite realizado | Versão: {TERMOS_VERSAO} | IP: {ip_usuario}"
             )
 
             flash("Termos aceitos com sucesso.", "success")
 
-            return redirect(url_for('main.dashboard'))
+            return redirect(url_for('index'))
 
         except Exception as e:
             print(f"Erro ao aceitar termos: {e}")
             flash("Erro ao processar aceite dos termos.", "danger")
 
     return render_template(
-        'aceitar_termos.html',
-        termo=TEXTO_TERMOS,
+        'aceitar_termos.html', 
+        termo=TEXTO_TERMOS, 
         versao=TERMOS_VERSAO
     )
 

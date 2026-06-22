@@ -68,7 +68,7 @@ def create_app():
 
         cache = session.get("termos_aceitos_cache")
 
-        # 🔥 se cache não bate com empresa atual → invalida
+        # 🔥 invalida cache se trocar empresa ou não existir
         if not cache or cache.get("id_empresa") != current_user.id_empresa:
 
             with db_conn() as conn:

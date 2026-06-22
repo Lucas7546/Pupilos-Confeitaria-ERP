@@ -45,43 +45,42 @@ def create_app():
     def set_empresa_context():
         from flask import g, request, session, redirect, url_for, render_template
         from flask_login import current_user
-        from modules.planos import get_plano_empresa
-        from modules.tenant_db import db_conn
-        from psycopg2.extras import DictCursor
-        from modules.termos import TERMOS_VERSAO
+        import traceback
 
         try:
-            # 1. Static files (NUNCA bloquear)
+            # 1. Ignorar casos inválidos
+            if not request.endpoint:
+                return
+
+            # 2. Static sempre liberado
             if request.path.startswith("/static/"):
                 g.id_empresa = None
                 return
 
-            # 2. Usuário não logado
+            # 3. Auth blueprint liberado TOTAL
+            if request.blueprint == "auth":
+                return
+
+            # 4. Usuário não logado
             if not current_user.is_authenticated:
                 return
 
-            # 3. Garantir empresa existe no usuário
+            # 5. empresa
             g.id_empresa = getattr(current_user, "id_empresa", None)
-
             if not g.id_empresa:
                 return
 
-            # 4. Rotas liberadas (CRÍTICO: inclui POST também)
-            rotas_liberadas = {
-                "auth.login",
-                "auth.logout",
+            # 6. rotas liberadas
+            if request.endpoint in {
                 "auditoria.aceitar_termos"
-            }
-
-            if request.endpoint in rotas_liberadas:
+            }:
                 return
 
-            # 5. Cache plano (seguro)
-            if session.get("id_empresa_cache") != g.id_empresa:
-                session["plano"] = get_plano_empresa()
-                session["id_empresa_cache"] = g.id_empresa
+            # 7. termos (só depois de tudo certo)
+            from modules.termos import TERMOS_VERSAO
+            from modules.tenant_db import db_conn
+            from psycopg2.extras import DictCursor
 
-            # 6. Verificação de termos
             with db_conn() as conn:
                 with conn.cursor(cursor_factory=DictCursor) as cur:
                     cur.execute("""
@@ -91,23 +90,16 @@ def create_app():
                     """, (g.id_empresa,))
                     res = cur.fetchone()
 
-            # 7. Se não existir empresa → erro real
             if not res:
                 return render_template("erro.html"), 500
 
             aceito = res.get("termos_aceitos") is True
             versao_bd = res.get("versao_termos") or "0"
 
-            # DEBUG (remove depois)
-            print(f"[TERMOS DEBUG] aceito={aceito} | bd={versao_bd} | code={TERMOS_VERSAO}")
-
-            # 8. REGRA FINAL
             if (not aceito) or (versao_bd != TERMOS_VERSAO):
                 return redirect(url_for("auditoria.aceitar_termos"))
 
         except Exception:
-            import traceback
-            print("[ERRO BEFORE REQUEST TERMOS]")
             print(traceback.format_exc())
             return render_template("erro.html"), 500
 

@@ -55,6 +55,8 @@ def create_app():
     def verificar_termos():
         from flask import request, redirect, url_for, session
         from flask_login import current_user
+        from psycopg2.extras import DictCursor
+        from modules.tenant_db import db_conn
 
         rotas_liberadas = ['auth.login', 'auth.logout', 'static', 'auditoria.aceitar_termos']
 
@@ -64,7 +66,28 @@ def create_app():
         if request.endpoint and request.endpoint in rotas_liberadas:
             return
 
-        if session.get("termos_aceitos") is False:
+        cache = session.get("termos_aceitos_cache")
+
+        # 🔥 se cache não bate com empresa atual → invalida
+        if not cache or cache.get("id_empresa") != current_user.id_empresa:
+
+            with db_conn() as conn:
+                with conn.cursor(cursor_factory=DictCursor) as cur:
+                    cur.execute("""
+                        SELECT termos_aceitos
+                        FROM empresas
+                        WHERE id_empresa = %s
+                    """, (current_user.id_empresa,))
+                    res = cur.fetchone()
+
+            session["termos_aceitos_cache"] = {
+                "id_empresa": current_user.id_empresa,
+                "valor": bool(res and res["termos_aceitos"])
+            }
+
+            cache = session["termos_aceitos_cache"]
+
+        if cache["valor"] is False:
             return redirect(url_for("auditoria.aceitar_termos"))
 
     @app.context_processor

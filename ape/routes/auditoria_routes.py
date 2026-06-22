@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, Response, flash, redirect, url_for
+from flask import Blueprint, render_template, request, Response, flash, redirect, url_for, session
 from flask_login import login_required, current_user
 from modules.permissoes import acesso_requerido
 from modules.decorators import superadmin_required
@@ -97,7 +97,12 @@ def aceitar_termos():
                     """, (data_aceite, TERMOS_VERSAO, current_user.id_empresa))
                     conn.commit()
 
-            # Registro detalhado na auditoria
+            # 🔥 IMPORTANTE: força sincronização imediata
+            if "plano" in session:
+                session.pop("plano")
+
+            session.modified = True
+
             registrar_log(
                 current_user.id_empresa, 
                 "TERMOS_ACEITE", 
@@ -105,13 +110,12 @@ def aceitar_termos():
             )
 
             flash("Termos aceitos com sucesso.", "success")
+
             return redirect(url_for('index'))
-            
+
         except Exception as e:
-            # Recomendo usar log_erro em vez de print para produção
-            # log_erro(f"Erro ao aceitar termos: {e}")
-            print(f"Erro ao aceitar termos: {e}") 
-            flash("Erro ao processar aceite dos termos. Tente novamente.", "danger")
+            print(f"Erro ao aceitar termos: {e}")
+            flash("Erro ao processar aceite dos termos.", "danger")
 
     return render_template(
         'aceitar_termos.html', 

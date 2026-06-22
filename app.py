@@ -93,15 +93,23 @@ def create_app():
                     """, (g.id_empresa,))
                     res = cur.fetchone()
 
-            # DEBUG: Veja no terminal do servidor o que está acontecendo
-            versao_bd = str(res.get('versao_termos') if res else 'None')
-            versao_code = str(TERMOS_VERSAO)
-            aceito = res.get('termos_aceitos') if res else False
-            
-            print(f"DEBUG TERMOS: Aceito={aceito} | BD={versao_bd} | Código={versao_code}")
+            # 🔒 caso empresa não exista ou falha de query
+            if res is None:
+                return render_template("erro.html"), 500
 
-            # Lógica corrigida e protegida
-            if not res or not aceito or versao_bd != versao_code:
+            aceito = res.get("termos_aceitos") is True
+            versao_bd = res.get("versao_termos")
+
+            # DEBUG (pode remover depois)
+            print(f"DEBUG TERMOS: aceito={aceito} | bd={versao_bd} | code={TERMOS_VERSAO}")
+
+            # 🔥 REGRA FINAL (CLARA E SEM AMBIGUIDADE)
+            precisa_aceitar = (
+                not aceito
+                or versao_bd != TERMOS_VERSAO
+            )
+
+            if precisa_aceitar:
                 return redirect(url_for('auditoria.aceitar_termos'))
 
         except Exception as e:

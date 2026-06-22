@@ -89,8 +89,8 @@ def create_app():
                             return "Empresa não encontrada", 403
 
             except Exception as e:
-                print(f"[ERRO before_request]: {e}")
-                return "Erro interno", 500
+                print(f"[ERRO CRÍTICO NO BEFORE_REQUEST]: {traceback.format_exc()}")
+                return "Erro interno de conexão", 500
 
     @app.context_processor
     def inject_plano():

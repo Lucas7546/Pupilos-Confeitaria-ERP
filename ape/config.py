@@ -1,7 +1,10 @@
 import os
 
 class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-key-change-me")
+    SECRET_KEY = os.environ.get("SECRET_KEY")
+    
+    if not SECRET_KEY:
+        raise ValueError("A variável de ambiente SECRET_KEY não foi definida!")
 
     JSON_SORT_KEYS = False
 

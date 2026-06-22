@@ -93,15 +93,19 @@ def create_app():
                     """, (g.id_empresa,))
                     res = cur.fetchone()
 
-            # Bloqueia se: Não existe registro, não aceitou, ou versão está defasada
-            if not res or not res['termos_aceitos'] or res.get('versao_termos') != TERMOS_VERSAO:
+            # DEBUG: Veja no terminal do servidor o que está acontecendo
+            versao_bd = str(res.get('versao_termos') if res else 'None')
+            versao_code = str(TERMOS_VERSAO)
+            aceito = res.get('termos_aceitos') if res else False
+            
+            print(f"DEBUG TERMOS: Aceito={aceito} | BD={versao_bd} | Código={versao_code}")
+
+            # Lógica corrigida e protegida
+            if not res or not aceito or versao_bd != versao_code:
                 return redirect(url_for('auditoria.aceitar_termos'))
 
         except Exception as e:
-            # Em caso de erro no banco, logamos mas evitamos um redirecionamento infinito
             print(f"[ERRO DE SEGURANÇA - TERMOS]: {e}")
-            # Opcional: Se o banco cair, você pode permitir o acesso ou bloquear. 
-            # O ideal é bloquear para proteger a conformidade:
             return render_template("erro.html"), 500
 
     @app.context_processor

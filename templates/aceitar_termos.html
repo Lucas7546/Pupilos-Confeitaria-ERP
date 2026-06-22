@@ -5,34 +5,34 @@
     <div class="row justify-content-center">
         <div class="col-12 col-md-10 col-lg-8">
             
-            <div class="card shadow-sm border-0">
+            <div class="card shadow-lg border-0" style="background-color: rgba(255,255,255,0.95);">
                 <div class="card-body p-4 p-md-5">
                     
                     <div class="d-flex justify-content-between align-items-start mb-3">
-                        <h2 class="fw-bold text-dark mb-2">
+                        <h2 class="fw-bold text-primary mb-2">
                             Termos de Uso e Privacidade
                         </h2>
                         <a href="{{ url_for('auth.logout') }}" class="btn-close" aria-label="Sair"></a>
                     </div>
 
-                    <p class="text-muted mb-4">
+                    <p class="text-dark fw-medium mb-4">
                         Para continuar acessando o <strong>Lumenarch</strong>, leia e aceite os termos abaixo.
                     </p>
 
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <label class="form-label fw-bold small text-uppercase m-0 text-primary">
+                        <label class="form-label fw-bold small text-uppercase m-0 text-dark">
                             Conteúdo do Contrato
                         </label>
-                        <small class="text-muted">
-                            Versão: <strong>{{ versao }}</strong>
+                        <small class="text-secondary fw-bold">
+                            Versão: {{ versao }}
                         </small>
                     </div>
 
                     <div id="scrollBox"
-                         class="border rounded bg-light p-3 mb-4"
-                         style="height: 350px; overflow-y: auto;">
+                         class="border rounded p-3 mb-4 bg-white"
+                         style="height: 350px; overflow-y: auto; border: 2px solid #dee2e6 !important;">
 
-                        <div class="term-text">
+                        <div class="term-text" style="color: #000; font-weight: 500;">
                             {{ termo }}
                         </div>
                     </div>
@@ -40,16 +40,10 @@
                     <form method="POST" id="formAceite">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                        <div class="card bg-light border-0 p-3 mb-4">
+                        <div class="card border-primary p-3 mb-4" style="background-color: #f0f7ff;">
                             <div class="form-check">
-                                <input
-                                    type="checkbox"
-                                    class="form-check-input"
-                                    name="aceite"
-                                    id="aceite"
-                                    disabled
-                                >
-                                <label class="form-check-label ps-2" for="aceite">
+                                <input type="checkbox" class="form-check-input" name="aceite" id="aceite" disabled style="border-color: #0d6efd;">
+                                <label class="form-check-label ps-2 text-dark" for="aceite">
                                     <strong>
                                         Li e aceito os <span class="text-primary">Termos de Uso</span> e <span class="text-primary">Política de Privacidade</span> (v{{ versao }}).
                                     </strong>
@@ -58,38 +52,21 @@
                         </div>
 
                         <div class="d-grid">
-                            <button
-                                type="submit"
-                                id="btnAceitar"
-                                class="btn btn-primary btn-lg"
-                                disabled
-                            >
+                            <button type="submit" id="btnAceitar" class="btn btn-primary btn-lg" disabled>
                                 Confirmar Aceite
                             </button>
                         </div>
                     </form>
-
-                    <p class="text-center text-muted small mt-4 mb-0">
-                        Em caso de dúvidas, entre em contato com o <span class="text-danger">suporte técnico</span>.
-                    </p>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
 
 <style>
-.term-text {
-    white-space: pre-wrap;
-    font-family: sans-serif;
-    color: #333;
-}
-/* Scrollbar customizada */
-#scrollBox::-webkit-scrollbar { width: 8px; }
-#scrollBox::-webkit-scrollbar-track { background: #f1f1f1; }
-#scrollBox::-webkit-scrollbar-thumb { background: #bbb; border-radius: 4px; }
-#scrollBox::-webkit-scrollbar-thumb:hover { background: #999; }
+.term-text { white-space: pre-wrap; font-family: sans-serif; }
+#scrollBox::-webkit-scrollbar { width: 10px; }
+#scrollBox::-webkit-scrollbar-thumb { background: #0d6efd; border-radius: 4px; }
 </style>
 
 <script>

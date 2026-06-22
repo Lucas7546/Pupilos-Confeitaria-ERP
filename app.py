@@ -3,9 +3,6 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_wtf.csrf import CSRFProtect
 from flask import Flask, redirect, url_for
 from ape.extensions import init_extensions
-from modules.termos import TERMOS_VERSAO
-from modules.tenant_db import db_conn
-from psycopg2.extras import DictCursor
 # Importando seus Blueprints organizados
 from ape.routes.auth_routes import auth_bp
 from ape.routes.estoque_routes import estoque_bp
@@ -43,58 +40,37 @@ def create_app():
     init_extensions(app)
 
     
-    
     @app.before_request
     def set_empresa_context():
-        from flask import g, request, current_app
+        from flask import g, request
         from flask_login import current_user
-        import traceback
 
-        # 1. Ignorar rotas de arquivos estáticos
         if request.path.startswith("/static/"):
             return
 
-        # 2. Ignorar quem não está logado
+        g.id_empresa = current_user.id_empresa if current_user.is_authenticated else None
+
+
+    @app.before_request
+    def verificar_termos():
+        from flask import request, redirect, url_for, session
+        from flask_login import current_user
+
+        rotas_liberadas = ['auth.login', 'auth.logout', 'static', 'auditoria.aceitar_termos']
+
         if not current_user.is_authenticated:
             return
 
-        # 3. Tentar pegar o ID da empresa de forma segura
-        try:
-            # Garante que id_empresa exista no user
-            g.id_empresa = getattr(current_user, "id_empresa", None)
-            
-            # Se for uma rota que precisa de validação de empresa
-            # (Usando o nome do endpoint para ser mais preciso)
-            if request.endpoint and "." in request.endpoint:
-                blueprint_name = request.endpoint.split('.')[0]
-                rotas_protegidas = ["main", "estoque", "vendas", "financeiro", "produtos", "compras"]
-                
-                if blueprint_name in rotas_protegidas:
-                    if not g.id_empresa:
-                        print(f"[DEBUG] Acesso bloqueado: Rota {request.endpoint} sem ID de empresa no user.")
-                        return "Empresa não definida", 403
+        if request.endpoint and request.endpoint in rotas_liberadas:
+            return
 
-                    # Validação no banco
-                    with db_conn() as conn:
-                        with conn.cursor(cursor_factory=DictCursor) as cur:
-                            cur.execute("SELECT 1 FROM empresas WHERE id_empresa = %s", (g.id_empresa,))
-                            if not cur.fetchone():
-                                print(f"[DEBUG] Acesso bloqueado: ID empresa {g.id_empresa} não encontrado no banco.")
-                                return "Empresa não encontrada", 403
-                                
-        except Exception as e:
-            # Se der qualquer erro aqui, NÃO derrube o sistema.
-            # Logue o erro para você ver o que é:
-            print(f"[ERRO CRÍTICO NO BEFORE_REQUEST]: {traceback.format_exc()}")
-            # Se o banco falhar, o erro 500 acontece. Vamos deixar passar para o próximo middleware 
-            # ou retornar uma mensagem simples para não vazar detalhes do DB.
-            return "Erro de processamento de sessão", 500
+        if session.get("termos_aceitos") is False:
+            return redirect(url_for("auditoria.aceitar_termos"))
 
     @app.context_processor
     def inject_plano():
         from flask import session
         return dict(plano=session.get("plano", "starter"))            
-        
     
     # Registro dos Blueprints
     app.register_blueprint(auth_bp)

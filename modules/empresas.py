@@ -1,37 +1,108 @@
+import traceback
 from modules.tenant_db import db_conn
+from utils.logger import log_erro
+from modules.termos import TERMOS_VERSAO
 
 
 def criar_empresa(nome, responsavel, plano="starter", cursor=None):
     try:
-        if cursor:
-            cursor.execute("INSERT INTO empresas (nome, responsavel, plano) VALUES (%s, %s, %s) RETURNING id_empresa", (nome, responsavel, plano))
-            id_empresa = cursor.fetchone()[0]
-            # O banco agora é INTEGER, o valor é 1
-            cursor.execute("INSERT INTO empresa_planos (id_empresa, plano, ativo) VALUES (%s, %s, 1)", (id_empresa, plano))
-            return id_empresa
-        else:
-            with db_conn() as conn:
-                with conn.cursor() as cur:
-                    cur.execute("INSERT INTO empresas (nome, responsavel, plano) VALUES (%s, %s, %s) RETURNING id_empresa", (nome, responsavel, plano))
-                    id_empresa = cur.fetchone()[0]
-                    cur.execute("INSERT INTO empresa_planos (id_empresa, plano, ativo) VALUES (%s, %s, 1)", (id_empresa, plano))
-                    conn.commit()
-                    return id_empresa
-    except Exception as e:
-        raise Exception(f"Erro ao criar empresa: {e}")
-def buscar_empresa_nome(nome):
-
-    with db_conn() as conn:
-        with conn.cursor() as cur:
-
-            cur.execute(
-                """
-                SELECT id_empresa
-                FROM empresas
-                WHERE LOWER(nome) = LOWER(%s)
-                LIMIT 1
-                """,
-                (nome,)
+        sql_insert_empresa = """
+            INSERT INTO empresas (
+                nome,
+                responsavel,
+                plano,
+                termos_aceitos,
+                data_aceite_termos,
+                versao_termos
             )
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id_empresa
+        """
 
-            return cur.fetchone()
+        params_empresa = (
+            nome,
+            responsavel,
+            plano,
+            False,
+            None,
+            TERMOS_VERSAO
+        )
+
+        sql_insert_plano = """
+            INSERT INTO empresa_planos (id_empresa, plano, ativo)
+            VALUES (%s, %s, 1)
+        """
+
+        if cursor:
+            cursor.execute(sql_insert_empresa, params_empresa)
+            row = cursor.fetchone()
+
+            if not row:
+                raise Exception("Falha ao retornar id_empresa")
+
+            id_empresa = row[0]
+
+            cursor.execute(sql_insert_plano, (id_empresa, plano))
+            return id_empresa
+
+        with db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql_insert_empresa, params_empresa)
+                row = cur.fetchone()
+
+                if not row:
+                    raise Exception("Falha ao retornar id_empresa")
+
+                id_empresa = row[0]
+
+                cur.execute(sql_insert_plano, (id_empresa, plano))
+
+                conn.commit()
+                return id_empresa
+
+    except Exception as e:
+        erro_trace = traceback.format_exc()
+
+        log_erro(
+            "Erro ao criar empresa",
+            extra={
+                "nome": nome,
+                "responsavel": responsavel,
+                "plano": plano,
+                "erro": str(e),
+                "traceback": erro_trace
+            }
+        )
+
+        raise
+
+
+def buscar_empresa_nome(nome):
+    try:
+        with db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT id_empresa
+                    FROM empresas
+                    WHERE LOWER(nome) = LOWER(%s)
+                    LIMIT 1
+                    """,
+                    (nome,)
+                )
+
+                return cur.fetchone()
+
+    except Exception as e:
+        erro_trace = traceback.format_exc()
+
+        log_erro(
+            "Erro ao buscar empresa por nome",
+            extra={
+                "nome": nome,
+                "erro": str(e),
+                "traceback": erro_trace
+            }
+        )
+
+        raise

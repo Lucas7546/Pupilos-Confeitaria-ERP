@@ -96,14 +96,6 @@ def aceitar_termos():
                         WHERE id_empresa = %s
                     """, (data_aceite, TERMOS_VERSAO, current_user.id_empresa))
 
-            # 🔥 ESSA PARTE É O QUE ESTAVA FALTANDO
-            session["termos_aceitos_cache"] = {
-                "id_empresa": current_user.id_empresa,
-                "valor": True
-            }
-
-            session.modified = True
-
             registrar_log(
                 current_user.id_empresa, 
                 "TERMOS_ACEITE", 

@@ -8,17 +8,19 @@
             <div class="card shadow-sm border-0">
                 <div class="card-body p-4 p-md-5">
                     
-                    <h2 class="fw-bold text-dark mb-2">
-                        Termos de Uso e Privacidade
-                    </h2>
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h2 class="fw-bold text-dark mb-2">
+                            Termos de Uso e Privacidade
+                        </h2>
+                        <a href="{{ url_for('auth.logout') }}" class="btn-close" aria-label="Sair"></a>
+                    </div>
 
                     <p class="text-muted mb-4">
                         Para continuar acessando o <strong>Lumenarch</strong>, leia e aceite os termos abaixo.
                     </p>
 
-                    <!-- HEADER INFO -->
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <label class="form-label fw-bold small text-uppercase m-0">
+                        <label class="form-label fw-bold small text-uppercase m-0 text-primary">
                             Conteúdo do Contrato
                         </label>
                         <small class="text-muted">
@@ -26,7 +28,6 @@
                         </small>
                     </div>
 
-                    <!-- BOX TERMOS -->
                     <div id="scrollBox"
                          class="border rounded bg-light p-3 mb-4"
                          style="height: 350px; overflow-y: auto;">
@@ -36,7 +37,6 @@
                         </div>
                     </div>
 
-                    <!-- FORM -->
                     <form method="POST" id="formAceite">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
@@ -51,7 +51,7 @@
                                 >
                                 <label class="form-check-label ps-2" for="aceite">
                                     <strong>
-                                        Li e aceito os Termos de Uso e Política de Privacidade (v{{ versao }}).
+                                        Li e aceito os <span class="text-primary">Termos de Uso</span> e <span class="text-primary">Política de Privacidade</span> (v{{ versao }}).
                                     </strong>
                                 </label>
                             </div>
@@ -70,9 +70,8 @@
                     </form>
 
                     <p class="text-center text-muted small mt-4 mb-0">
-                        Em caso de dúvidas, entre em contato com o suporte.
+                        Em caso de dúvidas, entre em contato com o <span class="text-danger">suporte técnico</span>.
                     </p>
-
                 </div>
             </div>
 
@@ -84,7 +83,13 @@
 .term-text {
     white-space: pre-wrap;
     font-family: sans-serif;
+    color: #333;
 }
+/* Scrollbar customizada */
+#scrollBox::-webkit-scrollbar { width: 8px; }
+#scrollBox::-webkit-scrollbar-track { background: #f1f1f1; }
+#scrollBox::-webkit-scrollbar-thumb { background: #bbb; border-radius: 4px; }
+#scrollBox::-webkit-scrollbar-thumb:hover { background: #999; }
 </style>
 
 <script>
@@ -110,16 +115,12 @@
 
     function init() {
         btn.disabled = true;
-
         checarScroll();
-
         scrollBox.addEventListener("scroll", checarScroll);
         window.addEventListener("resize", checarScroll);
-
         box.addEventListener("change", function () {
             btn.disabled = !this.checked;
         });
-
         form.addEventListener("submit", function () {
             btn.disabled = true;
             btn.innerText = "Processando...";
@@ -129,5 +130,4 @@
     window.addEventListener("load", init);
 })();
 </script>
-
 {% endblock %}

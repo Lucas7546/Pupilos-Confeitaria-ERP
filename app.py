@@ -47,47 +47,50 @@ def create_app():
     
     @app.before_request
     def set_empresa_context():
-        from flask import g, request, redirect, url_for, render_template
+        from flask import g, request
         from flask_login import current_user
 
-        # 1. Ignorar rotas de static e auth
-        if request.path.startswith("/static/") or (request.blueprint == "auth"):
+        # 1. nunca mexe em static
+        if request.path.startswith("/static/"):
             return
 
-        # 2. Se não estiver logado, segue o baile (o @login_required das rotas vai cuidar disso)
+        # 2. login NÃO depende de empresa
         if not current_user.is_authenticated:
             return
 
-        # 3. Contexto da Empresa
+        # 3. pega empresa
         g.id_empresa = getattr(current_user, "id_empresa", None)
-        if not g.id_empresa:
-            return
 
-        # 4. Rotas de exceção
-        if request.endpoint in ["auditoria.aceitar_termos"]:
-            return
+        # 4. só valida empresa se a rota REALMENTE precisar disso
+        rotas_protegidas = [
+            "main",
+            "estoque",
+            "vendas",
+            "financeiro",
+            "produtos",
+            "compras",
+        ]
 
-        # 5. Verificação de termos
-        try:
-            with db_conn() as conn:
-                with conn.cursor(cursor_factory=DictCursor) as cur:
-                    cur.execute("SELECT termos_aceitos, versao_termos FROM empresas WHERE id_empresa = %s", (g.id_empresa,))
-                    res = cur.fetchone()
-            
-            if not res:
-                return "Erro: Empresa não encontrada", 500
+        if request.blueprint in rotas_protegidas:
 
-            aceito = (res.get("termos_aceitos") is True)
-            versao_bd = str(res.get("versao_termos") or "0")
-            
-            if not aceito or versao_bd != str(TERMOS_VERSAO):
-                return redirect(url_for("auditoria.aceitar_termos"))
-                
-        except Exception as e:
-            # IMPORTANTE: Printar o erro no log do Render
-            print(f"--- ERRO CRÍTICO NO BEFORE_REQUEST: {e} ---")
-            print(traceback.format_exc())
-            return "Erro interno de sistema", 500
+            if not g.id_empresa:
+                print("[WARN] Usuário sem empresa no contexto")
+                return "Empresa não definida", 403
+
+            # valida no banco só aqui (não global)
+            try:
+                with db_conn() as conn:
+                    with conn.cursor(cursor_factory=DictCursor) as cur:
+                        cur.execute(
+                            "SELECT 1 FROM empresas WHERE id_empresa = %s",
+                            (g.id_empresa,)
+                        )
+                        if not cur.fetchone():
+                            return "Empresa não encontrada", 403
+
+            except Exception as e:
+                print(f"[ERRO before_request]: {e}")
+                return "Erro interno", 500
 
     @app.context_processor
     def inject_plano():

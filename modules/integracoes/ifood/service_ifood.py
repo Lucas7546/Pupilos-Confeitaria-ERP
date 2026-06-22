@@ -9,8 +9,15 @@ import traceback
 
 PROVIDER = "ifood"
 
+EVENTOS_PROCESSAVEIS = [
+    "PLACED"
+]
+
+
 def processar_webhook_ifood(id_empresa, payload):
+
     try:
+
         order_id = (
             payload.get("orderId")
             or payload.get("order_id")
@@ -18,18 +25,34 @@ def processar_webhook_ifood(id_empresa, payload):
         )
 
         if not order_id:
-            raise Exception("ID do pedido não encontrado no payload")
+            raise Exception(
+                "ID do pedido não encontrado no payload"
+            )
 
-        event_type = payload.get("eventType")
+        event_type = (
+            payload.get("eventType")
+            or payload.get("event_type")
+        )
 
-        if not pedidos_integracao.salvar_evento_integracao(
+        if not event_type:
+            raise Exception(
+                "Tipo de evento não encontrado"
+            )
+
+        event_type = event_type.upper()
+
+        evento_salvo = pedidos_integracao.salvar_evento_integracao(
             id_empresa=id_empresa,
             provider=PROVIDER,
             event_type=event_type,
             order_id=order_id,
             payload=payload
-        ):
-            raise Exception(f"Falha ao salvar evento {order_id}")
+        )
+
+        if not evento_salvo:
+            raise Exception(
+                f"Falha ao salvar evento {order_id}"
+            )
 
         pedido_id = pedidos_integracao.salvar_pedido_integracao(
             id_empresa=id_empresa,
@@ -39,26 +62,44 @@ def processar_webhook_ifood(id_empresa, payload):
         )
 
         if not pedido_id:
-            raise Exception(f"Falha ao salvar pedido {order_id}")
+            raise Exception(
+                f"Falha ao salvar pedido {order_id}"
+            )
 
-        if event_type == "PLACED":
-            # Passando o id_empresa para a função de processamento
-            processado = processar_pedido_ifood(id_empresa, order_id)
+        if event_type in EVENTOS_PROCESSAVEIS:
+
+            processado = processar_pedido_ifood(
+                id_empresa,
+                order_id
+            )
+
             if not processado:
-                raise Exception(f"Falha ao processar pedido {order_id}")
+                raise Exception(
+                    f"Falha ao processar pedido {order_id}"
+                )
 
         return True
 
     except Exception as e:
+
         erro_detalhado = traceback.format_exc()
+
         logs_integracao.registrar_log_integracao(
             id_empresa=id_empresa,
             provider=PROVIDER,
             tipo="WEBHOOK",
-            mensagem=f"Erro: {str(e)}\n\nTraceback:\n{erro_detalhado}",
-            payload=payload
+            mensagem=f"""
+Erro: {str(e)}
+
+Traceback:
+{erro_detalhado}
+""",
+            payload=payload,
+            order_id=order_id if 'order_id' in locals() else None
         )
+
         traceback.print_exc()
+
         return False
 
 
@@ -157,20 +198,39 @@ Traceback:
 
 
 def registrar_venda_ifood(id_empresa, item_ifood):
+
     try:
+
         produto = mapear_produto_ifood(id_empresa, item_ifood)
+
         if not produto:
             raise Exception("Produto não mapeado")
 
         id_produto = produto[0]
-        quantidade = int(item_ifood.get("quantity", 1))
 
-        if not receitas.validar_estoque_suficiente(id_produto, quantidade):
-            raise Exception(f"Estoque insuficiente para produto {id_produto}")
+        quantidade = int(
+            item_ifood.get("quantity", 1)
+        )
 
-        valor_unitario = float(item_ifood.get("price") or item_ifood.get("unitPrice") or 0)
-        if isinstance(item_ifood.get("price"), dict): # Ajuste caso seja objeto
-            valor_unitario = float(item_ifood.get("price", {}).get("value", 0))
+        if not receitas.validar_estoque_suficiente(
+            id_produto,
+            quantidade
+        ):
+            raise Exception(
+                f"Estoque insuficiente para produto {id_produto}"
+            )
+
+        price = item_ifood.get("price")
+        unit_price = item_ifood.get("unitPrice")
+
+        if isinstance(price, dict):
+            valor_unitario = float(
+                price.get("value", 0)
+            )
+        else:
+            valor_unitario = float(
+                price or unit_price or 0
+            )
 
         valor_total = valor_unitario * quantidade
 
@@ -181,14 +241,50 @@ def registrar_venda_ifood(id_empresa, item_ifood):
             usuario="IFOOD"
         )
 
-        return venda_ok
+        if not venda_ok:
+            raise Exception("Falha ao registrar venda")
+
+        return True
+
     except Exception as e:
-        log_erro(f"Erro ao registrar venda iFood: {str(e)}\n{traceback.format_exc()}")
+
+        erro_detalhado = traceback.format_exc()
+
+        log_erro(f"""
+Erro ao registrar venda iFood: {str(e)}
+
+Traceback:
+{erro_detalhado}
+""")
+
+        traceback.print_exc()
+
         return False
     
 def buscar_detalhes_pedido(id_empresa, order_id):
-    token = ifood_auth.get_token(id_empresa) 
-    headers = {"Authorization": f"Bearer {token}"}
-    url = f"https://merchant-api.ifood.com.br/order/v1.0/orders/{order_id}"
-    response = requests.get(url, headers=headers)
-    return response.json() if response.status_code == 200 else None
+    try:
+        token = ifood_auth.get_token(id_empresa)
+
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+
+        url = f"https://merchant-api.ifood.com.br/order/v1.0/orders/{order_id}"
+
+        response = requests.get(url, headers=headers, timeout=15)
+
+        if response.status_code != 200:
+            raise Exception(
+                f"Erro API iFood: {response.status_code} - {response.text}"
+            )
+
+        return response.json()
+
+    except Exception as e:
+        log_erro(f"""
+Erro ao buscar pedido iFood {order_id}: {str(e)}
+
+Traceback:
+{traceback.format_exc()}
+""")
+        return None

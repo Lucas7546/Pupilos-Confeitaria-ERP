@@ -8,8 +8,10 @@ import os
 class IfoodAuth:
     def __init__(self):
         self.url = "https://merchant-api.ifood.com.br/authentication/v1.0/oauth/token"
-        # Carrega a chave de criptografia do ambiente
-        self.cipher = Fernet(os.getenv("DB_ENCRYPTION_KEY").encode())
+        key = os.getenv("DB_ENCRYPTION_KEY")
+        if not key:
+            raise Exception("DB_ENCRYPTION_KEY não configurada")
+        self.cipher = Fernet(key.encode())
 
     def get_token(self, id_empresa):
         # 1. Busca credenciais e token atual no banco
@@ -17,8 +19,10 @@ class IfoodAuth:
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 cur.execute("""
                     SELECT client_id, client_secret, access_token, expires_at 
-                    FROM integracao_ifood_config 
+                    FROM integracoes
                     WHERE id_empresa = %s
+                    AND provider = 'ifood'
+                    AND ativo = TRUE
                 """, (id_empresa,))
                 row = cur.fetchone()
         
@@ -43,9 +47,11 @@ class IfoodAuth:
         with db_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    UPDATE integracao_ifood_config 
+                    UPDATE integracoes
                     SET access_token = %s, expires_at = %s 
                     WHERE id_empresa = %s
+                    AND provider = 'ifood'       
+
                 """, (token, expiracao, id_empresa))
                 
         return token

@@ -3,6 +3,10 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_wtf.csrf import CSRFProtect
 from flask import Flask, redirect, url_for
 from ape.extensions import init_extensions
+from modules.termos import TERMOS_VERSAO
+from modules.tenant_db import db_conn
+from psycopg2.extras import DictCursor
+import traceback
 # Importando seus Blueprints organizados
 from ape.routes.auth_routes import auth_bp
 from ape.routes.estoque_routes import estoque_bp
@@ -43,65 +47,47 @@ def create_app():
     
     @app.before_request
     def set_empresa_context():
-        from flask import g, request, session, redirect, url_for, render_template
+        from flask import g, request, redirect, url_for, render_template
         from flask_login import current_user
-        import traceback
 
+        # 1. Ignorar rotas de static e auth
+        if request.path.startswith("/static/") or (request.blueprint == "auth"):
+            return
+
+        # 2. Se não estiver logado, segue o baile (o @login_required das rotas vai cuidar disso)
+        if not current_user.is_authenticated:
+            return
+
+        # 3. Contexto da Empresa
+        g.id_empresa = getattr(current_user, "id_empresa", None)
+        if not g.id_empresa:
+            return
+
+        # 4. Rotas de exceção
+        if request.endpoint in ["auditoria.aceitar_termos"]:
+            return
+
+        # 5. Verificação de termos
         try:
-            # 1. Ignorar casos inválidos
-            if not request.endpoint:
-                return
-
-            # 2. Static sempre liberado
-            if request.path.startswith("/static/"):
-                g.id_empresa = None
-                return
-
-            # 3. Auth blueprint liberado TOTAL
-            if request.blueprint == "auth":
-                return
-
-            # 4. Usuário não logado
-            if not current_user.is_authenticated:
-                return
-
-            # 5. empresa
-            g.id_empresa = getattr(current_user, "id_empresa", None)
-            if not g.id_empresa:
-                return
-
-            # 6. rotas liberadas
-            if request.endpoint in {
-                "auditoria.aceitar_termos"
-            }:
-                return
-
-            # 7. termos (só depois de tudo certo)
-            from modules.termos import TERMOS_VERSAO
-            from modules.tenant_db import db_conn
-            from psycopg2.extras import DictCursor
-
             with db_conn() as conn:
                 with conn.cursor(cursor_factory=DictCursor) as cur:
-                    cur.execute("""
-                        SELECT termos_aceitos, versao_termos
-                        FROM empresas
-                        WHERE id_empresa = %s
-                    """, (g.id_empresa,))
+                    cur.execute("SELECT termos_aceitos, versao_termos FROM empresas WHERE id_empresa = %s", (g.id_empresa,))
                     res = cur.fetchone()
-
+            
             if not res:
-                return render_template("erro.html"), 500
+                return "Erro: Empresa não encontrada", 500
 
-            aceito = res.get("termos_aceitos") is True
-            versao_bd = res.get("versao_termos") or "0"
-
-            if (not aceito) or (versao_bd != TERMOS_VERSAO):
+            aceito = (res.get("termos_aceitos") is True)
+            versao_bd = str(res.get("versao_termos") or "0")
+            
+            if not aceito or versao_bd != str(TERMOS_VERSAO):
                 return redirect(url_for("auditoria.aceitar_termos"))
-
-        except Exception:
+                
+        except Exception as e:
+            # IMPORTANTE: Printar o erro no log do Render
+            print(f"--- ERRO CRÍTICO NO BEFORE_REQUEST: {e} ---")
             print(traceback.format_exc())
-            return render_template("erro.html"), 500
+            return "Erro interno de sistema", 500
 
     @app.context_processor
     def inject_plano():

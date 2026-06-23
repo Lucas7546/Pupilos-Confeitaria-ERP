@@ -160,7 +160,7 @@ def configuracoes():
                 # 2. Busca dados financeiros (Ajuste o nome da tabela/colunas se necessário)
                 cur.execute("""
                     SELECT data_ultimo_pagamento, dias_atraso, bloqueado 
-                    FROM financeiro 
+                    FROM empresa_planos
                     WHERE id_empresa = %s
                 """, (g.id_empresa,))
                 pagamento = cur.fetchone() # Será um dicionário ex: {'dias_atraso': 0, ...}

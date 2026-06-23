@@ -62,6 +62,7 @@ def create_app():
             'auth.login',
             'auth.logout',
             'static',
+            'main.dashboard',
             'auditoria.aceitar_termos'
         }
 

@@ -53,43 +53,38 @@ def create_app():
 
     @app.before_request
     def verificar_termos():
-        from flask import request, redirect, url_for, session
+        from flask import request, redirect, url_for
         from flask_login import current_user
         from psycopg2.extras import DictCursor
         from modules.tenant_db import db_conn
 
-        rotas_liberadas = ['auth.login', 'auth.logout', 'static', 'auditoria.aceitar_termos']
+        rotas_liberadas = {
+            'auth.login',
+            'auth.logout',
+            'static',
+            'auditoria.aceitar_termos'
+        }
 
         if not current_user.is_authenticated:
             return
 
-        if request.endpoint and request.endpoint in rotas_liberadas:
+        if request.endpoint in rotas_liberadas:
             return
 
-        cache = session.get("termos_aceitos_cache")
+        with db_conn() as conn:
+            with conn.cursor(cursor_factory=DictCursor) as cur:
+                cur.execute("""
+                    SELECT termos_aceitos
+                    FROM empresas
+                    WHERE id_empresa = %s
+                """, (current_user.id_empresa,))
+                res = cur.fetchone()
 
-        # 🔥 invalida cache se trocar empresa ou não existir
-        if not cache or cache.get("id_empresa") != current_user.id_empresa:
+        termos = res["termos_aceitos"] if res else False
 
-            with db_conn() as conn:
-                with conn.cursor(cursor_factory=DictCursor) as cur:
-                    cur.execute("""
-                        SELECT termos_aceitos
-                        FROM empresas
-                        WHERE id_empresa = %s
-                    """, (current_user.id_empresa,))
-                    res = cur.fetchone()
-
-            session["termos_aceitos_cache"] = {
-                "id_empresa": current_user.id_empresa,
-                "valor": bool(res and res["termos_aceitos"])
-            }
-
-            cache = session["termos_aceitos_cache"]
-
-        if cache["valor"] is False:
+        if termos is not True:
             return redirect(url_for("auditoria.aceitar_termos"))
-
+    
     @app.context_processor
     def inject_plano():
         from flask import session

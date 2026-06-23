@@ -95,24 +95,30 @@ def aceitar_termos():
                             versao_termos = %s 
                         WHERE id_empresa = %s
                     """, (data_aceite, TERMOS_VERSAO, current_user.id_empresa))
+                    conn.commit()
+
+            # 🔥 IMPORTANTE: força flush de sessão
+            session.pop("plano", None)
+            session.modified = True
 
             registrar_log(
-                current_user.id_empresa, 
-                "TERMOS_ACEITE", 
+                current_user.id_empresa,
+                "TERMOS_ACEITE",
                 f"Aceite realizado | Versão: {TERMOS_VERSAO} | IP: {ip_usuario}"
             )
 
             flash("Termos aceitos com sucesso.", "success")
 
-            return redirect(url_for('index'))
+            # 🔥 IMPORTANTE: manda direto pro dashboard (NÃO pro index)
+            return redirect(url_for('dashboard'))
 
         except Exception as e:
             print(f"Erro ao aceitar termos: {e}")
             flash("Erro ao processar aceite dos termos.", "danger")
 
     return render_template(
-        'aceitar_termos.html', 
-        termo=TEXTO_TERMOS, 
+        'aceitar_termos.html',
+        termo=TEXTO_TERMOS,
         versao=TERMOS_VERSAO
     )
 

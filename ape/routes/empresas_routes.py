@@ -151,14 +151,21 @@ def convite_invalido():
 def configuracoes():
     try:
         with db_conn() as conn:
-            # Note o cursor_factory=DictCursor aqui!
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 # 1. Busca o plano
                 cur.execute("SELECT plano FROM empresas WHERE id_empresa = %s", (g.id_empresa,))
                 resultado = cur.fetchone()
                 plano_atual = resultado['plano'] if resultado else "starter"
                 
-                # 2. Busca os feedbacks usando nomes de colunas explícitos
+                # 2. Busca dados financeiros (Ajuste o nome da tabela/colunas se necessário)
+                cur.execute("""
+                    SELECT data_ultimo_pagamento, dias_atraso, bloqueado 
+                    FROM financeiro 
+                    WHERE id_empresa = %s
+                """, (g.id_empresa,))
+                pagamento = cur.fetchone() # Será um dicionário ex: {'dias_atraso': 0, ...}
+                
+                # 3. Busca os feedbacks
                 cur.execute("""
                     SELECT id_feedback, id_empresa, usuario_origem, tipo, mensagem, status, resposta_admin, data_criacao 
                     FROM feedback 
@@ -167,9 +174,12 @@ def configuracoes():
                 """, (g.id_empresa,))
                 feedbacks = cur.fetchall()
                 
-        return render_template("configuracoes.html", plano_atual=plano_atual, feedbacks=feedbacks)
+        return render_template("configuracoes.html", 
+                               plano_atual=plano_atual, 
+                               feedbacks=feedbacks,
+                               pagamento=pagamento)
     except Exception as e:
-        log_erro(f"Erro configuracoes: {e}")
+        log_erro(f"Erro configuracoes: {e}")  
         return "Erro ao carregar configurações", 500
     
 @empresas_bp.route("/upgrade-necessario")

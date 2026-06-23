@@ -94,3 +94,35 @@ def conta_bloqueada():
     return render_template("conta_bloqueada.html")
 
 
+@billing_bp.route("/billing/gerar-pix-atual")
+@login_required
+def gerar_pix_atual():
+    try:
+        with db_admin_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT valor_plano FROM empresa_planos WHERE id_empresa = %s", (current_user.id_empresa,))
+                res = cur.fetchone()
+                valor_a_pagar = float(res[0]) if res else 200.00
+        
+        request_payment = {
+            "transaction_amount": valor_a_pagar,
+            "description": f"Mensalidade - Empresa {current_user.id_empresa}",
+            "payment_method_id": "pix",
+            "external_reference": f"mensalidade_{current_user.id_empresa}",
+            "payer": {"email": current_user.email}
+        }
+
+        result = sdk.payment().create(request_payment)
+        payment = result.get("response")
+        
+        if not payment or "point_of_interaction" not in payment:
+            return "Erro ao comunicar com Mercado Pago", 500
+
+        return render_template("pagar_pix.html", 
+                               pix_code=payment["point_of_interaction"]["transaction_data"]["qr_code"], 
+                               qr_code_base64=payment["point_of_interaction"]["transaction_data"]["qr_code_base64"],
+                               valor=valor_a_pagar)
+
+    except Exception:
+        print(f"Erro ao gerar pix atual: {traceback.format_exc()}")
+        return "Erro interno ao processar pagamento", 500

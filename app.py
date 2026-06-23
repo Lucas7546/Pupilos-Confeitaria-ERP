@@ -23,6 +23,7 @@ from ape.routes.auditoria_routes import auditoria_bp
 from ape.routes.api_routes import api_bp
 from ape.routes.equipe_routes import equipe_bp
 from ape.routes.insumos_routes import insumos_bp
+from ape.routes.billing_routes import billing_bp
 from ape.routes.produtos_routes import produtos_bp
 from ape.routes.vinculos_routes import vinculos_bp
 from ape.routes.subprodutos_routes import subprodutos_bp
@@ -81,6 +82,54 @@ def create_app():
 
         if termos is not True:
             return redirect(url_for("auditoria.aceitar_termos"))
+        
+    @app.before_request
+    def verificar_bloqueio_pagamento():
+        from modules.tenant_db import db_admin_conn
+
+        if not current_user.is_authenticated:
+            return
+
+        if current_user.is_superadmin:
+            return
+
+        if not request.endpoint:
+            return
+
+        if request.endpoint in (
+            'auth.login',
+            'auth.logout',
+            'static',
+            'auditoria.aceitar_termos',
+            'billing.conta_bloqueada',
+            'billing.webhook'
+        ):
+            return
+
+        try:
+            with db_admin_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT bloqueado
+                        FROM empresa_planos
+                        WHERE id_empresa = %s
+                    """, (current_user.id_empresa,))
+
+                    res = cur.fetchone()
+
+            bloqueado = res[0] if res else False
+
+            print(
+                f"BILLING CHECK | "
+                f"EMPRESA: {current_user.id_empresa} | "
+                f"BLOQUEADO: {bloqueado}"
+            )
+
+            if bloqueado:
+                return redirect(url_for("billing.conta_bloqueada"))
+
+        except Exception as e:
+            print(f"Erro billing middleware: {e}")
     
     @app.context_processor
     def inject_plano():
@@ -99,6 +148,7 @@ def create_app():
     app.register_blueprint(financeiro_bp, url_prefix='/financeiro')
     app.register_blueprint(usuarios_bp)
     app.register_blueprint(auditoria_bp)
+    app.register_blueprint(billing_bp)
     app.register_blueprint(equipe_bp)
     app.register_blueprint(insumos_bp)
     app.register_blueprint(produtos_bp, url_prefix='/produtos')

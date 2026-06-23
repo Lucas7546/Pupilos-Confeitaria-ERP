@@ -102,7 +102,10 @@ def toggle_usuario(id_usuario):
 @acesso_requerido("admin")
 def area_admin():
     lista = usuarios.listar_usuarios() or []
-    
+
+    if lista:
+        print(f"DEBUG USUARIOS: {type(lista[0])} -> {lista[0]}")
+
     count_pendentes = 0
     dados_financeiros = [] # Nova lista para as empresas
     
@@ -122,6 +125,8 @@ def area_admin():
                     LEFT JOIN empresa_planos p ON e.id_empresa = p.id_empresa
                 """)
                 dados_financeiros = cur.fetchall()
+                if dados_financeiros:
+                    print(f"DEBUG FINANCEIRO: {dados_financeiros[0]}")
                 
     except Exception as e:
         print(f"Erro no painel admin: {e}")

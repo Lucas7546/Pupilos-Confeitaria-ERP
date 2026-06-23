@@ -4,6 +4,7 @@ from modules.permissoes import acesso_requerido
 from modules.decorators import superadmin_required
 from ape.services.log_service import registrar_log
 from psycopg2.extras import DictCursor
+import traceback
 import json
 import secrets
 from modules.admin_db import admin_conn
@@ -113,7 +114,9 @@ def aceitar_termos():
             return redirect(url_for('main.dashboard'))
 
         except Exception as e:
-            print(f"Erro ao aceitar termos: {e}")
+            erro_detalhado = traceback.format_exc()
+            print(f"Erro ao aceitar termos: {erro_detalhado}")
+            traceback.print_exc()
             flash("Erro ao processar aceite dos termos.", "danger")
 
     return render_template(

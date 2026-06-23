@@ -1,7 +1,10 @@
 import os
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_wtf.csrf import CSRFProtect
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, url_for, request
+from flask_login import current_user
+from psycopg2.extras import DictCursor
+from modules.tenant_db import db_conn
 from ape.extensions import init_extensions
 # Importando seus Blueprints organizados
 from ape.routes.auth_routes import auth_bp
@@ -53,27 +56,20 @@ def create_app():
 
     @app.before_request
     def verificar_termos():
-        from flask import request, redirect, url_for
-        from flask_login import current_user
-        from psycopg2.extras import DictCursor
-        from modules.tenant_db import db_conn
-
-        rotas_liberadas = {
-            'auth.login',
-            'auth.logout',
-            'static',
-            'main.dashboard',
-            'auditoria.aceitar_termos'
-        }
-
         if not current_user.is_authenticated:
             return
 
-        if request.endpoint in rotas_liberadas:
+        if not request.endpoint:
             return
 
+        if request.endpoint in ('auth.login', 'auth.logout', 'static', 'auditoria.aceitar_termos'):
+            return
+
+        print("DEBUG USER:", current_user.id_empresa)
+        print("DEBUG ENDPOINT:", request.endpoint)
+
         with db_conn() as conn:
-            with conn.cursor(cursor_factory=DictCursor) as cur:
+            with conn.cursor() as cur:
                 cur.execute("""
                     SELECT termos_aceitos
                     FROM empresas
@@ -81,7 +77,11 @@ def create_app():
                 """, (current_user.id_empresa,))
                 res = cur.fetchone()
 
-        termos = res["termos_aceitos"] if res else False
+        print("DEBUG DB:", res)
+
+        termos = bool(res[0]) if res else False
+
+        print("DEBUG TERMOS:", termos)
 
         if termos is not True:
             return redirect(url_for("auditoria.aceitar_termos"))

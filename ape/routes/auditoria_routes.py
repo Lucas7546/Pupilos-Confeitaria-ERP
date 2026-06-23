@@ -110,7 +110,7 @@ def aceitar_termos():
             flash("Termos aceitos com sucesso.", "success")
 
             # 🔥 IMPORTANTE: manda direto pro dashboard (NÃO pro index)
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('main.dashboard'))
 
         except Exception as e:
             print(f"Erro ao aceitar termos: {e}")

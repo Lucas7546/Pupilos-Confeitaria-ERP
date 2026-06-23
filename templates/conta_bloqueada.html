@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5 text-center">
+    <div class="row justify-content-center">
+        <div class="col-md-6 bg-dark-card p-5 rounded border border-danger">
+            <i class="bi bi-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
+            <h1 class="text-white mt-3">Acesso Bloqueado</h1>
+            <p class="text-white-50 fs-5 mt-3">
+                Identificamos uma pendência financeira em sua assinatura. 
+                Para continuar aproveitando nossas ferramentas de gestão e IA, regularize seu pagamento.
+            </p>
+            <div class="mt-4">
+                <a href="{{ url_for('billing.gerar_pix_atraso') }}" class="btn btn-warning btn-lg w-100 fw-bold">
+                    Gerar PIX para Pagamento
+                </a>
+            </div>
+            </div>
+            <p class="text-white-50 mt-4 small">
+                Dúvidas? Entre em contato com nosso suporte.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

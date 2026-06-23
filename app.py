@@ -59,14 +59,11 @@ def create_app():
         if not current_user.is_authenticated:
             return
 
-        if not request.endpoint:
-            return
-
         if request.endpoint in ('auth.login', 'auth.logout', 'static', 'auditoria.aceitar_termos'):
             return
 
-        print("DEBUG USER:", current_user.id_empresa)
-        print("DEBUG ENDPOINT:", request.endpoint)
+        print("ENDPOINT:", request.endpoint)
+        print("ID EMPRESA:", current_user.id_empresa)
 
         with db_conn() as conn:
             with conn.cursor() as cur:
@@ -77,11 +74,10 @@ def create_app():
                 """, (current_user.id_empresa,))
                 res = cur.fetchone()
 
-        print("DEBUG DB:", res)
+        print("RESULT SQL:", res)
 
-        termos = bool(res[0]) if res else False
-
-        print("DEBUG TERMOS:", termos)
+        termos = res[0] if res else False
+        print("TERMOS:", termos)
 
         if termos is not True:
             return redirect(url_for("auditoria.aceitar_termos"))

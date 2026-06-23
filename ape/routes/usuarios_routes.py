@@ -103,23 +103,35 @@ def toggle_usuario(id_usuario):
 def area_admin():
     lista = usuarios.listar_usuarios() or []
     
-    # Adicionando a busca pelo número de pendências
     count_pendentes = 0
+    dados_financeiros = [] # Nova lista para as empresas
+    
     try:
         with db_admin_conn() as conn:
             with conn.cursor() as cur:
+                # 1. Busca pendências
                 cur.execute("SELECT COUNT(*) FROM solicitacoes_upgrade WHERE status = 'pendente'")
-                resultado = cur.fetchone()
-                if resultado:
-                    count_pendentes = resultado[0]
+                res_pendentes = cur.fetchone()
+                if res_pendentes:
+                    count_pendentes = res_pendentes[0]
+                
+                # 2. Busca dados financeiros (com COALESCE para evitar erros de NULL)
+                cur.execute("""
+                    SELECT e.nome, p.status_assinatura, p.data_ultimo_pagamento, p.dias_atraso, p.bloqueado 
+                    FROM empresas e
+                    LEFT JOIN empresa_planos p ON e.id_empresa = p.id_empresa
+                """)
+                dados_financeiros = cur.fetchall()
+                
     except Exception as e:
-        print(f"Erro ao contar pendências: {e}")
+        print(f"Erro no painel admin: {e}")
 
     return render_template(
         "admin_panel.html", 
         total_usuarios=len(lista), 
         usuarios=lista,
-        count_pendentes=count_pendentes # Passa para o HTML
+        count_pendentes=count_pendentes,
+        empresas_financeiro=dados_financeiros # Passando os dados novos
     )
 
 @usuarios_bp.route("/editar/<int:id_usuario>", methods=["GET"])

@@ -36,7 +36,7 @@ HTML
                     <p class="text-white-50 small mb-1">Último Pagamento: {{ pagamento.data_ultimo_pagamento.strftime('%d/%m/%Y') if pagamento.data_ultimo_pagamento else 'Nenhum' }}</p>
                     
                     <div class="d-grid gap-2 mt-3">
-                        <a href="{{ url_for('billing_bp.gerar_pix_atual') }}" class="btn btn-outline-light btn-sm fw-bold">
+                        <a href="{{ url_for('billing.gerar_pix_atual') }}" class="btn btn-outline-light btn-sm fw-bold">
                             <i class="bi bi-qr-code me-1"></i> Gerar Pix do Mês
                         </a>
                     </div>

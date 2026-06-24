@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5 text-center">
+    <h2 class="text-white">Pagamento via Pix</h2>
+    <div class="card bg-dark-card p-4 mx-auto" style="max-width: 400px;">
+        <p class="text-white">Valor: R$ {{ valor }}</p>
+        <img src="data:image/png;base64,{{ qr_code_base64 }}" alt="QR Code Pix" class="img-fluid mb-3">
+        <div class="alert alert-info small">{{ pix_code }}</div>
+        <button class="btn btn-warning" onclick="navigator.clipboard.writeText('{{ pix_code }}')">
+            Copiar Código Pix
+        </button>
+    </div>
+</div>
+{% endblock %}

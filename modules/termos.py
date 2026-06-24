@@ -5,7 +5,7 @@ TEXTO_TERMOS = """
 TERMOS DE USO E POLÍTICA DE PRIVACIDADE - LUMENARCH
 
 Versão: 2.0  
-Última atualização: 22/06/2026  
+Última atualização: 24/06/2026  
 
 ---
 

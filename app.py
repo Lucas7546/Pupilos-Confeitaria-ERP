@@ -61,34 +61,44 @@ def create_app():
 
     @app.before_request
     def verificar_termos():
+        from flask import request, redirect, url_for
+        from flask_login import current_user
+        from modules.tenant_db import db_conn
+        from modules.termos import TERMOS_VERSAO 
+
         if not current_user.is_authenticated:
             return
 
-        if request.endpoint in ('auth.login', 'auth.logout', 'static', 'auditoria.aceitar_termos'):
+        if request.endpoint in (
+            'auth.login',
+            'auth.logout',
+            'static',
+            'auditoria.aceitar_termos'
+        ):
             return
-
-        print("ENDPOINT:", request.endpoint)
-        print("ID EMPRESA:", current_user.id_empresa)
 
         with db_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    SELECT termos_aceitos
+                    SELECT termos_aceitos, versao_termos
                     FROM empresas
                     WHERE id_empresa = %s
                 """, (current_user.id_empresa,))
                 res = cur.fetchone()
 
-        print("RESULT SQL:", res)
+        termos_ok = (
+            res is not None and
+            res[0] is True and
+            res[1] == TERMOS_VERSAO
+        )
 
-        termos = res[0] if res else False
-        print("TERMOS:", termos)
-
-        if termos is not True:
+        if not termos_ok:
             return redirect(url_for("auditoria.aceitar_termos"))
-        
+            
     @app.before_request
     def verificar_bloqueio_pagamento():
+        from flask import request, redirect, url_for
+        from flask_login import current_user
         from modules.tenant_db import db_admin_conn
 
         if not current_user.is_authenticated:
@@ -118,16 +128,9 @@ def create_app():
                         FROM empresa_planos
                         WHERE id_empresa = %s
                     """, (current_user.id_empresa,))
-
                     res = cur.fetchone()
 
             bloqueado = res[0] if res else False
-
-            print(
-                f"BILLING CHECK | "
-                f"EMPRESA: {current_user.id_empresa} | "
-                f"BLOQUEADO: {bloqueado}"
-            )
 
             if bloqueado:
                 return redirect(url_for("billing.conta_bloqueada"))

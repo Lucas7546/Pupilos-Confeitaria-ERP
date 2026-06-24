@@ -1,234 +1,212 @@
-TERMOS_VERSAO = "1.0"
-TERMOS_ATUALIZADO_EM = "22/06/2026"
+TERMOS_VERSAO = "2.0"
+TERMOS_ATUALIZADO_EM = "24/06/2026"
 
 TEXTO_TERMOS = """
 TERMOS DE USO E POLÍTICA DE PRIVACIDADE - LUMENARCH
 
-Versão: 1.0
-Última atualização: 22/06/2026
+Versão: 2.0
+Última atualização: 24/06/2026
+
 
 DISPOSIÇÕES GERAIS
 
-1.1. Ao acessar ou utilizar o sistema Lumenarch (“Plataforma”), o usuário declara que leu, compreendeu e concorda integralmente com os presentes Termos de Uso e Política de Privacidade.
+1.1. Ao acessar ou utilizar o sistema Lumenarch (“Plataforma”), o usuário declara que leu, compreendeu e concorda integralmente com estes Termos de Uso e Política de Privacidade.
 
-OBJETO
+1.2. Estes Termos representam um acordo legal entre o usuário e o Lumenarch.
 
-2.1. O Lumenarch é uma plataforma digital de gestão empresarial, incluindo, mas não se limitando a:
+
+OBJETO DA PLATAFORMA
+
+2.1. O Lumenarch é uma plataforma SaaS de gestão empresarial que pode incluir:
 
 Gestão de estoque e inventário;
 Controle financeiro;
 Gestão de vendas;
-Integração com plataformas terceiras;
-Automação operacional;
-Processamento inteligente de dados por meio de algoritmos e inteligência artificial.
+Integrações com sistemas terceiros;
+Automação de processos operacionais;
+Processamento de dados com suporte de inteligência artificial.
 
-2.2. O sistema é disponibilizado na modalidade SaaS (Software as a Service), mediante licença limitada, não exclusiva, revogável e intransferível de uso.
+2.2. A plataforma é fornecida mediante licença de uso limitada, não exclusiva, intransferível e revogável.
+
+2.3. O sistema é um serviço tecnológico em constante evolução, podendo sofrer atualizações, melhorias, alterações ou remoção de funcionalidades a qualquer momento.
+
 
 ACEITAÇÃO DOS TERMOS
 
-3.1. Ao utilizar o Lumenarch, o usuário concorda com todas as disposições deste documento.
+3.1. O uso da plataforma implica aceitação total destes Termos.
 
-3.2. Caso não concorde com qualquer cláusula, deverá interromper imediatamente o uso da plataforma.
+3.2. Caso o usuário não concorde com qualquer parte deste documento, deverá interromper imediatamente o uso da plataforma.
+
 
 CADASTRO E RESPONSABILIDADE DA CONTA
 
 4.1. O usuário é responsável por:
 
 Fornecer informações verdadeiras e atualizadas;
-Manter a confidencialidade de login e senha;
-Restringir acessos não autorizados;
-Responder por toda atividade realizada em sua conta.
+Manter sigilo de login e senha;
+Garantir segurança do acesso à conta;
+Toda e qualquer atividade realizada em sua conta.
 
-4.2. Qualquer atividade realizada por meio da conta será presumida como de responsabilidade do titular.
+4.2. Todas as ações realizadas na conta são presumidas como feitas pelo titular.
+
 
 RESPONSABILIDADES DO USUÁRIO
 
 5.1. O usuário é exclusivamente responsável por:
 
 Cadastro de produtos;
-Estoque;
+Gestão de estoque;
 Precificação;
-Receitas;
-Dados financeiros;
-Informações fiscais;
-Informações de clientes e fornecedores.
+Informações financeiras e fiscais;
+Dados de clientes e fornecedores.
 
 5.2. O Lumenarch atua exclusivamente como ferramenta de apoio operacional e gerencial.
 
-5.3. Não garantimos resultados financeiros, operacionais, comerciais ou estratégicos.
+5.3. Não garantimos resultados financeiros, comerciais ou operacionais.
 
-5.4. Toda decisão empresarial permanece sob responsabilidade integral do usuário.
+5.4. Todas as decisões tomadas com base no uso da plataforma são de responsabilidade exclusiva do usuário.
 
-FUNCIONALIDADES DE IA, PREVISÃO E PRECIFICAÇÃO
 
-6.1. As funcionalidades de:
+FUNCIONALIDADES DE INTELIGÊNCIA ARTIFICIAL
+
+6.1. A plataforma pode oferecer funcionalidades baseadas em IA, como:
 
 Previsão de demanda;
-Sugestão de compra;
-Precificação;
-Projeções analíticas;
-Automação inteligente;
+Sugestão de compras;
+Análises e projeções;
+Automação inteligente de processos.
 
-são baseadas em modelos estatísticos, algoritmos e dados fornecidos pelo próprio usuário.
+6.2. Essas funcionalidades possuem caráter exclusivamente consultivo.
 
-6.2. Tais funcionalidades possuem caráter exclusivamente consultivo.
+6.3. Os resultados são gerados com base em dados fornecidos pelo próprio usuário e modelos estatísticos.
 
-6.3. O Lumenarch não garante assertividade total dos resultados e não se responsabiliza por decisões tomadas com base nessas informações.
+6.4. O Lumenarch não garante precisão, exatidão ou resultados das recomendações geradas pela IA.
 
-USO DE FUNCIONALIDADES BASEADAS EM INTELIGÊNCIA ARTIFICIAL
+6.5. O usuário é o único responsável por decisões tomadas com base nessas funcionalidades.
 
-7.1. Determinadas funcionalidades da plataforma poderão utilizar recursos de inteligência artificial, processamento automatizado e modelos preditivos.
 
-7.2. Tais funcionalidades poderão estar sujeitas a:
+LIMITES DE USO E RECURSOS
 
-Limites de uso;
-Limites de requisições;
-Consumo mensal;
-Cobrança adicional conforme utilização.
+7.1. A plataforma pode possuir limites técnicos de uso, como:
 
-7.3. Os limites, condições de uso e eventuais cobranças serão informados previamente ao usuário.
+Quantidade de requisições;
+Uso de processamento;
+Consumo mensal de recursos.
 
-7.4. O Lumenarch reserva-se o direito de alterar limites, disponibilidade ou regras de utilização dessas funcionalidades mediante atualização destes Termos ou comunicação na plataforma.
+7.2. Esses limites podem ser alterados a qualquer momento para manter o funcionamento da plataforma.
+
 
 INTEGRAÇÕES COM TERCEIROS
 
-8.1. A plataforma poderá se integrar com serviços de terceiros, incluindo marketplaces, ERPs, sistemas fiscais e plataformas de delivery, como iFood.
+8.1. A plataforma pode se integrar a serviços de terceiros.
 
-8.2. O Lumenarch não possui controle sobre:
+8.2. O Lumenarch não se responsabiliza por falhas, indisponibilidade ou alterações em APIs externas ou serviços de terceiros.
 
-APIs externas;
-Mudanças de integração;
-Instabilidades;
-Suspensões;
-Bloqueios de terceiros.
-
-8.3. Eventuais falhas decorrentes de sistemas externos não geram responsabilidade ao Lumenarch.
 
 DISPONIBILIDADE DO SISTEMA
 
-9.1. Empregamos esforços razoáveis para manter a plataforma disponível de forma contínua.
+9.1. Trabalhamos para manter a plataforma disponível, mas não garantimos funcionamento contínuo ou livre de falhas.
 
-9.2. Entretanto, poderão ocorrer interrupções decorrentes de:
+9.2. A plataforma pode ficar indisponível por motivos como:
 
 Manutenção;
 Atualizações;
 Falhas técnicas;
-Ataques cibernéticos;
+Ataques externos;
 Eventos de força maior.
 
-9.3. Não garantimos disponibilidade ininterrupta ou livre de falhas.
 
-SEGURANÇA E BACKUP
+SEGURANÇA E RISCOS
 
-10.1. Adotamos medidas técnicas e administrativas adequadas para proteção dos dados armazenados.
+10.1. Adotamos medidas de segurança adequadas para proteção dos dados.
 
-10.2. Apesar disso, nenhum sistema é totalmente imune a:
+10.2. O usuário reconhece que nenhum sistema digital é totalmente seguro contra falhas, ataques ou perda de dados.
 
-Falhas técnicas;
-Invasões;
-Ataques cibernéticos;
-Perdas de conectividade.
 
-10.3. O usuário reconhece tais riscos inerentes ao ambiente digital.
+PRIVACIDADE E DADOS (LGPD)
 
-PRIVACIDADE E PROTEÇÃO DE DADOS
+11.1. O tratamento de dados segue a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).
 
-11.1. O tratamento de dados é realizado em conformidade com a Lei nº 13.709/2018 (LGPD).
+11.2. Coletamos apenas dados necessários para funcionamento da plataforma.
 
-11.2. Coletamos apenas os dados necessários para:
+11.3. Não vendemos dados pessoais.
 
-Funcionamento da plataforma;
-Execução das integrações;
-Suporte técnico;
-Melhorias do sistema.
+11.4. Dados podem ser compartilhados apenas quando necessário para:
 
-11.3. Não comercializamos dados pessoais.
+Execução do serviço;
+Obrigações legais;
+Integrações contratadas pelo usuário.
 
-11.4. Os dados poderão ser compartilhados apenas quando necessário para:
 
-Execução contratual;
-Cumprimento legal;
-Obrigações regulatórias.
 PROPRIEDADE INTELECTUAL
 
-12.1. Todos os direitos relacionados ao Lumenarch, incluindo:
+12.1. Todo conteúdo da plataforma pertence exclusivamente ao Lumenarch, incluindo código, design, marca e estrutura.
 
-Código-fonte;
-Layout;
-Marca;
-Design;
-Algoritmos;
-Estrutura de banco de dados;
-Documentação;
+12.2. É proibido copiar, modificar, distribuir, reproduzir ou fazer engenharia reversa da plataforma.
 
-são de propriedade exclusiva do Lumenarch.
 
-12.2. É proibido:
-
-Copiar;
-Modificar;
-Distribuir;
-Reproduzir;
-Comercializar;
-Realizar engenharia reversa da plataforma.
 LIMITAÇÃO DE RESPONSABILIDADE
 
-13.1. Em nenhuma hipótese o Lumenarch será responsável por:
+13.1. O Lumenarch não se responsabiliza por:
 
+Perdas financeiras;
 Lucros cessantes;
-Perda de receita;
 Perda de dados;
-Danos indiretos;
-Danos incidentais;
-Danos emergentes.
+Danos indiretos ou incidentais;
+Decisões tomadas pelo usuário.
 
-13.2. A responsabilidade da plataforma, quando legalmente aplicável, ficará limitada ao valor total efetivamente pago pelo usuário nos últimos 12 meses ou nos últimos 3 meses de contratação, prevalecendo o maior valor.
+13.2. Quando aplicável, a responsabilidade total do Lumenarch será limitada ao valor pago pelo usuário nos últimos 3 a 12 meses, prevalecendo o maior período permitido.
 
-PLANOS, PAGAMENTOS E CANCELAMENTO
+13.3. O usuário utiliza a plataforma por sua própria conta e risco.
 
-14.1. Caso a plataforma opere em modelo pago:
 
-Os valores serão informados previamente;
-O pagamento será recorrente conforme o plano contratado;
-O cancelamento poderá ser solicitado a qualquer momento.
+PLANOS, PAGAMENTOS E SUSPENSÃO
 
-14.2. A inadimplência poderá resultar em suspensão ou encerramento da conta.
+14.1. A plataforma pode operar em modelo pago com cobrança recorrente.
 
-USO ABUSIVO OU EXCESSIVO
+14.2. Em caso de inadimplência, o acesso poderá ser suspenso ou bloqueado automaticamente.
 
-15.1. O Lumenarch poderá limitar, suspender temporariamente ou bloquear funcionalidades em caso de uso excessivo, abusivo ou que comprometa a estabilidade, segurança ou custos operacionais da plataforma.
+14.3. O cancelamento pode ser solicitado a qualquer momento pelo usuário.
 
-15.2. Incluem-se, sem limitação:
 
+USO ABUSIVO
+
+15.1. É proibido o uso da plataforma de forma abusiva ou que prejudique seu funcionamento.
+
+15.2. Inclui:
+
+Sobrecarga de sistema;
 Uso automatizado indevido;
-Consumo excessivo de recursos computacionais;
-Tentativas de exploração de falhas;
-Sobrecarga intencional do sistema.
-SUSPENSÃO E RESCISÃO
+Tentativas de exploração;
+Atividades maliciosas.
 
-16.1. O Lumenarch poderá suspender ou encerrar contas em caso de:
+
+SUSPENSÃO E ENCERRAMENTO
+
+16.1. O Lumenarch pode suspender ou encerrar contas em caso de:
 
 Violação destes Termos;
-Fraudes;
+Fraude;
 Uso indevido;
-Atividades suspeitas;
-Descumprimento legal.
+Risco ao sistema ou terceiros;
+Obrigação legal.
 
-16.2. Medidas judiciais e extrajudiciais poderão ser adotadas, quando cabíveis.
+16.2. Medidas administrativas e legais podem ser tomadas quando necessário.
+
 
 ALTERAÇÕES DOS TERMOS
 
-17.1. Reservamo-nos o direito de alterar estes Termos a qualquer momento.
+17.1. Estes Termos podem ser alterados a qualquer momento.
 
-17.2. As alterações entrarão em vigor após sua publicação na plataforma.
+17.2. O uso contínuo após alterações implica aceitação automática da nova versão.
 
-17.3. O uso continuado após alterações implica aceitação automática dos novos Termos.
 
 FORO
 
-18.1. Fica eleito o foro da Comarca de São Paulo/SP para dirimir quaisquer controvérsias oriundas destes Termos, com renúncia a qualquer outro, por mais privilegiado que seja.
+18.1. Fica eleito o foro da Comarca de São Paulo/SP para resolver quaisquer conflitos.
+
 
 ACEITE FINAL
 
-19.1. Ao clicar em “Aceitar”, o usuário declara ciência e concordância integral com estes Termos.
+19.1. Ao clicar em “Aceitar”, o usuário confirma que leu e concorda integralmente com estes Termos.
 """

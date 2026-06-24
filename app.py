@@ -52,7 +52,11 @@ def create_app():
         if request.path.startswith("/static/"):
             return
 
-        g.id_empresa = current_user.id_empresa if current_user.is_authenticated else None
+        # não quebra se user ainda não estiver pronto
+        if current_user.is_authenticated:
+            g.id_empresa = getattr(current_user, "id_empresa", None)
+        else:
+            g.id_empresa = None
 
 
     @app.before_request

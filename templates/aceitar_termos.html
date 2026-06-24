@@ -71,37 +71,43 @@
 
 <script>
 (function () {
-    const box = document.getElementById("aceite");
+    const checkbox = document.getElementById("aceite");
     const btn = document.getElementById("btnAceitar");
     const scrollBox = document.getElementById("scrollBox");
     const form = document.getElementById("formAceite");
 
-    if (!box || !btn || !scrollBox || !form) return;
+    if (!checkbox || !btn || !scrollBox || !form) return;
 
-    let liberado = false;
+    let liberadoScroll = false;
 
     function checarScroll() {
         const chegouFim =
             scrollBox.scrollTop + scrollBox.clientHeight >= scrollBox.scrollHeight - 10;
 
-        if (chegouFim) {
-            liberado = true;
-            box.disabled = false;
+        if (chegouFim && !liberadoScroll) {
+            liberadoScroll = true;
+            checkbox.disabled = false;
         }
     }
 
+    function atualizarBotao() {
+        btn.disabled = !(liberadoScroll && checkbox.checked);
+    }
+
     function init() {
+        checkbox.disabled = true;
         btn.disabled = true;
-        checarScroll();
+
         scrollBox.addEventListener("scroll", checarScroll);
-        window.addEventListener("resize", checarScroll);
-        box.addEventListener("change", function () {
-            btn.disabled = !this.checked;
-        });
+
+        checkbox.addEventListener("change", atualizarBotao);
+
         form.addEventListener("submit", function () {
             btn.disabled = true;
             btn.innerText = "Processando...";
         });
+
+        checarScroll();
     }
 
     window.addEventListener("load", init);

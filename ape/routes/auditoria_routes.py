@@ -82,41 +82,70 @@ def _listar_logs(
 @auditoria_bp.route('/aceitar-termos', methods=['GET', 'POST'])
 @login_required
 def aceitar_termos():
+    from datetime import datetime, timezone
+    from flask import request, session, redirect, url_for, flash, render_template
+    import traceback
+
     if request.method == 'POST':
         try:
             data_aceite = datetime.now(timezone.utc)
-            ip_usuario = request.remote_addr
+            ip_usuario = request.headers.get("X-Forwarded-For", request.remote_addr)
+            user_agent = request.headers.get("User-Agent", "unknown")
 
             with db_conn() as conn:
                 with conn.cursor() as cur:
+
+                    # 🔥 verifica se já está na versão atual
+                    cur.execute("""
+                        SELECT termos_aceitos, versao_termos
+                        FROM empresas
+                        WHERE id_empresa = %s
+                    """, (current_user.id_empresa,))
+
+                    res = cur.fetchone()
+
+                    ja_aceitou = False
+                    versao_ok = False
+
+                    if res:
+                        ja_aceitou = res[0] is True
+                        versao_ok = res[1] == TERMOS_VERSAO
+
+                    # 🔥 se já aceitou versão atual, não precisa atualizar
+                    if ja_aceitou and versao_ok:
+                        flash("Termos já estão atualizados.", "info")
+                        return redirect(url_for('main.dashboard'))
+
+                    # 🔥 atualiza aceite
                     cur.execute("""
                         UPDATE empresas 
-                        SET termos_aceitos = TRUE, 
-                            data_aceite_termos = %s, 
-                            versao_termos = %s 
+                        SET termos_aceitos = TRUE,
+                            data_aceite_termos = %s,
+                            versao_termos = %s
                         WHERE id_empresa = %s
-                    """, (data_aceite, TERMOS_VERSAO, current_user.id_empresa))
+                    """, (
+                        data_aceite,
+                        TERMOS_VERSAO,
+                        current_user.id_empresa
+                    ))
+
                     conn.commit()
 
-            # 🔥 IMPORTANTE: força flush de sessão
+            # limpa cache de sessão se existir
             session.pop("plano", None)
-            session.modified = True
 
             registrar_log(
                 current_user.id_empresa,
                 "TERMOS_ACEITE",
-                f"Aceite realizado | Versão: {TERMOS_VERSAO} | IP: {ip_usuario}"
+                f"Versão: {TERMOS_VERSAO} | IP: {ip_usuario} | UA: {user_agent}"
             )
 
             flash("Termos aceitos com sucesso.", "success")
-
-            # 🔥 IMPORTANTE: manda direto pro dashboard (NÃO pro index)
             return redirect(url_for('main.dashboard'))
 
-        except Exception as e:
-            erro_detalhado = traceback.format_exc()
-            print(f"Erro ao aceitar termos: {erro_detalhado}")
-            traceback.print_exc()
+        except Exception:
+            erro = traceback.format_exc()
+            print(f"Erro ao aceitar termos:\n{erro}")
             flash("Erro ao processar aceite dos termos.", "danger")
 
     return render_template(

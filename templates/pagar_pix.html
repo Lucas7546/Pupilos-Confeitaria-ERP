@@ -1,14 +1,57 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="container py-5 text-center">
-    <h2 class="text-white">Pagamento via Pix</h2>
-    <div class="card bg-dark-card p-4 mx-auto" style="max-width: 400px;">
-        <p class="text-white">Valor: R$ {{ valor }}</p>
-        <img src="data:image/png;base64,{{ qr_code_base64 }}" alt="QR Code Pix" class="img-fluid mb-3">
-        <div class="alert alert-info small">{{ pix_code }}</div>
-        <button class="btn btn-warning" onclick="navigator.clipboard.writeText('{{ pix_code }}')">
-            Copiar Código Pix
-        </button>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-6 col-lg-4 text-center">
+            
+            <h2 class="text-white mb-4">Pagamento via Pix</h2>
+            
+            <div class="card bg-dark-card shadow-lg border-0 p-4" style="border-radius: 15px;">
+                <h5 class="text-white mb-3">Valor a pagar:</h5>
+                <h2 class="text-warning fw-bold mb-4">R$ {{ "%.2f"|format(valor) }}</h2>
+
+                <img src="data:image/png;base64,{{ qr_code_base64 }}" 
+                     alt="QR Code Pix" 
+                     class="img-fluid mb-3 bg-white p-2" 
+                     style="border-radius: 10px;">
+
+                <div class="alert alert-warning small mb-3 text-start">
+                    <i class="bi bi-shield-check"></i> 
+                    Ao abrir o app do seu banco, o recebedor será confirmado como <strong>Lumenarch</strong> (ou nome de sua empresa).
+                </div>
+
+                <div class="alert alert-secondary small mb-3 text-break" 
+                     style="font-family: monospace; font-size: 0.8rem; height: 80px; overflow-y: auto;">
+                    {{ pix_code }}
+                </div>
+
+                <button id="btnCopiar" class="btn btn-warning w-100 fw-bold" onclick="copiarCodigo()">
+                    <i class="bi bi-clipboard"></i> Copiar Código Pix
+                </button>
+            </div>
+            
+            <p class="text-muted mt-3 small">
+                O pagamento é processado instantaneamente.
+            </p>
+        </div>
     </div>
 </div>
-{% endblock %}
+
+<script>
+function copiarCodigo() {
+    const pixCode = `{{ pix_code }}`;
+    const btn = document.getElementById("btnCopiar");
+    
+    navigator.clipboard.writeText(pixCode).then(() => {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check-lg"></i> Código Copiado!';
+        btn.classList.replace('btn-warning', 'btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.replace('btn-success', 'btn-warning');
+        }, 3000);
+    });
+}
+</script>

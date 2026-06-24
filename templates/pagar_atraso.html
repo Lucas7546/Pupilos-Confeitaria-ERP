@@ -4,11 +4,11 @@
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-6 col-lg-5">
-            <div class="card bg-dark-card border border-warning shadow-lg">
+            <div class="card bg-dark-card border border-warning shadow-lg" style="border-radius: 15px;">
                 <div class="card-body p-4 text-center">
                     
                     <h2 class="text-white mb-3">Regularizar Pagamento</h2>
-                    <p class="text-white-50">Sua assinatura está pendente. Efetue o pagamento abaixo para liberar seu acesso imediatamente.</p>
+                    <p class="text-white-50">Sua assinatura está pendente. Efetue o pagamento para liberar seu acesso imediatamente.</p>
                     
                     <div class="alert alert-warning py-2 mb-4">
                         <h4 class="mb-0">Valor: R$ {{ "%.2f"|format(valor) }}</h4>
@@ -20,12 +20,16 @@
 
                     <div class="form-group mb-4">
                         <label class="text-white-50 small mb-1">Código PIX (Copia e Cola):</label>
-                        <div class="input-group">
-                            <textarea class="form-control bg-dark text-warning border-secondary" rows="2" readonly id="pixCode">{{ pix_code }}</textarea>
-                        </div>
-                        <button onclick="copiarPix()" class="btn btn-warning w-100 mt-2 fw-bold">
+                        <textarea class="form-control bg-dark text-warning border-secondary text-monospace" 
+                                  rows="2" readonly id="pixCode" style="font-size: 0.85rem;">{{ pix_code }}</textarea>
+                        
+                        <button onclick="copiarPix(this)" class="btn btn-warning w-100 mt-2 fw-bold">
                             <i class="bi bi-clipboard"></i> Copiar Código PIX
                         </button>
+                    </div>
+
+                    <div class="alert alert-info small text-start mb-4">
+                        <i class="bi bi-shield-check"></i> <strong>Confirmação:</strong> Ao abrir seu banco, o beneficiário será confirmado como <strong>Lumenarch</strong>.
                     </div>
 
                     <div class="d-grid gap-2">
@@ -38,7 +42,7 @@
                     </div>
                     
                     <p class="text-white-50 small mt-4">
-                        <i class="bi bi-info-circle"></i> Após o pagamento, o sistema libera seu acesso automaticamente em até 1 minuto.
+                        <i class="bi bi-info-circle"></i> Liberado automaticamente em até 1 minuto após o pagamento.
                     </p>
                 </div>
             </div>
@@ -47,21 +51,21 @@
 </div>
 
 <script>
-function copiarPix() {
-    var copyText = document.getElementById("pixCode");
-    copyText.select();
-    copyText.setSelectionRange(0, 99999);
-    document.execCommand("copy");
+function copiarPix(btn) {
+    const pixCode = document.getElementById("pixCode").value;
     
-    // Feedback visual
-    const btn = event.target;
-    btn.innerHTML = '<i class="bi bi-check-circle"></i> Copiado!';
-    btn.classList.replace('btn-warning', 'btn-success');
-    
-    setTimeout(() => {
-        btn.innerHTML = '<i class="bi bi-clipboard"></i> Copiar Código PIX';
-        btn.classList.replace('btn-success', 'btn-warning');
-    }, 2000);
+    navigator.clipboard.writeText(pixCode).then(() => {
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check-circle"></i> Código Copiado!';
+        btn.classList.replace('btn-warning', 'btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.replace('btn-success', 'btn-warning');
+        }, 2500);
+    }).catch(err => {
+        console.error('Erro ao copiar: ', err);
+    });
 }
 </script>
 {% endblock %}

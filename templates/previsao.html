@@ -1,362 +1,64 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container-fluid py-4 px-md-5 animate-in">
+<div class="container py-5 animate-in">
 
-    <!-- HEADER -->
-    <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-3">
-
-        <div>
-            <h1 class="fw-extrabold text-white mb-1"
-                style="font-size: 2.5rem; letter-spacing: -1.5px;">
-
-                🔮 Previsão de
-                <span class="text-info">Demanda</span>
-
-            </h1>
-
-            <p class="text-white-50 fs-5 mb-0">
-                Inteligência baseada em consumo médio, tendência e ruptura.
-            </p>
-        </div>
-
-        <div class="d-flex gap-2 flex-wrap">
-
-            <a href="{{ url_for('export.exportar_previsao_csv') }}"
-               class="btn btn-success fw-bold rounded-3 px-4 py-2 shadow-sm">
-
-                <i class="bi bi-filetype-csv me-2"></i>
-                CSV
-            </a>
-
-            <a href="{{ url_for('export.exportar_previsao_excel') }}"
-               class="btn btn-primary fw-bold rounded-3 px-4 py-2 shadow-sm">
-
-                <i class="bi bi-file-earmark-excel me-2"></i>
-                Excel
-            </a>
-
-            <a href="{{ url_for('export.exportar_previsao_pdf') }}"
-               class="btn btn-danger fw-bold rounded-3 px-4 py-2 shadow-sm">
-
-                <i class="bi bi-file-earmark-pdf me-2"></i>
-                PDF
-            </a>
-
-            <div class="p-3 rounded-4 bg-dark-card border border-info border-opacity-25">
-
-                <small class="text-white-50 d-block mb-1">
-                    IA DE PREVISÃO DA
-                </small>
-
-                <span class="text-info fw-bold fs-6">
-                    Lumenarch Solutions
-                </span>
-
-            </div>
-
-        </div>
-
+    <div class="text-center mb-5">
+        <h1 class="fw-extrabold text-white mb-2" style="font-size: 2.8rem; letter-spacing: -1.5px;">
+            Bem-vindo ao <span class="text-warning">Lumenarch</span>
+        </h1>
+        <p class="text-white-50 fs-5">Seu painel de controle operacional está pronto. Por onde deseja começar?</p>
     </div>
 
-    <!-- KPI -->
-    <div class="row g-4 mb-5">
+    <div class="row g-4 justify-content-center">
 
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-dark-card border-0 shadow-lg rounded-4 h-100">
-                <div class="card-body">
-                    <small class="text-white-50 text-uppercase">Total de Insumos</small>
-                    <h2 class="fw-bold text-info mt-2">{{ previsoes|length }}</h2>
-                </div>
+        <div class="col-md-4">
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100 text-center hover-card">
+                <i class="bi bi-plus-circle-fill text-primary fs-1 mb-3"></i>
+                <h4 class="text-white">Cadastro</h4>
+                <p class="text-white-50 small">Adicione novos insumos, produtos e gerencie seu estoque base.</p>
+                <a href="{{ url_for('produtos.cadastro') }}" class="btn btn-outline-primary mt-auto">Acessar</a>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-dark-card border-0 shadow-lg rounded-4 h-100">
-                <div class="card-body">
-                    <small class="text-white-50 text-uppercase">Risco Crítico</small>
-                    <h2 class="fw-bold text-danger mt-2">
-                        {{ previsoes | selectattr("dias_restantes", "lt", 2) | list | length }}
-                    </h2>
-                </div>
+        <div class="col-md-4">
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100 text-center hover-card">
+                <i class="bi bi-calculator-fill text-warning fs-1 mb-3"></i>
+                <h4 class="text-white">Precificação</h4>
+                <p class="text-white-50 small">Analise margens, custos e ajuste preços para máxima rentabilidade.</p>
+                <a href="{{ url_for('produtos.precificacao') }}" class="btn btn-outline-warning mt-auto">Acessar</a>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-dark-card border-0 shadow-lg rounded-4 h-100">
-                <div class="card-body">
-                    <small class="text-white-50 text-uppercase">Atenção</small>
-                    <h2 class="fw-bold text-warning mt-2">
-                        {{ previsoes | selectattr("dias_restantes", "lt", 5) | list | length }}
-                    </h2>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-dark-card border-0 shadow-lg rounded-4 h-100">
-                <div class="card-body">
-                    <small class="text-white-50 text-uppercase">Estoque Seguro</small>
-                    <h2 class="fw-bold text-success mt-2">
-                        {{ previsoes | selectattr("dias_restantes", "ge", 5) | list | length }}
-                    </h2>
-                </div>
+        <div class="col-md-4">
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100 text-center hover-card">
+                <i class="bi bi-cart-check-fill text-success fs-1 mb-3"></i>
+                <h4 class="text-white">Vendas</h4>
+                <p class="text-white-50 small">Registre transações e acompanhe o fluxo de saída do seu negócio.</p>
+                <a href="{{ url_for('vendas.vendas') }}" class="btn btn-outline-success mt-auto">Acessar</a>
             </div>
         </div>
 
     </div>
 
-    <!-- GRID -->
-    <div class="row g-4">
-
-        {% for item in previsoes %}
-
-        {# ===== LÓGICA CORRETA (ANTES DO HTML) ===== #}
-        {% set cor_risco =
-            '#ef4444' if item.dias_restantes < 2 else
-            '#f59e0b' if item.dias_restantes < 5 else
-            '#10b981'
-        %}
-
-        {% set bar_class =
-            'bg-danger' if item.dias_restantes < 2 else
-            'bg-warning' if item.dias_restantes < 5 else
-            'bg-success'
-        %}
-
-        {% set progresso = (item.dias_restantes / 15) * 100 %}
-        {% if progresso > 100 %}
-            {% set progresso = 100 %}
-        {% endif %}
-
-        <div class="col-xl-4 col-md-6">
-
-            <div class="card bg-dark-card border-0 shadow-lg h-100 rounded-4 overflow-hidden position-relative hover-card">
-
-                <!-- BARRA LATERAL -->
-                <div class="position-absolute h-100"
-                     style="width: 6px; left:0; top:0; background-color: {{ cor_risco }};">
-                </div>
-
-                <div class="card-body ps-4 py-4">
-
-                    <!-- TOP -->
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-
-                        <div>
-
-                            <div class="d-flex align-items-center gap-2 mb-2">
-
-                                <h4 class="text-white fw-bold mb-0">
-                                    {{ item.materia_prima }}
-                                </h4>
-
-                                {% if item.risco == "CRÍTICO" %}
-                                <span class="badge bg-danger">CRÍTICO</span>
-
-                                {% elif item.risco == "ALTO" %}
-                                <span class="badge bg-warning text-dark">ALTO</span>
-
-                                {% elif item.risco == "MODERADO" %}
-                                <span class="badge bg-info">MODERADO</span>
-
-                                {% else %}
-                                <span class="badge bg-success">BAIXO</span>
-                                {% endif %}
-
-                            </div>
-
-                            <small class="text-white-50">
-                                Consumo médio diário: {{ item.media_diaria }}
-                            </small>
-
-                        </div>
-
-                        <span class="badge bg-black bg-opacity-40 text-white-50 border border-secondary border-opacity-25">
-                            {{ item.unidade }}
-                        </span>
-
-                    </div>
-
-                    <!-- DADOS -->
-                    <div class="row g-3 mb-4">
-
-                        <div class="col-6">
-                            <div class="metric-box">
-                                <small class="metric-title">Estoque Atual</small>
-                                <div class="metric-value text-white">{{ item.estoque_atual }}</div>
-                            </div>
-                        </div>
-
-                        <div class="col-6">
-                            <div class="metric-box">
-                                <small class="metric-title">Consumo 7d</small>
-                                <div class="metric-value text-info">{{ item.consumo_previsto }}</div>
-                            </div>
-                        </div>
-
-                        <div class="col-6">
-                            <div class="metric-box">
-                                <small class="metric-title">Consumo 15d</small>
-                                <div class="metric-value text-warning">{{ item.consumo_15d }}</div>
-                            </div>
-                        </div>
-
-                        <div class="col-6">
-                            <div class="metric-box">
-                                <small class="metric-title">Dias Restantes</small>
-
-                                <div class="metric-value
-                                    {% if item.dias_restantes < 2 %}
-                                        text-danger
-                                    {% elif item.dias_restantes < 5 %}
-                                        text-warning
-                                    {% else %}
-                                        text-success
-                                    {% endif %}">
-
-                                    {{ item.dias_restantes }}
-
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <!-- BARRA -->
-                    <div class="mb-4">
-
-                        <div class="progress bg-black bg-opacity-30"
-                             style="height: 12px; border-radius: 10px;">
-
-                            <div class="progress-bar {{ bar_class }}"
-                                 role="progressbar"
-                                 style="width: {{ progresso }}%; border-radius: 10px;">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <!-- IA -->
-                    <div class="mb-3">
-
-                        <small class="text-white-50 d-block mb-2">
-                            Sugestão Inteligente de Compra
-                        </small>
-
-                        <div class="bg-black bg-opacity-25 rounded-3 p-3">
-
-                            <div class="d-flex justify-content-between">
-
-                                <span class="text-white-50">
-                                    Quantidade sugerida:
-                                </span>
-
-                                <span class="fw-bold text-info">
-                                    {{ item.sugestao_compra }} {{ item.unidade }}
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <!-- ALERTA -->
-                    {% if item.dias_restantes < 2 %}
-                    <div class="alert bg-danger bg-opacity-10 border-0 text-danger small mb-0 py-2">
-                        <i class="bi bi-exclamation-octagon-fill me-2"></i>
-                        Compra urgente necessária.
-                    </div>
-
-                    {% elif item.dias_restantes < 5 %}
-                    <div class="alert bg-warning bg-opacity-10 border-0 text-warning small mb-0 py-2">
-                        <i class="bi bi-clock-history me-2"></i>
-                        Planeje a reposição em breve.
-                    </div>
-
-                    {% else %}
-                    <div class="alert bg-success bg-opacity-10 border-0 text-success small mb-0 py-2">
-                        <i class="bi bi-check-circle-fill me-2"></i>
-                        Estoque seguro.
-                    </div>
-                    {% endif %}
-
-                </div>
+    <div class="row g-4 justify-content-center mt-2">
+        <div class="col-md-4">
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4 h-100 text-center hover-card">
+                <i class="bi bi-graph-up-arrow text-info fs-1 mb-3"></i>
+                <h4 class="text-white">Previsão de Demanda</h4>
+                <p class="text-white-50 small">IA para prever quando comprar insumos e evitar ruptura.</p>
+                <a href="{{ url_for('produtos.previsao') }}" class="btn btn-outline-info mt-auto">Acessar</a>
             </div>
         </div>
-
-        {% else %}
-
-        <div class="col-12">
-            <div class="text-center py-5 text-white-50 bg-dark-card rounded-4 border border-secondary border-opacity-10">
-                <i class="bi bi-graph-down fs-1 d-block mb-3"></i>
-                <p class="fs-5">Sem dados suficientes para previsão.</p>
-            </div>
-        </div>
-
-        {% endfor %}
-
     </div>
+
 </div>
 
 <style>
-.bg-dark-card {
-    background: #0f172a !important;
-    border: 1px solid #334155 !important;
-}
-
-.animate-in {
-    animation: fadeIn 0.6s ease-out;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.progress-bar {
-    transition: width 1s ease-in-out;
-}
-
-.hover-card {
-    transition: all 0.25s ease;
-    border: 1px solid #334155 !important;
-}
-
-.hover-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 18px 35px rgba(0,0,0,0.45) !important;
-}
-
-.metric-box {
-    background: rgba(255,255,255,0.03);
-    border-radius: 14px;
-    padding: 14px;
-    border: 1px solid rgba(255,255,255,0.05);
-}
-
-.metric-title {
-    color: #94a3b8;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    font-weight: 700;
-}
-
-.metric-value {
-    font-size: 1.2rem;
-    font-weight: 800;
-}
-
-@media print {
-    .sidebar, .btn, .bg-dark-card {
-        display: none !important;
-    }
-    body {
-        background: white !important;
-    }
-}
+    .bg-dark-card { background: #0f172a !important; border: 1px solid #334155 !important; }
+    .animate-in { animation: fadeIn 0.6s ease-out; }
+    .hover-card { transition: all 0.3s ease; }
+    .hover-card:hover { transform: translateY(-10px); border-color: #64748b !important; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 </style>
-
 {% endblock %}

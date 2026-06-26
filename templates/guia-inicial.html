@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4 animate-in">
+
+    <section class="mb-5">
+        <div class="text-center py-5">
+            <span class="badge bg-warning text-dark mb-3 px-3 py-2">ERP Inteligente para Negócios Alimentícios</span>
+            <h1 class="display-3 fw-bold text-white mb-4">
+                Transforme sua operação com o <span class="text-warning">Lumenarch</span>
+            </h1>
+            <p class="lead text-white-50 mx-auto mb-4" style="max-width: 900px;">
+                Controle estoque, produção, vendas, custos, fluxo de caixa e previsões inteligentes em uma única plataforma.
+            </p>
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a href="#secao-cadastro" class="btn btn-warning btn-lg px-4 fw-bold shadow">Ver Demonstração</a>
+                <a href="/login" class="btn btn-outline-light btn-lg px-4">Entrar na Plataforma</a>
+            </div>
+        </div>
+    </section>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card bg-dark-card p-4 h-100 border-0 shadow">
+                <h4 class="text-warning">📉 Reduza desperdícios</h4>
+                <p class="text-white-50 mb-0">Controle insumos em tempo real e saiba exatamente onde está sua perda.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-dark-card p-4 h-100 border-0 shadow">
+                <h4 class="text-info">⚡ Automatize processos</h4>
+                <p class="text-white-50 mb-0">Compras, estoque e produção conectados automaticamente.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-dark-card p-4 h-100 border-0 shadow">
+                <h4 class="text-success">📈 Aumente lucro</h4>
+                <p class="text-white-50 mb-0">Precificação inteligente e análise financeira em tempo real.</p>
+            </div>
+        </div>
+    </div>
+
+    <nav class="nav nav-pills nav-fill bg-dark-card rounded-pill mb-5 p-2 sticky-top shadow-lg" style="top: 20px; z-index: 1000; border: 1px solid #334155;">
+        <a class="nav-link text-white" href="#secao-cadastro">📦 Cadastro</a>
+        <a class="nav-link text-white" href="#secao-precificacao">💰 Precificação</a>
+        <a class="nav-link text-white" href="#secao-vendas">🛒 Vendas</a>
+        <a class="nav-link text-white" href="#secao-estoque">📦 Estoque</a>
+        <a class="nav-link text-white" href="#secao-ficha">🥣 Ficha Técnica</a>
+        <a class="nav-link text-white" href="#secao-previsao">📈 Previsão</a>
+        <a class="nav-link text-white" href="#secao-acessos">👥 Acessos</a>
+        <a class="nav-link text-white" href="#secao-financeiro">💰 Financeiro</a>
+    </nav>
+
+    <section id="secao-cadastro" class="mb-5 p-4 border-bottom border-secondary">
+        <div class="container-fluid py-4 animate-in">
+            <div class="mb-5 px-md-4">
+                <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.5rem; letter-spacing: -1.5px;">
+                    📝 Central de <span class="text-warning">Cadastros</span>
+                </h1>
+                <div class="row g-3 mt-4 mb-4">
+                    <div class="col-md-4"><div class="card bg-dark-card p-3 text-center border-0 shadow-sm"><small class="text-white-50">Insumos</small><h3 class="text-warning mb-0">152</h3></div></div>
+                    <div class="col-md-4"><div class="card bg-dark-card p-3 text-center border-0 shadow-sm"><small class="text-white-50">Produtos</small><h3 class="text-info mb-0">48</h3></div></div>
+                    <div class="col-md-4"><div class="card bg-dark-card p-3 text-center border-0 shadow-sm"><small class="text-white-50">Subprodutos</small><h3 class="text-violet mb-0">23</h3></div></div>
+                </div>
+            </div>
+
+            <div class="row g-4 px-md-4" style="pointer-events: none; opacity: 0.9;">
+                <div class="col-lg-6">
+                    <div class="card h-100 bg-dark-card border-0 shadow-lg p-2">
+                        <div class="card-header border-0 bg-transparent py-4 px-4">
+                            <h4 class="fw-bold text-warning mb-0"><i class="bi bi-egg-fried me-2"></i>Insumos (Matéria-Prima)</h4>
+                        </div>
+                        <div class="card-body px-4 pb-4">
+                            <div class="mb-3">
+                                <label class="form-label text-white-50 small fw-bold">NOME DO INGREDIENTE</label>
+                                <input type="text" class="form-control form-control-lg custom-input" placeholder="Ex: Chocolate 70%" disabled>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-white-50 small fw-bold">UNIDADE DE MEDIDA</label>
+                                    <select class="form-select custom-input" disabled>
+                                        <option>Quilograma (kg)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-white-50 small fw-bold">QUANTIDADE ATUAL</label>
+                                    <input type="number" class="form-control custom-input" placeholder="0.000" disabled>
+                                </div>
+                            </div>
+                            <button class="btn btn-warning w-100 fw-bold py-3 shadow-sm rounded-4 text-dark" disabled>
+                                <i class="bi bi-plus-circle-fill me-2"></i>SALVAR INGREDIENTE
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6 d-flex flex-column g-4">
+                    <div class="card bg-dark-card border-0 shadow-lg p-2 mb-4 flex-fill">
+                        <div class="card-header border-0 bg-transparent py-4 px-4">
+                            <h4 class="fw-bold text-info mb-0"><i class="bi bi-cake2 me-2"></i>Produto Final</h4>
+                        </div>
+                        <div class="card-body px-4 pb-4">
+                            <div class="mb-3">
+                                <label class="form-label text-white-50 small fw-bold">NOME COMERCIAL</label>
+                                <input type="text" class="form-control form-control-lg custom-input" placeholder="Ex: Brownie Supremo" disabled>
+                            </div>
+                            <button class="btn btn-info w-100 fw-bold py-3 text-white shadow-sm rounded-4" disabled>
+                                <i class="bi bi-check-all me-2"></i>FINALIZAR PRODUTO
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card bg-dark-card border-0 shadow-lg p-2 flex-fill">
+                        <div class="card-header border-0 bg-transparent py-4 px-4">
+                            <h4 class="fw-bold text-violet mb-0"><i class="bi bi-box-seam me-2"></i>Subproduto</h4>
+                        </div>
+                        <div class="card-body px-4 pb-4">
+                            <input type="text" class="form-control form-control-lg custom-input mb-3" placeholder="Ex: Massa Base Brownie" disabled>
+                            <button class="btn btn-violet w-100 fw-bold py-3 text-white shadow-sm rounded-4" disabled>
+                                <i class="bi bi-layers-half me-2"></i>SALVAR SUBPRODUTO
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="secao-precificacao" class="mb-5 p-4">
+        <h2 class="text-warning mb-4">💰 Precificação Inteligente</h2>
+        <div class="card bg-dark-card border-0 p-4 shadow-lg">
+            <p class="text-white-50">Demonstração: Simulação de margem de lucro com ajuste dinâmico de custos.</p>
+            <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                    <div>
+                        <h5 class="text-white fw-bold mb-1">🎯 Simulação de Margem</h5>
+                        <small class="text-white-50">Ajuste a margem para recalcular preços em tempo real</small>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="text-white-50 fw-bold">Margem:</span>
+                        <input type="range" id="rangeMargem" class="form-range" min="5" max="80" value="30" style="width: 200px;">
+                        <span id="valorMargem" class="badge bg-warning text-dark px-3 py-2">30%</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead class="text-white-50 small text-uppercase">
+                            <tr><th>Produto</th><th>Atual</th><th>Equilíbrio</th><th>Sugerido</th><th class="text-center">Status</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for item in tabela %}
+                            <tr data-id="{{ item.id }}" data-atual="{{ item.atual }}" data-equilibrio="{{ item.equilibrio }}" data-custo="{{ item.custo }}">
+                                <td class="fw-bold text-info">{{ item.nome }}</td>
+                                <td class="text-white">R$ {{ "%.2f"|format(item.atual)|replace('.', ',') }}</td>
+                                <td class="text-white-50">R$ {{ "%.2f"|format(item.equilibrio)|replace('.', ',') }}</td>
+                                <td><span class="preco-sugerido text-success fw-bold">R$ 0,00</span></td>
+                                <td class="text-center status-financeiro"></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="secao-vendas" class="mb-5 p-4" style="pointer-events: none; opacity: 0.9;">
+        <h2 class="text-warning mb-4"><i class="bi bi-cart-check-fill"></i> Registro de Vendas</h2>
+        
+        <div class="row g-4 mb-4">
+            <div class="col-md-4"><div class="card bg-dark-card p-3 border-0 shadow-sm"><small class="text-white-50">Vendas Hoje</small><h3 class="text-success">R$ 1.248</h3></div></div>
+            <div class="col-md-4"><div class="card bg-dark-card p-3 border-0 shadow-sm"><small class="text-white-50">Pedidos</small><h3 class="text-info">82</h3></div></div>
+            <div class="col-md-4"><div class="card bg-dark-card p-3 border-0 shadow-sm"><small class="text-white-50">Ticket Médio</small><h3 class="text-warning">R$ 15,22</h3></div></div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="card bg-dark-card border-0 shadow-lg p-4">
+                    <h5 class="text-white mb-4">Nova Venda</h5>
+                    <div class="mb-3">
+                        <label class="form-label text-white-50 small">PRODUTO</label>
+                        <select class="form-select bg-dark text-white border-secondary" disabled>
+                            <option>Exemplo: Brownie Supremo</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white-50 small">QUANTIDADE</label>
+                        <div class="input-group">
+                            <button class="btn btn-outline-secondary" disabled>-</button>
+                            <input type="number" class="form-control bg-dark text-white border-secondary text-center" value="1" disabled>
+                            <button class="btn btn-outline-secondary" disabled>+</button>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-black bg-opacity-20 rounded text-center mb-3">
+                        <span class="text-white-50 small">TOTAL A RECEBER</span>
+                        <div class="h3 text-success fw-bold">R$ 0,00</div>
+                    </div>
+                    <button class="btn btn-warning w-100 fw-bold" disabled>FINALIZAR VENDA</button>
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="card bg-dark-card border-0 shadow-lg p-4">
+                    <h5 class="text-white mb-3">Últimas Vendas</h5>
+                    <div class="row g-2 mb-3">
+                        <div class="col-sm-7"><input type="text" class="form-control bg-dark text-white border-secondary" placeholder="Buscar..." disabled></div>
+                        <div class="col-sm-5"><input type="date" class="form-control bg-dark text-white border-secondary" disabled></div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover align-middle">
+                            <thead>
+                                <tr class="text-white-50 small">
+                                    <th>Data</th><th>Produto</th><th>Qtd</th><th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>25/06/2026</td>
+                                    <td>Brownie Supremo</td>
+                                    <td>2</td>
+                                    <td class="text-success">R$ 10,00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="secao-estoque" class="container-fluid py-4 animate-in">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
+            <div>
+                <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.2rem; letter-spacing: -1px;">
+                    📦 Demonstração: Painel Inteligência de <span class="text-warning">Estoque</span>
+                </h1>
+                <p class="text-white-50 mb-0">Controle unificado de Matérias-Primas, Subprodutos e Produtos Finais.</p>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-dark-card border border-secondary border-opacity-25 rounded-3 px-4 py-2 shadow-sm text-center">
+                    <small class="text-white-50 d-block fw-bold text-uppercase" style="font-size: 0.6rem;">Itens Cadastrados</small>
+                    <span class="text-white fs-5 fw-bold">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-dark-card border border-secondary border-opacity-10 mb-4 rounded-4 shadow-lg">
+            <div class="card-body p-4">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label text-white-50 small font-monospace mb-2">BUSCAR ITEM</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-black bg-opacity-35 border-secondary border-opacity-25 text-white-50"><i class="bi bi-search"></i></span>
+                            <input type="text" id="buscaNomeItem" class="form-control bg-dark text-white border-secondary border-opacity-25" placeholder="Digite o nome...">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-white-50 small font-monospace mb-2">TIPO</label>
+                        <select id="buscaCategoriaItem" class="form-select bg-dark text-white border-secondary border-opacity-25">
+                            <option value="todos">🔹 Mostrar Tudo</option>
+                            <option value="insumo">🟢 Matérias-Primas</option>
+                            <option value="subproduto">🟡 Subprodutos</option>
+                            <option value="produto_final">🔴 Produtos Finais</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" onclick="limparFiltros()" class="btn btn-outline-secondary text-white w-100 fw-bold border-opacity-25 py-2">
+                            <i class="bi bi-trash3 me-1"></i> Limpar Filtros
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-dark-card border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="table-responsive">
+                <table id="tabelaGlobalEstoque" class="table table-hover table-dark align-middle mb-0">
+                    <thead class="bg-black bg-opacity-50">
+                        <tr class="text-white-50 small text-uppercase">
+                            <th class="ps-4 py-3">ID</th>
+                            <th class="py-3">Item / Registro</th>
+                            <th class="py-3">Tipo</th>
+                            <th class="py-3 text-center">Saldo</th>
+                            <th class="py-3 text-end pe-4">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr data-tipo="insumo">
+                            <td class="ps-4 font-monospace small">#MP-001</td>
+                            <td>
+                                <div class="fw-bold text-white fs-6 alvo-busca-nome">Farinha de Trigo</div>
+                                <small class="text-white-50">Matéria-prima</small>
+                            </td>
+                            <td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-3 rounded-pill">Insumo</span></td>
+                            <td class="text-center fs-5 fw-bold text-danger">5,5kg</td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-outline-warning btn-sm px-3 rounded-3"><i class="bi bi-pencil-square"></i> AJUSTAR</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="secao-ficha" class="mb-5 p-4 border-bottom border-secondary">
+        <h2 class="text-warning mb-4">🥣 Demonstração: Ficha Técnica</h2>
+        <div style="pointer-events: none;">
+            <div class="card bg-dark-card border-0 p-4">
+                <table class="table table-dark">
+                    <thead><tr><th>Tipo</th><th>Item</th><th>Custo</th></tr></thead>
+                    <tbody>
+                        <tr><td><span class="badge bg-primary">Insumo</span></td><td>Chocolate 70%</td><td>R$ 15,00</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="secao-acessos" class="mb-5 p-4">
+        <h2 class="text-warning mb-4">👥 Gestão de Acessos</h2>
+        <div class="card bg-dark-card border-0 p-4 shadow-lg">
+            <table class="table table-dark align-middle">
+                <thead><tr><th>Usuário</th><th>Cargo</th><th>Nível</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr><td>Lucas</td><td>Dono</td><td>Master</td><td><span class="badge bg-success">Ativo</span></td></tr>
+                    <tr><td>Miranda</td><td>Colaborador</td><td>Restrito</td><td><span class="badge bg-success">Ativo</span></td></tr>
+                    <tr><td>thiago</td><td>Financeiro</td><td>Restrito</td><td><span class="badge bg-success">Ativo</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section id="secao-previsao" class="mb-5 p-4">
+        <h2 class="text-info mb-4">📈 Previsão de Demanda</h2>
+        <div class="row g-4">
+            <div class="col-md-12">
+                <div class="card bg-dark-card border-0 shadow-lg rounded-4 p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <i class="bi bi-graph-up-arrow fs-2 text-info me-3"></i>
+                        <div>
+                            <h4 class="text-white mb-0">IA de Demanda</h4>
+                            <p class="text-white-50 small mb-0">Análise preditiva para evitar ruptura de estoque</p>
+                        </div>
+                    </div>
+                    
+                    <div class="alert bg-black bg-opacity-20 border-info border-opacity-50 text-white-50">
+                        <i class="bi bi-info-circle me-2 text-info"></i> 
+                        Sistema operando com base nos dados de vendas dos últimos 30 dias.
+                    </div>
+
+                    <div class="text-center py-4">
+                        <p class="text-white-50">Nenhum alerta de ruptura para os próximos 7 dias.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="secao-financeiro" class="mb-5 p-4">
+        <h2 class="text-warning mb-4">💰 Painel Financeiro</h2>
+        <div class="row g-4 mb-4">
+            <div class="col-md-4"><div class="card bg-dark-card p-4"><small class="text-white-50">Receita Mensal</small><h3 class="text-success">R$ 42.800</h3></div></div>
+            <div class="col-md-4"><div class="card bg-dark-card p-4"><small class="text-white-50">Despesas</small><h3 class="text-danger">R$ 18.300</h3></div></div>
+            <div class="col-md-4"><div class="card bg-dark-card p-4"><small class="text-white-50">Lucro</small><h3 class="text-warning">R$ 24.500</h3></div></div>
+        </div>
+    </section>
+
+    <section class="py-5 text-center">
+        <h2 class="text-white fw-bold mb-3">Pronto para transformar sua gestão?</h2>
+        <p class="text-white-50 mb-4">Centralize estoque, vendas, produção e financeiro em uma única plataforma.</p>
+        <a href="/login" class="btn btn-warning btn-lg px-5 fw-bold shadow">Começar Agora</a>
+    </section>
+
+</div>
+
+<style>
+    section { padding-top: 100px; }
+    html { scroll-behavior: smooth; }
+    .nav-link.active { background-color: #f59e0b !important; color: #000 !important; font-weight: bold; }
+    .bg-dark-card { background: #1e293b !important; border-radius: 24px; }
+    .text-violet { color: #a78bfa !important; }
+    .btn-violet { background-color: #7c3aed !important; }
+    .custom-input { background-color: #0f172a !important; border: 1px solid #334155 !important; color: #ffffff !important; border-radius: 12px !important; }
+    .animate-in { animation: slideUp 0.6s ease-out; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<script>
+    document.getElementById('buscaNomeItem').addEventListener('input', function() {
+        let filtro = this.value.toLowerCase();
+        let cat = document.getElementById('buscaCategoriaItem').value;
+        document.querySelectorAll('#tabelaGlobalEstoque tbody tr').forEach(tr => {
+            let nome = tr.querySelector('.alvo-busca-nome').textContent.toLowerCase();
+            let tipo = tr.getAttribute('data-tipo');
+            tr.style.display = (nome.includes(filtro) && (cat === 'todos' || tipo === cat)) ? '' : 'none';
+        });
+    });
+
+    function limparFiltros() {
+        document.getElementById('buscaNomeItem').value = '';
+        document.getElementById('buscaCategoriaItem').value = 'todos';
+        document.getElementById('buscaNomeItem').dispatchEvent(new Event('input'));
+    }
+
+    window.addEventListener('scroll', () => {
+        let current = '';
+        const sections = document.querySelectorAll('section');
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            if (pageYOffset >= (sectionTop - 150)) {
+                current = section.getAttribute('id');
+            }
+        });
+
+        document.querySelectorAll('.nav-link').forEach(li => {
+            li.classList.remove('active');
+            if (li.getAttribute('href').includes(current)) {
+                li.classList.add('active');
+            }
+        });
+    });
+</script>
+{% endblock %}

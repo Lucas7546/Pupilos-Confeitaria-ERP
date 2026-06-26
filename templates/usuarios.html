@@ -257,6 +257,25 @@
 
 <!-- SEARCH SCRIPT -->
 <script>
+
+function filterTable() {
+    let input = document.getElementById("searchInput");
+    let filter = input.value.toLowerCase();
+    let rows = document.querySelectorAll("#userTable tbody tr");
+
+    rows.forEach(row => {
+        // Busca tanto por Nome (index 1) quanto por Cargo (index 2)
+        let name = row.children[1].innerText.toLowerCase();
+        let role = row.children[2].innerText.toLowerCase();
+        
+        if (name.includes(filter) || role.includes(filter)) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
+
 function filterTable() {
     let input = document.getElementById("searchInput");
     let filter = input.value.toLowerCase();
@@ -290,6 +309,15 @@ function filterTable() {
     transition: 0.2s;
 }
 
+.table td, .table th {
+    padding: 1rem 1.5rem !important;
+}
+
+.btn-warning:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    transition: all 0.2s ease;
+}
 </style>
 
 {% endblock %}

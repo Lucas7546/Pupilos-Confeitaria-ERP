@@ -565,17 +565,18 @@ def alterar_status(id_usuario: int, novo_status: int) -> bool:
 
 
 def atualizar_senha(id_usuario, nova_senha_plana):
-    # Gera o hash da nova senha
     nova_senha_hash = generate_password_hash(nova_senha_plana)
-    
+
     with db_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE usuarios SET senha = %s WHERE id = %s",
+                """
+                UPDATE usuarios
+                SET senha = %s
+                WHERE id_usuario = %s
+                """,
                 (nova_senha_hash, id_usuario)
             )
-            conn.commit()
-
 
 
 

@@ -148,8 +148,12 @@ def debug_user():
 @login_required
 def trocar_senha():
     nova_senha = request.form.get("nova_senha")
-    id_user = current_user.id
-    
-    atualizar_senha(id_user, nova_senha)
+
+    if not nova_senha:
+        flash("Informe uma nova senha.", "danger")
+        return redirect(url_for("main.configuracoes"))
+
+    atualizar_senha(current_user.id_usuario, nova_senha)
+
     flash("Senha alterada com sucesso!", "success")
     return redirect(url_for("main.configuracoes"))

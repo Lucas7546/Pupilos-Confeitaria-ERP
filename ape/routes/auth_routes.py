@@ -21,6 +21,12 @@ auth_bp = Blueprint("auth", __name__)
 # =============================================================
 # LOGIN
 # =============================================================
+
+@auth_bp.route('/manual-lumenarch')
+def manual():
+    # Aqui você renderiza o seu guia-inicial.html
+    return render_template('guia-inicial.html')
+
 @auth_bp.route("/login", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def login():

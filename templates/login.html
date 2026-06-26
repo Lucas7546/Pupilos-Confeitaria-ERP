@@ -58,6 +58,38 @@
         .modal-cadastro { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 9999; padding: 20px; overflow-y: auto; }
         .modal-card { width: 100%; max-width: 420px; margin: 40px auto; background: rgba(30, 41, 59, 0.95); border-radius: 28px; padding: 40px; border: 1px solid rgba(255, 255, 255, 0.1); }
         .fechar-modal { float: right; cursor: pointer; font-size: 24px; color: #94a3b8; }
+        .manual-box {
+        background: var(--card-bg); /* Usa a mesma transparência do login */
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 28px;
+        backdrop-filter: blur(16px);
+        position: relative;
+        }
+
+        /* Efeito de borda brilhante igual ao login-box */
+        .manual-box::after { 
+            content: ""; position: absolute; inset: -1px; border-radius: 29px; 
+            background: linear-gradient(135deg, var(--accent-primary), transparent, transparent); 
+            z-index: -1; opacity: 0.3; 
+        }
+
+        /* Botão sincronizado com a cor do tema */
+        .btn-manual {
+            background: linear-gradient(135deg, var(--accent-primary), #d97706);
+            border: none;
+            padding: 12px;
+            border-radius: 12px;
+            color: #000;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .btn-manual:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>

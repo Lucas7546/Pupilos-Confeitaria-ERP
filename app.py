@@ -8,6 +8,7 @@ from modules.tenant_db import db_conn
 from ape.extensions import init_extensions
 # Importando seus Blueprints organizados
 from ape.routes.auth_routes import auth_bp
+from ape.routes.chatbot_routes import chatbot_bp
 from ape.routes.estoque_routes import estoque_bp
 from ape.routes.compras_routes import compras_bp
 from ape.routes.empresas_routes import empresas_bp
@@ -158,6 +159,7 @@ def create_app():
     app.register_blueprint(billing_bp)
     app.register_blueprint(equipe_bp)
     app.register_blueprint(insumos_bp)
+    app.register_blueprint(chatbot_bp)
     app.register_blueprint(produtos_bp, url_prefix='/produtos')
     app.register_blueprint(vinculos_bp)
     app.register_blueprint(empresas_bp)

@@ -560,6 +560,119 @@
     <script src="{{ url_for('static', filename='js/xlsx.full.min.js') }}"></script>
 
     <script src="{{ url_for('static', filename='js/html2pdf.bundle.min.js') }}"></script>
+
+    <div id="chatbot-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; font-family: sans-serif;">
+  
+        <!-- Botão Flutuante Circular -->
+        <button id="chatbot-toggle-btn" onclick="toggleChat()" style="background-color: #2563eb; color: #fff; border: none; border-radius: 50%; width: 60px; height: 60px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-size: 24px;">
+            💬
+        </button>
+
+        <!-- Janela do Chat (inicialmente oculta) -->
+        <div id="chatbot-window" style="display: none; width: 320px; height: 450px; background-color: #fff; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); flex-direction: column; overflow: hidden; position: absolute; bottom: 75px; right: 0;">
+            
+            <!-- Cabeçalho -->
+            <div style="background-color: #2563eb; color: #fff; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; font-weight: bold;">
+            <span>Atendimento Virtual</span>
+            <button onclick="toggleChat()" style="background: none; border: none; color: #fff; cursor: pointer; font-size: 16px;">✕</button>
+            </div>
+
+            <!-- Histórico de Mensagens -->
+            <div id="chatbot-messages" style="flex: 1; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background-color: #f9fafb;">
+            <div style="align-self: flex-start; background-color: #e5e7eb; color: #1f2937; padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 14px;">
+                Olá! Como posso te ajudar hoje?
+            </div>
+            </div>
+
+            <!-- Input e Envio -->
+            <form id="chatbot-form" onsubmit="sendMessage(event)" style="display: flex; padding: 8px; border-top: 1px solid #e5e7eb; background-color: #fff;">
+            <input type="text" id="chatbot-input" placeholder="Digite sua mensagem..." autocomplete="off" style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; outline: none; font-size: 14px;" />
+            <button type="submit" style="margin-left: 8px; background-color: #2563eb; color: #fff; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: bold;">➤</button>
+            </form>
+        </div>
+        </div>
+
+        <!-- Script de Controle do Chat e Conexão com o Backend Flask -->
+        <script>
+        function toggleChat() {
+            const windowEl = document.getElementById('chatbot-window');
+            const btnEl = document.getElementById('chatbot-toggle-btn');
+            if (windowEl.style.display === 'none' || windowEl.style.display === '') {
+            windowEl.style.display = 'flex';
+            btnEl.style.display = 'none'; 
+            document.getElementById('chatbot-input').focus();
+            } else {
+            windowEl.style.display = 'none';
+            btnEl.style.display = 'flex'; 
+            }
+        }
+
+        async function sendMessage(event) {
+            event.preventDefault();
+            const inputEl = document.getElementById('chatbot-input');
+            const messageText = inputEl.value.trim();
+            if (!messageText) return;
+
+            const messagesContainer = document.getElementById('chatbot-messages');
+
+            // 1. Exibe a mensagem do usuário na tela
+            messagesContainer.innerHTML += `
+            <div style="align-self: flex-end; background-color: #2563eb; color: #fff; padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 14px;">
+                ${escapeHtml(messageText)}
+            </div>
+            `;
+            inputEl.value = '';
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            // 2. Mostra indicador de "Digitando..."
+            const loadingId = 'loading-' + Date.now();
+            messagesContainer.innerHTML += `
+            <div id="${loadingId}" style="align-self: flex-start; color: #6b7280; font-size: 12px; padding: 4px;">
+                Digitando...
+            </div>
+            `;
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            try {
+            // 3. ENVIA PARA A ROTA DO FLASK (/api/chat)
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ message: messageText })
+            });
+
+            const data = await response.json();
+            
+            // Remove o "Digitando..."
+            document.getElementById(loadingId).remove();
+
+            const botReply = data.output || data.reply || data.message || 'Recebi sua mensagem!';
+
+            // 4. Exibe a resposta do bot na tela
+            messagesContainer.innerHTML += `
+                <div style="align-self: flex-start; background-color: #e5e7eb; color: #1f2937; padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 14px;">
+                ${escapeHtml(botReply)}
+                </div>
+            `;
+            } catch (error) {
+            document.getElementById(loadingId).remove();
+            messagesContainer.innerHTML += `
+                <div style="align-self: flex-start; background-color: #fee2e2; color: #991b1b; padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 14px;">
+                Erro ao se conectar com o assistente.
+                </div>
+            `;
+            }
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+        </script>
 </body>
 
 </html>

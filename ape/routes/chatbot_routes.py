@@ -31,4 +31,4 @@ def receber_mensagem_chat():
 
     except Exception as e:
         print(f"Erro ao comunicar com o n8n: {e}")
-        return jsonify({'output': 'Desculpe, estou enfrentando instabilidades no momento.'}), 500
+        return jsonify({'output': 'Desculpe, estou em fase de desenvolvimento.'}), 500
